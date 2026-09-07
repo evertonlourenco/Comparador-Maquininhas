@@ -1,0 +1,100 @@
+<?php
+
+namespace App\Filament\Resources\Cupons\Tables;
+
+use App\Enums\StatusItem;
+use App\Models\Cupom;
+use App\Models\Marca;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Support\Enums\FontWeight;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Table;
+use Illuminate\Support\Carbon;
+
+class CuponsTable
+{
+    /** Regra 5, destaque visual: vence em menos de 7 dias. */
+    private const DIAS_ALERTA_VENCIMENTO = 7;
+
+    public static function configure(Table $table): Table
+    {
+        return $table
+            ->columns([
+                TextColumn::make('marca.nome')
+                    ->label('Marca')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('equipamento.nome')
+                    ->label('Equipamento')
+                    ->default('Catálogo todo')
+                    ->searchable(),
+                TextColumn::make('codigo')
+                    ->weight(FontWeight::Bold)
+                    ->searchable(),
+                TextColumn::make('valor')
+                    ->formatStateUsing(fn (Cupom $record): string => $record->tipo_desconto->value === 'percentual'
+                        ? number_format((float) $record->valor, 2, ',', '.').'%'
+                        : 'R$ '.number_format((float) $record->valor, 2, ',', '.')),
+                TextColumn::make('valido_ate')
+                    ->label('Válido até')
+                    ->date('d/m/Y')
+                    ->sortable()
+                    ->badge()
+                    ->color(function (Cupom $record): string {
+                        $hoje = Carbon::today();
+
+                        if ($record->valido_ate->lt($hoje)) {
+                            return 'gray';
+                        }
+
+                        return $hoje->diffInDays($record->valido_ate) <= self::DIAS_ALERTA_VENCIMENTO
+                            ? 'danger'
+                            : 'success';
+                    })
+                    ->description(function (Cupom $record): ?string {
+                        $hoje = Carbon::today();
+
+                        if ($record->valido_ate->lt($hoje)) {
+                            return 'Vencido';
+                        }
+
+                        $dias = $hoje->diffInDays($record->valido_ate);
+
+                        return $dias <= self::DIAS_ALERTA_VENCIMENTO
+                            ? "Vence em {$dias} dia(s)"
+                            : null;
+                    }),
+                TextColumn::make('status')
+                    ->badge()
+                    ->sortable(),
+                TextColumn::make('ordem')
+                    ->numeric()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+            ])
+            ->defaultSort('valido_ate')
+            ->filters([
+                SelectFilter::make('marca_id')
+                    ->label('Marca')
+                    ->options(fn () => Marca::orderBy('nome')->pluck('nome', 'id'))
+                    ->searchable(),
+                SelectFilter::make('status')->options(StatusItem::class),
+                Filter::make('vencidos')
+                    ->label('Vencidos')
+                    ->toggle()
+                    ->query(fn ($query) => $query->vencidos()),
+            ])
+            ->recordActions([
+                EditAction::make(),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                ]),
+            ]);
+    }
+}

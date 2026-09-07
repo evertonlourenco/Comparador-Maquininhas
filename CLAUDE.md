@@ -188,6 +188,60 @@ estrutura, não dados de etapa 04 — os models referenciam esses códigos por c
   vai precisar de uma tabela de staging própria.
 - **Sem rastreamento de cliques de cupom** — etapa 09.
 
+## Painel admin (Filament)
+
+Recursos em `app/Filament/Resources`: Marcas, Planos, Equipamentos, Taxas Divulgadas,
+Faixas Reportadas, Cupons. Cada um segue o padrão gerado pelo `filament:make-resource`
+(Resource + `Schemas/*Form` + `Tables/*Table` + `Pages`), não embutido.
+
+**Cupom pluraliza errado em inglês.** `Str::plural('cupom')` dá `cupoms`. O slug da
+rota e os labels do `CupomResource` são fixados manualmente (`cupons`) — se um novo
+resource tiver plural irregular em português, o mesmo cuidado se aplica.
+
+**Select com `->options(EnumClass)` pode entregar o enum já resolvido no `$get()`/
+`$state`**, não só a string crua. Todo closure de formulário que recebe o valor de um
+Select enum-backed (`afterStateUpdated`, `visible`, `minValue`/`maxValue`, `prefix`)
+precisa aceitar `EnumClass|string|null` e normalizar antes de comparar ou construir o
+enum — comparar direto com `=== Enum::Caso->value` ou chamar `Enum::from($get(...))`
+quebra quando o valor chega como instância. Ver `tipoOperacaoDe()` em
+`TaxaDivulgadaForm`/`FaixaReportadaForm` e `enquadramentoDe()` em `PlanoForm`.
+
+**Regras de fechadura em `->rules([...])` do FileUpload precisam de um wrapper.**
+Filament avalia (`evaluate()`) cada item do array de `rules()` antes de usá-lo — um
+Closure de validação no formato do Laravel (`fn (string $attribute, $value, Closure
+$fail)`) é interpretado como "resolva isto para obter a regra", não como a regra em
+si, e quebra porque `$attribute` não é injetável. Por isso `ImagemSeguraWebp::
+regraDeValidacao()` é passada como `fn () => ImagemSeguraWebp::regraDeValidacao()` —
+o wrapper de zero argumentos é avaliado (trivial), e o que ele retorna é a regra real.
+
+**Upload de imagem (logo de marca, foto de equipamento) valida pelo conteúdo, não
+pela extensão**, e converte para WebP no disco — `app/Support/Uploads/
+ImagemSeguraWebp.php`, usado via `->saveUploadedFileUsing()`. `finfo_file` lê os
+bytes reais; um `.jpg` que na verdade é texto é rejeitado antes de chegar ao GD.
+
+**Lançamento em lote de taxas** (`TaxaDivulgadaResource\Pages\LancamentoEmLote`,
+acessível pelo botão na listagem) resolve o pedido de "lançar a tabela inteira de
+uma marca sem criar um registro por vez": grade fixa de 21 colunas (1x a 21x) por
+seção de prazo de recebimento, com metadados (fonte, verificação, status) comuns ao
+lote inteiro. 1x sempre grava como `credito_avista`; 2x–21x como `credito_parcelado`
+(regra 2) — débito e Pix não têm a dimensão parcelas e continuam no cadastro normal.
+Cada célula preenchida faz `updateOrCreate` pela chave da regra 1, então relançar o
+lote atualiza em vez de duplicar. O Select de marca já filtra `publica_tabela = true`
+(regra 4); mesmo assim o método `lancar()` captura `DomainException` do model e avisa
+por notificação em vez de estourar erro 500.
+
+**Painel inicial** (`app/Filament/Widgets/PainelInicial.php`) soma três alertas
+operacionais: taxas com `data_verificacao` há mais de 30 dias (um aviso antecipado ao
+selo de frescor de 45 dias da regra 8, não o mesmo limite), cupons vigentes vencendo
+em até 7 dias, e marcas sem nenhuma taxa/faixa cadastrada.
+
+**Autenticação de dois fatores é obrigatória no painel**, via app autenticador
+(TOTP) nativo do Filament — `AdminPanelProvider::multiFactorAuthentication(...,
+isRequired: true)`. O segredo e os códigos de recuperação ficam em
+`users.app_authentication_secret`/`app_authentication_recovery_codes`, cifrados
+(cast `encrypted`) — nunca em texto puro. Todo usuário novo é obrigado a configurar
+no primeiro login; não há como pular.
+
 ## Convenções
 
 - Commits com prefixo da etapa: `etapa-09: pagina de cupons e rastreamento de cliques`
@@ -201,7 +255,7 @@ estrutura, não dados de etapa 04 — os models referenciam esses códigos por c
 
 - [x] **01** — Ambiente local, Filament, Git e CLAUDE.md
 - [x] **02** — Schema do banco
-- [ ] 03 — Painel admin no Filament
+- [x] **03** — Painel admin no Filament
 - [ ] 04 — Carga dos dados reais
 - [ ] 05 — Motor de cálculo
 - [ ] 06 — Identidade visual e design system
