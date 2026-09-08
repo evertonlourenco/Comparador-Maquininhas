@@ -19,6 +19,10 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
+        <!-- Regra 11: o fuso e America/Sao_Paulo em todo lugar. O selo de
+             frescor de 45 dias vira o dia em Sao Paulo, nao em UTC. -->
+        <env name="APP_TIMEZONE" value="America/Sao_Paulo"/>
+        <env name="APP_LOCALE" value="pt_BR"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>

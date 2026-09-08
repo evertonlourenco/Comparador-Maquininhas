@@ -25,3 +25,6 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Gerado por `php artisan comparador:gerar-json` (regra 9).
+/public/dados
