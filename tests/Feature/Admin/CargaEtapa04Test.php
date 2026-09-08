@@ -4,9 +4,12 @@ namespace Tests\Feature\Admin;
 
 use App\Enums\StatusPublicacao;
 use App\Filament\Resources\Equipamentos\Pages\ListEquipamentos;
+use App\Filament\Resources\FaixaReportadas\Pages\CreateFaixaReportada;
 use App\Filament\Resources\FaixaReportadas\Pages\ListFaixaReportadas;
 use App\Filament\Resources\Marcas\Pages\ListMarcas;
 use App\Filament\Resources\Planos\Pages\ListPlanos;
+use App\Filament\Resources\PrazoRecebimentos\Pages\ListPrazoRecebimentos;
+use App\Filament\Resources\TaxaDivulgadas\Pages\CreateTaxaDivulgada;
 use App\Filament\Resources\TaxaDivulgadas\Pages\LancamentoEmLote;
 use App\Filament\Resources\TaxaDivulgadas\Pages\ListTaxaDivulgadas;
 use App\Filament\Widgets\PainelInicial;
@@ -41,6 +44,10 @@ class CargaEtapa04Test extends TestCase
             ListMarcas::class, ListPlanos::class, ListEquipamentos::class,
             ListTaxaDivulgadas::class, ListFaixaReportadas::class,
             LancamentoEmLote::class, PainelInicial::class,
+            // Os formularios de taxa passaram a montar a lista de grupos de
+            // bandeira a partir do tipo de operacao (etapa 05, decisao 1).
+            CreateTaxaDivulgada::class, CreateFaixaReportada::class,
+            ListPrazoRecebimentos::class,
         ];
 
         foreach ($paginas as $pagina) {
