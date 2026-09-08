@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 /**
@@ -31,5 +32,31 @@ class DatabaseSeeder extends Seeder
             TonSeeder::class,
             SumUpSeeder::class,
         ]);
+
+        $this->usuarioLocal();
+    }
+
+    /**
+     * So em ambiente local, e so se nao houver ninguem: sem isto um
+     * migrate:fresh --seed deixaria o /admin sem nenhum usuario para entrar -
+     * e o painel exige 2FA, entao nem daria para criar um pelo login.
+     *
+     * Nunca roda fora do local: usuario semeado em producao e porta aberta.
+     */
+    private function usuarioLocal(): void
+    {
+        if (! app()->environment('local') || User::exists()) {
+            return;
+        }
+
+        User::factory()->create([
+            'name' => 'Admin local',
+            'email' => 'admin@comparador-maquininhas.test',
+        ]);
+
+        $this->command?->warn(
+            'Usuario local criado: admin@comparador-maquininhas.test / senha padrao da factory. '
+            .'O painel exige configurar o 2FA no primeiro login.'
+        );
     }
 }
