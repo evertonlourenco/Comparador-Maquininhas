@@ -59,9 +59,22 @@ class MarcasSeeder extends Seeder
                 ],
             ],
             [
+                'nome' => 'SumUp', 'slug' => 'sumup', 'adquirente' => 'sumup',
+                'site' => 'https://www.sumup.com/pt-br/maquininhas/taxas/',
+                'publica_tabela' => true, 'ordem' => 4,
+                'descricao' => 'Publica tabela por faixa de faturamento mensal, com percentual '
+                    .'declarado apenas para Visa e Mastercard. Recebimento na hora e em 1 dia util '
+                    .'saem pela mesma taxa - o que muda e so o prazo.',
+                'bandeiras' => [
+                    $vm,
+                    [GrupoBandeira::DEMAIS, ['elo', 'american-express']],
+                    [GrupoBandeira::VOUCHER, ['vr', 'ticket', 'alelo']],
+                ],
+            ],
+            [
                 'nome' => 'Stone', 'slug' => 'stone', 'adquirente' => 'stone',
                 'site' => 'https://www.stone.com.br/',
-                'publica_tabela' => false, 'ordem' => 4,
+                'publica_tabela' => false, 'ordem' => 5,
                 'descricao' => 'Nao publica tabela de taxas: a condicao e negociada caso a caso. '
                     .'O dado desta marca e faixa reportada, nunca taxa divulgada.',
                 'bandeiras' => [],
@@ -69,21 +82,21 @@ class MarcasSeeder extends Seeder
             [
                 'nome' => 'Cielo', 'slug' => 'cielo', 'adquirente' => 'cielo',
                 'site' => 'https://www.cielo.com.br/',
-                'publica_tabela' => false, 'ordem' => 5,
+                'publica_tabela' => false, 'ordem' => 6,
                 'descricao' => 'Nao publica tabela de taxas. O dado desta marca e faixa reportada.',
                 'bandeiras' => [],
             ],
             [
                 'nome' => 'Rede', 'slug' => 'rede', 'adquirente' => 'rede',
                 'site' => 'https://www.userede.com.br/',
-                'publica_tabela' => false, 'ordem' => 6,
+                'publica_tabela' => false, 'ordem' => 7,
                 'descricao' => 'Nao publica tabela de taxas. O dado desta marca e faixa reportada.',
                 'bandeiras' => [],
             ],
             [
                 'nome' => 'GetNet', 'slug' => 'getnet', 'adquirente' => 'getnet',
                 'site' => 'https://www.getnet.com.br/',
-                'publica_tabela' => false, 'ordem' => 7,
+                'publica_tabela' => false, 'ordem' => 8,
                 'descricao' => 'Nao publica tabela de taxas. O dado desta marca e faixa reportada.',
                 'bandeiras' => [],
             ],

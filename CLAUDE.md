@@ -187,10 +187,10 @@ rodar `php artisan db:seed` de novo atualiza, nunca duplica.
 
 | Seeder | O que carrega |
 |---|---|
-| `AdquirentesSeeder` | 6 adquirentes, cada um confirmado no rodapé ou no texto institucional do site da própria marca |
+| `AdquirentesSeeder` | 7 adquirentes, cada um confirmado no rodapé ou no texto institucional do site da própria marca |
 | `BandeirasSeeder` | 13 bandeiras, só as que aparecem em alguma marca já carregada |
-| `MarcasSeeder` | 7 marcas + pivot `bandeira_marca` com o grupo de cada uma |
-| `PagBankSeeder`, `InfinitePaySeeder`, `TonSeeder` | planos, equipamentos com preço de adesão, e a tabela de taxas |
+| `MarcasSeeder` | 8 marcas + pivot `bandeira_marca` com o grupo de cada uma |
+| `PagBankSeeder`, `InfinitePaySeeder`, `TonSeeder`, `SumUpSeeder` | planos, equipamentos e a tabela de taxas de cada marca |
 
 **`DatabaseSeeder` não usa `WithoutModelEvents`, e isso é deliberado.** O trait
 vem do scaffolding do Laravel e desligaria os eventos de model — justamente o
@@ -199,15 +199,21 @@ hook de `TemChaveDeTaxa`, único lugar que preenche `marca_id` a partir do plano
 `publica_tabela = false` (regra 4). Com eventos desligados a carga gravaria
 `marca_id` nulo e furaria a regra 4 em silêncio.
 
-**Estado da carga, verificado em 08/09/2026** — 882 taxas divulgadas, todas em
+**Estado da carga, verificado em 08/09/2026** — 960 taxas divulgadas, todas em
 rascunho (regra 10), todas com `url_fonte` e `data_verificacao`:
 
 | Marca | Publica tabela | Planos | Taxas |
 |---|---|---|---|
 | Ton | sim | 6 faixas de faturamento | 528 (2 prazos × 2 grupos × 1x a 21x) |
 | InfinitePay | sim | 4 faixas de faturamento | 280 (3 prazos × 2 grupos × 1x a 12x) |
+| SumUp | sim | 3 faixas de faturamento | 78 (2 prazos × 1 grupo × 1x a 12x) |
 | PagBank | sim | 3 | 74 (3 prazos × 2 grupos, parcelado único de 2x a 12x) |
 | Stone, Cielo, Rede, GetNet | não | — | 0 — ver abaixo |
+
+A SumUp publica percentual **só para Visa e Mastercard** — toda tabela do site
+dela traz essa nota. Elo, Amex e os vouchers estão vinculados como bandeira
+aceita, sem taxa. E os aparelhos dela entraram sem preço: a página publica só o
+valor da parcela, e num dos modelos com dois valores sem dizer qual vigora.
 
 **O que ainda não entrou, e por quê:**
 
@@ -225,9 +231,13 @@ rascunho (regra 10), todas com `url_fonte` e `data_verificacao`:
   bandeiras — faltam duas das cinco dimensões da chave da regra 1. As taxas do
   PagBank vêm todas da página Taxas e Tarifas, que é dimensional, e ficam no
   plano "Taxas iniciais", nome que é o que a própria página usa.
-- **Voucher: nenhuma taxa.** O Ton aceita Alelo, Pluxee, Ticket, Up Brasil e VR
-  (vinculadas no pivot, no grupo `voucher`), mas não publica o percentual
-  delas. O PagBank diz explicitamente que voucher é negociado com a bandeira.
+- **Voucher: nenhuma taxa.** Ton e SumUp aceitam vale-refeição (vinculados no
+  pivot, no grupo `voucher`), mas nenhuma das duas publica o percentual. O
+  PagBank diz explicitamente que voucher é negociado com a bandeira.
+- **Produtos "celular como maquininha" ficaram de fora** — TapTon, InfiniteTap,
+  Tap On e Tap to Pay. Têm tabela própria e faixas de faturamento próprias, e
+  virariam plano separado dentro da mesma marca. Vale decidir na etapa 07 se o
+  comparador os trata como maquininha.
 
 ### Limitações conhecidas
 

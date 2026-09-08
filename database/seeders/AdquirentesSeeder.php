@@ -24,6 +24,9 @@ class AdquirentesSeeder extends Seeder
             ['Stone', 'stone',
                 'Stone Instituicao de Pagamento S.A., CNPJ 16.501.555/0001-57. Credenciadora das '
                 .'marcas Stone e Ton - que, pela regra 7, seguem concorrendo como opcoes distintas.'],
+            ['SumUp', 'sumup',
+                'SumUp Instituicao de Pagamento Brasil Ltda., CNPJ 16.668.076/0001-20. '
+                .'Credenciadora propria da marca SumUp, conforme rodape de sumup.com.'],
             ['Cielo', 'cielo', 'Credenciadora propria da marca Cielo.'],
             ['Rede', 'rede', 'Credenciadora propria da marca Rede, do conglomerado Itau Unibanco.'],
             ['GetNet', 'getnet', 'Credenciadora propria da marca GetNet, do conglomerado Santander.'],

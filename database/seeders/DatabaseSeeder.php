@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
             PagBankSeeder::class,
             InfinitePaySeeder::class,
             TonSeeder::class,
+            SumUpSeeder::class,
         ]);
     }
 }
