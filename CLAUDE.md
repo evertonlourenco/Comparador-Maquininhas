@@ -187,9 +187,9 @@ rodar `php artisan db:seed` de novo atualiza, nunca duplica.
 
 | Seeder | O que carrega |
 |---|---|
-| `AdquirentesSeeder` | 7 adquirentes, cada um confirmado no rodapé ou no texto institucional do site da própria marca |
+| `AdquirentesSeeder` | 8 adquirentes, cada um confirmado no rodapé ou no texto institucional do site da própria marca |
 | `BandeirasSeeder` | 13 bandeiras, só as que aparecem em alguma marca já carregada |
-| `MarcasSeeder` | 8 marcas + pivot `bandeira_marca` com o grupo de cada uma |
+| `MarcasSeeder` | 9 marcas + pivot `bandeira_marca` com o grupo de cada uma |
 | `PagBankSeeder`, `InfinitePaySeeder`, `TonSeeder`, `SumUpSeeder` | planos, equipamentos e a tabela de taxas de cada marca |
 
 **`DatabaseSeeder` não usa `WithoutModelEvents`, e isso é deliberado.** O trait
@@ -208,7 +208,7 @@ rascunho (regra 10), todas com `url_fonte` e `data_verificacao`:
 | InfinitePay | sim | 4 faixas de faturamento | 280 (3 prazos × 2 grupos × 1x a 12x) |
 | SumUp | sim | 3 faixas de faturamento | 78 (2 prazos × 1 grupo × 1x a 12x) |
 | PagBank | sim | 3 | 74 (3 prazos × 2 grupos, parcelado único de 2x a 12x) |
-| Stone, Cielo, Rede, GetNet | não | — | 0 — ver abaixo |
+| Mercado Pago, Stone, Cielo, Rede, GetNet | não | — | 0 — ver abaixo |
 
 A SumUp publica percentual **só para Visa e Mastercard** — toda tabela do site
 dela traz essa nota. Elo, Amex e os vouchers estão vinculados como bandeira
@@ -217,11 +217,18 @@ valor da parcela, e num dos modelos com dois valores sem dizer qual vigora.
 
 **O que ainda não entrou, e por quê:**
 
-- **Faixas reportadas: nenhuma.** Cielo, Rede, GetNet e Stone estão cadastradas
-  como marca, mas `faixas_reportadas` exige `n_relatos`, `periodo_inicio` e
-  `periodo_fim`. Isso não se levanta em site oficial — vem da captação de
-  relatos da etapa 10. Marca sem dado nenhum é o estado honesto, e o Painel
-  Inicial já sinaliza.
+- **Faixas reportadas: nenhuma.** Cielo, Rede, GetNet, Stone e Mercado Pago
+  estão cadastradas como marca, mas `faixas_reportadas` exige `n_relatos`,
+  `periodo_inicio` e `periodo_fim`. Isso não se levanta em site oficial — vem
+  da captação de relatos da etapa 10. Marca sem dado nenhum é o estado honesto,
+  e o Painel Inicial já sinaliza.
+- **Mercado Pago entrou com `publica_tabela = false`**, somando-se às quatro
+  que a regra 4 já nomeava. A página pública dele traz só a taxa promocional
+  dos primeiros 30 dias; a tabela padrão varia por faturamento e só aparece no
+  simulador dentro da conta, atrás de login. Sem tabela pública não há
+  `url_fonte` para citar, e carregar só a promocional venderia como permanente
+  uma taxa que dura 30 dias. Se a tabela aparecer em página aberta, o campo é
+  um clique no painel.
 - **Pix não tem nenhuma linha**, apesar de InfinitePay e Ton publicarem Pix a
   0%. `grupo_bandeira_id` é NOT NULL e Pix não tem bandeira — não existe grupo
   correto para ele. Escolher um seria inventar dimensão. Decidir isso é da

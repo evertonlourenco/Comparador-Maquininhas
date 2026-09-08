@@ -27,6 +27,9 @@ class AdquirentesSeeder extends Seeder
             ['SumUp', 'sumup',
                 'SumUp Instituicao de Pagamento Brasil Ltda., CNPJ 16.668.076/0001-20. '
                 .'Credenciadora propria da marca SumUp, conforme rodape de sumup.com.'],
+            ['Mercado Pago', 'mercado-pago',
+                'Mercado Pago Instituicao de Pagamento Ltda., CNPJ 10.573.521/0001-91. '
+                .'Credenciadora propria da marca Mercado Pago, conforme rodape do site.'],
             ['Cielo', 'cielo', 'Credenciadora propria da marca Cielo.'],
             ['Rede', 'rede', 'Credenciadora propria da marca Rede, do conglomerado Itau Unibanco.'],
             ['GetNet', 'getnet', 'Credenciadora propria da marca GetNet, do conglomerado Santander.'],
