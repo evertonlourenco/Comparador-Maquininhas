@@ -12,16 +12,20 @@ use PHPUnit\Framework\TestCase;
 class DinheiroTest extends TestCase
 {
     /**
-     * O caso que separa round() do PHP de Math.round() do JS. 2.675 nao existe
-     * em ponto flutuante: o double mais proximo e 2,674999999999999822...
      * A regra do comparador e meio centavo para cima, nos dois idiomas.
+     *
+     * 1,005 e 0,145 sao os casos que separam round() do PHP de Math.round() do
+     * JS: em ponto flutuante 1,005 x 100 da 100.49999999999999, que o
+     * Math.round derruba para 100. 2,675 esta aqui como contraexemplo - ele
+     * parece do mesmo tipo, mas x 100 da 267,5 exatos e os dois idiomas ja
+     * concordam nele sozinhos.
      */
     public function test_meio_centavo_vai_para_cima(): void
     {
-        $this->assertSame(2.68, Dinheiro::arredondar(2.675));
         $this->assertSame(1.01, Dinheiro::arredondar(1.005));
         $this->assertSame(0.15, Dinheiro::arredondar(0.145));
-        $this->assertSame(-2.68, Dinheiro::arredondar(-2.675));
+        $this->assertSame(2.68, Dinheiro::arredondar(2.675));
+        $this->assertSame(-1.01, Dinheiro::arredondar(-1.005));
     }
 
     public function test_arredondamento_nao_mexe_no_que_ja_esta_no_centavo(): void

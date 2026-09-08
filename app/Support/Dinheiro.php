@@ -26,17 +26,22 @@ final class Dinheiro
      * Meio centavo vai para cima, e o erro binario de escalar por 100 nao
      * decide o desempate.
      *
-     * round() do PHP e Math.round() do JS nao servem: eles discordam entre si
-     * exatamente nos casos de meio centavo. 2.675 nao existe em ponto
-     * flutuante - o valor real e 2.67499999999999982236431605997495353221893.
-     * Math.round(2.675 * 100) / 100 da 2.67; round(2.675, 2) do PHP da 2.68,
-     * porque o PHP corrige o erro antes de desempatar. Um comparador em que o
-     * numero da tela nao bate com o numero do teste nao serve.
+     * Nem round() do PHP nem Math.round() do JS servem, porque discordam entre
+     * si. Um valor com meio centavo nao existe exato em ponto flutuante: o
+     * double mais proximo de 1,005 e 1,00499999999999989..., e multiplicar por
+     * 100 da 100.49999999999999. Math.round dessa conta e 100, entao o JS
+     * escreveria R$ 1,00 onde o PHP - que corrige o erro dentro do round() -
+     * escreve R$ 1,01. Idem para 0,145: JS 0,14 contra PHP 0,15.
+     *
+     * (Nem todo meio centavo diverge, e por isso o teste de paridade nao pode
+     * depender de um valor sorteado: 2,675 x 100 arredonda para 267,5 exatos,
+     * e os dois idiomas concordam sozinhos em 2,68. Os casos que separam os
+     * dois estao tabelados em ParidadeDoMotorTest::tabelaDeCentavos.)
      *
      * A correcao aqui e explicita e igual nos dois lados: reduz o valor
      * escalado a 15 digitos significativos - a precisao que um double IEEE-754
      * garante representar de volta sem ambiguidade - e so entao desempata.
-     * 2.675 * 100 = 267.49999999999997 vira 267.5, que sobe para 268.
+     * 1,005 x 100 = 100.49999999999999 vira 100,5, que sobe para 101.
      */
     public static function arredondar(float $valor, int $casas = 2): float
     {

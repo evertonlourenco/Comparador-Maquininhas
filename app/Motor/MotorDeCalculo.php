@@ -69,7 +69,7 @@ final class MotorDeCalculo
                 'gerado_em' => $catalogo['gerado_em'] ?? null,
                 'contem_rascunhos' => $catalogo['contem_rascunhos'] ?? false,
             ],
-            'itens' => $this->ordenar($itens),
+            'itens' => $this->ordenar(array_map($this->formatar(...), $itens)),
         ];
     }
 
@@ -813,6 +813,65 @@ final class MotorDeCalculo
         $fim = strtotime($ate.' 00:00:00 UTC');
 
         return (int) (($fim - $inicio) / 86400);
+    }
+
+    /**
+     * Regra 11: a volta para pt-BR acontece na saida do motor, e nao na
+     * pagina. Se cada tela formatasse por conta propria, uma delas escreveria
+     * 2,5% em vez de 2,50% mais cedo ou mais tarde.
+     *
+     * Os numeros crus continuam no resultado, ao lado dos formatados: quem
+     * precisa ordenar, somar ou testar usa o numero; quem exibe usa a string.
+     */
+    private function formatar(array $item): array
+    {
+        $custos = $item['custos'];
+        $faixa = $item['custos_faixa'];
+        $adesao = $item['adesao'];
+
+        $item['vendas'] = array_map(function (array $linha): array {
+            if (array_key_exists('percentual', $linha)) {
+                $linha['percentual_formatado'] = Dinheiro::percentual($linha['percentual']);
+            }
+
+            if (array_key_exists('percentual_mediana', $linha)) {
+                $linha['percentual_mediana_formatado'] = Dinheiro::percentual($linha['percentual_mediana']);
+                $linha['percentual_minimo_formatado'] = Dinheiro::percentual($linha['percentual_minimo']);
+                $linha['percentual_maximo_formatado'] = Dinheiro::percentual($linha['percentual_maximo']);
+            }
+
+            $linha['custo_formatado'] = isset($linha['custo']) ? Dinheiro::real($linha['custo']) : null;
+
+            return $linha;
+        }, $item['vendas']);
+
+        $item['formatado'] = [
+            'total_mensal' => isset($custos['total_mensal']) ? Dinheiro::real($custos['total_mensal']) : null,
+            'total_mensal_parcial' => isset($custos['total_mensal_parcial'])
+                ? Dinheiro::real($custos['total_mensal_parcial'])
+                : null,
+            'vendas' => $custos === null ? null : Dinheiro::real($custos['vendas']),
+            'conta' => $custos === null ? null : Dinheiro::real($custos['conta']),
+            'aparelho' => $custos === null ? null : Dinheiro::real($custos['aparelho']),
+            'antecipacao_avulsa' => $custos === null ? null : Dinheiro::real($custos['antecipacao_avulsa']),
+            // Faixa reportada nunca ganha uma string unica de total (regra 4).
+            'faixa' => $faixa === null ? null : [
+                'total_mensal_minimo' => Dinheiro::real($faixa['total_mensal_minimo']),
+                'total_mensal_mediana' => Dinheiro::real($faixa['total_mensal_mediana']),
+                'total_mensal_maximo' => Dinheiro::real($faixa['total_mensal_maximo']),
+            ],
+            'adesao' => $adesao === null ? null : [
+                'valor_final' => Dinheiro::real($adesao['valor_final']),
+                'por_mes' => Dinheiro::real($adesao['por_mes']),
+                'desconto_do_cupom' => Dinheiro::real($adesao['desconto_do_cupom']),
+            ],
+            'frescor' => [
+                'data_verificacao' => Dinheiro::data($item['frescor']['data_verificacao']),
+                'dias' => $item['frescor']['dias'],
+            ],
+        ];
+
+        return $item;
     }
 
     /**
