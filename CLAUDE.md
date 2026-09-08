@@ -29,7 +29,15 @@ export PATH="$HOME/Library/Application Support/Herd/bin:$PATH"
 php artisan migrate
 php artisan test
 php artisan optimize:clear
+
+# Regra 9: o JSON estático que alimenta o comparador no navegador.
+# Sem --rascunhos só entra taxa publicada (regra 10).
+php artisan comparador:gerar-json
+php artisan comparador:gerar-json --rascunhos   # só para conferir em localhost
 ```
+
+O teste de paridade entre o motor em PHP e o motor em JavaScript chama `node`.
+Sem Node no PATH ele se marca como skipped em vez de passar em silêncio.
 
 ## Regras de domínio inegociáveis
 
@@ -123,11 +131,11 @@ gerador de JSON estático e os filtros do admin — escrito **só** pelo hook em
 | `marcas` | Marca comercial. `publica_tabela` decide qual classe de taxa aceita. |
 | `bandeiras` | Visa, Mastercard, Elo, Amex, Alelo… |
 | `bandeira_marca` | Bandeiras aceitas **+ `grupo_bandeira_id`** — cada marca agrupa do seu jeito. |
-| `grupos_bandeiras` | Dimensão: `visa_master`, `demais`, `voucher`. |
+| `grupos_bandeiras` | Dimensão: `visa_master`, `demais`, `voucher` e `pix` (etapa 05, decisão 1). |
 | `planos` | Regra 3. Custos da conta: mensalidade, saque, TED, Pix, antecipação avulsa. |
 | `equipamentos` | Só o que é do aparelho. Preço não mora aqui. |
 | `equipamento_plano` | Adesão e aluguel — variam por plano para o mesmo aparelho. |
-| `prazos_recebimento` | Dimensão: `na_hora`, `d_1`, `d_14`, `d_30`, `parcela_a_parcela`. |
+| `prazos_recebimento` | Dimensão: `na_hora`, `d_1`, `d_14`, `d_30`, `parcela_a_parcela` + `antecipacao_embutida`. |
 | `taxas_divulgadas` | Classe A: publicada pela marca, com `url_fonte`. |
 | `faixas_reportadas` | Classe B: mediana/mín/máx/`n_relatos`/período. |
 | `cupons` | Regra 5. `valido_ate` NOT NULL. Nenhum campo de taxa. |
@@ -141,6 +149,27 @@ parcela cai no mês dela. Não cabe em um `int`.
 mediana como número publicado. E `faixas_reportadas` não tem nenhuma coluna chamada
 `percentual` — só `percentual_mediana`, `percentual_minimo`, `percentual_maximo`.
 Um `$taxa->percentual` acidental numa view não compila silenciosamente: vem nulo.
+
+**Pix é grupo de bandeira também — um grupo técnico.** `grupo_bandeira_id` é NOT
+NULL nas duas tabelas de taxa e o Pix não passa por bandeira nenhuma. Tornar a
+coluna nullable custaria a chave única da regra 1: em MySQL e em SQLite, NULL é
+distinto de NULL dentro de um índice UNIQUE, então a mesma linha de Pix poderia
+entrar duas vezes para o mesmo plano e prazo sem o banco reclamar — e todo leitor
+passaria a precisar de LEFT JOIN. O grupo `pix` mantém a coluna NOT NULL, mantém
+a chave valendo e não pede migration, porque grupo é linha e não enum. O que
+custa: uma linha na tabela de grupos que não agrupa bandeira nenhuma. O preço é
+pago com duas guardas em `TemChaveDeTaxa` — taxa de Pix só no grupo `pix`, grupo
+`pix` só aceita Pix — e com o escopo `GrupoBandeira::deCartao()`, que tira o
+grupo do cadastro de bandeiras da marca e do lançamento em lote. Ver etapa 05.
+
+**`prazos_recebimento.antecipacao_embutida` diz quem já cobrou o adiantamento.**
+Ligado em `na_hora`, `d_1` e `d_14` — os três só existem porque a marca antecipa
+o recebível e cobra por isso dentro do percentual. É coluna, e não uma lista de
+códigos no PHP, porque o painel permite cadastrar prazo novo: um `d_7` criado
+amanhã precisa declarar isso, e adivinhar aqui é cobrar em dobro ou não cobrar
+nada. `PrazoRecebimento::mesesDeAntecipacao()` converte o prazo na unidade de
+`taxa_antecipacao_mensal`: `dias / 30`, ou `(n + 1) / 2` quando cada parcela cai
+no mês dela.
 
 **Voucher é grupo de bandeira, não tipo de operação.** Vale-refeição é débito à vista;
 o que muda são as bandeiras, o prazo e o percentual — os três já capturados. Manter
@@ -199,13 +228,14 @@ hook de `TemChaveDeTaxa`, único lugar que preenche `marca_id` a partir do plano
 `publica_tabela = false` (regra 4). Com eventos desligados a carga gravaria
 `marca_id` nulo e furaria a regra 4 em silêncio.
 
-**Estado da carga, verificado em 08/09/2026** — 960 taxas divulgadas, todas em
-rascunho (regra 10), todas com `url_fonte` e `data_verificacao`:
+**Estado da carga, verificado em 08/09/2026** — 964 taxas divulgadas (960 da
+etapa 04 + 4 de Pix destravadas na etapa 05), todas em rascunho (regra 10),
+todas com `url_fonte` e `data_verificacao`:
 
 | Marca | Publica tabela | Planos | Taxas |
 |---|---|---|---|
 | Ton | sim | 6 faixas de faturamento | 528 (2 prazos × 2 grupos × 1x a 21x) |
-| InfinitePay | sim | 4 faixas de faturamento | 280 (3 prazos × 2 grupos × 1x a 12x) |
+| InfinitePay | sim | 4 faixas de faturamento | 284 (3 prazos × 2 grupos × 1x a 12x, + Pix) |
 | SumUp | sim | 3 faixas de faturamento | 78 (2 prazos × 1 grupo × 1x a 12x) |
 | PagBank | sim | 3 | 74 (3 prazos × 2 grupos, parcelado único de 2x a 12x) |
 | Mercado Pago, Stone, Cielo, Rede, GetNet | não | — | 0 — ver abaixo |
@@ -229,10 +259,13 @@ valor da parcela, e num dos modelos com dois valores sem dizer qual vigora.
   `url_fonte` para citar, e carregar só a promocional venderia como permanente
   uma taxa que dura 30 dias. Se a tabela aparecer em página aberta, o campo é
   um clique no painel.
-- **Pix não tem nenhuma linha**, apesar de InfinitePay e Ton publicarem Pix a
-  0%. `grupo_bandeira_id` é NOT NULL e Pix não tem bandeira — não existe grupo
-  correto para ele. Escolher um seria inventar dimensão. Decidir isso é da
-  etapa 05, junto com o motor de cálculo.
+- **Pix: resolvido na etapa 05.** O impedimento era de schema, não de dado —
+  não havia grupo de bandeira onde a linha coubesse. Com o grupo técnico `pix`
+  criado, entrou a carga da InfinitePay: 0% nas quatro faixas, prazo "na hora",
+  da mesma leitura de `infinitepay.io/taxas` que já sustentava "Pix gratuito"
+  nos campos de tarifa do plano. Ton e SumUp continuam sem linha de Pix porque
+  a etapa 04 não registrou percentual verificado para elas — agora é um clique
+  no painel, não mais um bloqueio.
 - **PagBank: os planos Essencial e Super Max entraram sem taxa.** A página que
   os publica dá percentual sem dizer prazo de recebimento nem grupo de
   bandeiras — faltam duas das cinco dimensões da chave da regra 1. As taxas do
@@ -337,13 +370,115 @@ no primeiro login; não há como pular.
 - Uma etapa por sessão. O plano completo está no documento "Construção do Comparador
   de Maquininhas".
 
+## Motor de cálculo (etapa 05)
+
+`app/Motor` come um catálogo em **array puro** — o mesmo array que vira o JSON
+estático da regra 9 — e devolve array puro. Não toca em Eloquent, não consulta
+banco e não lê o relógio: o `hoje` entra pelo cenário. É isso que permite a
+implementação gêmea em JavaScript receber exatamente a mesma entrada.
+
+| Arquivo | Papel |
+|---|---|
+| `App\Support\Dinheiro` | Regra 11 inteira: arredondamento, decimal→float, entrada pt-BR, saída pt-BR |
+| `App\Motor\CatalogoDoComparador` | Banco → array. A única peça que conhece Eloquent |
+| `App\Motor\Cenario` + `VendaDoCenario` | O que o lojista informa. Aceita dinheiro em pt-BR |
+| `App\Motor\MotorDeCalculo` | As três contas e os quatro estados |
+| `App\Motor\EstadoDoResultado` | `calculado` / `incompleto` / `faixa_reportada` / `sem_dado_publicado` |
+| `App\Console\Commands\GerarJsonDoComparador` | `comparador:gerar-json` |
+| `resources/js/comparador/{dinheiro,motor}.mjs` | O gêmeo em JavaScript |
+| `scripts/verifica-motor-js.mjs` | Compara os dois sobre os mesmos casos |
+
+### As três contas
+
+```
+custo da venda    = valor × percentual + quantidade × valor_fixo     (chave da regra 1)
+custo da conta    = mensalidade + saque + TED + Pix + antecipação avulsa
+custo do aparelho = aluguel mensal + adesão amortizada
+```
+
+**Adesão é amortizada em 12 meses**, e o horizonte é campo do cenário. 12 não é
+número escolhido a esmo: é o parcelamento que as próprias marcas oferecem para a
+adesão — a InfinitePay publica "R$ 199,00 à vista ou 12x de R$ 16,58" na mesma
+página de onde a carga tirou o preço. A adesão cheia anda junto com a amortizada
+em todo resultado, porque 12 × R$ 16,58 dá R$ 198,96 e não R$ 199,00: o
+arredondamento ao centavo não pode esconder a conta.
+
+**O motor nunca estima.** Faltou a taxa naquele prazo, a mensalidade ou o preço
+do aparelho, o resultado sai `incompleto` com a lista do que falta — e o total
+muda de nome, para `total_mensal_parcial`. É o mesmo truque de `faixas_reportadas`
+não ter coluna `percentual`: um número que não fecha não pode ter o nome do
+número que fecha.
+
+**Tarifa nula é desconhecida, não zero** — mas só vira falta quando o cenário usa
+o serviço. Quem não faz TED nenhum no mês não precisa saber a tarifa de TED.
+A mensalidade é a exceção: ela é cobrada sempre.
+
+### Os quatro estados (regra 4 no formato do resultado)
+
+Só `calculado` é ranqueado por preço. Os outros três vêm em blocos próprios,
+depois, com o motivo à vista — assim uma mediana de relatos nunca disputa a
+primeira posição com um número publicado. No estado `faixa_reportada` **não
+existe a chave `total_mensal`**, só `total_mensal_minimo`, `_mediana` e
+`_maximo`. Marca sem dado nenhum aparece com o motivo e sem número: zero seria
+mentira.
+
+### Regra 8 e regra 5 são recalculadas, nunca gravadas
+
+O JSON é estático e os dias passam. O nível de frescor e a vigência do cupom são
+calculados pelo motor contra o `hoje` do cenário — um arquivo gerado há 60 dias
+diz "desatualizada" sozinho, e um cupom vencido some sozinho, sem depender de
+alguém lembrar de regerar.
+
+### Prazo: a quinta dimensão da chave
+
+Com prazo pedido no cenário, é aquele ou nada — se o plano não vende débito na
+hora, o resultado diz que falta, não troca por outro prazo. Com `prazo: null`, o
+motor escolhe o mais barato entre os que o plano oferece, por linha de venda,
+somando a antecipação avulsa na comparação. Quando isso mistura prazos dentro do
+mesmo plano — o caso do "sem antecipação" da InfinitePay, em que débito é D+1 e
+crédito é D+30 —, o resultado registra os prazos usados e emite aviso.
+
+### Por que a fórmula existe duas vezes (decisão 2)
+
+A regra 9 manda o comparador rodar no navegador sobre JSON estático. As entradas
+do lojista formam espaço contínuo — faturamento em reais, mix, parcelas, prazo,
+horizonte —, então o JSON não tem como carregar resultado pronto para toda
+combinação sem congelar a granularidade das perguntas. A aritmética roda no
+navegador. E o PHP precisa da mesma conta de qualquer forma: painel, testes de
+valor conhecido e o gerador saber o que está exportando.
+
+O PHP é a fonte da verdade. `tests/Feature/Motor/ParidadeDoMotorTest.php` gera o
+resultado esperado de 13 casos com o motor em PHP — 9 sobre um catálogo sintético
+de valores redondos, 4 sobre a carga real —, manda para o Node e confere campo a
+campo, inclusive as strings já formatadas em pt-BR. **Mudou de um lado, muda do
+outro; o teste avisa quando alguém esquecer.**
+
+Junto vai uma tabela de arredondamento conferida direto no primitivo, e ela
+existe por um motivo concreto: trocando `arredondar()` por `Math.round()` no lado
+JavaScript, os 12 cenários continuavam passando. Cenário só encosta no desempate
+de meio centavo por acaso. Os valores que separam os dois idiomas são `1,005` e
+`0,145`, onde `Math.round` derruba o que o `round()` do PHP sobe. `2,675`, que
+parece o caso clássico, **não** diverge — vezes 100 dá 267,5 exatos.
+
+Por isso nenhum dos dois lados usa o arredondamento nativo: os dois reduzem o
+valor escalado a 15 dígitos significativos e só então desempatam, meio centavo
+para cima.
+
+### Antecipação nunca é cobrada duas vezes (decisão 3)
+
+A antecipação automática já está dentro do percentual quando o prazo declara
+`antecipacao_embutida`. Nesses casos o motor **não soma nada** e registra o
+aviso. A antecipação avulsa (`planos.taxa_antecipacao_mensal`) só incide sobre o
+que ainda não foi antecipado, sobre o valor que sobra a receber (venda menos a
+taxa), pelos meses de espera do recebível.
+
 ## Etapas concluídas
 
 - [x] **01** — Ambiente local, Filament, Git e CLAUDE.md
 - [x] **02** — Schema do banco
 - [x] **03** — Painel admin no Filament
-- [ ] 04 — Carga dos dados reais
-- [ ] 05 — Motor de cálculo
+- [x] **04** — Carga dos dados reais
+- [x] **05** — Motor de cálculo
 - [ ] 06 — Identidade visual e design system
 - [ ] 07 — O comparador
 - [ ] 08 — Páginas de marca e listagem
@@ -354,3 +489,68 @@ no primeiro login; não há como pular.
 - [ ] 13 — Lançamento
 - [ ] 14 — Monitor de mudanças
 - [ ] 15 — Decisão sobre programa de parceiros
+
+## Pendente ao fim da etapa 05
+
+O motor está pronto e testado, mas ele é honesto sobre o que não sabe — e isso
+transformou buracos silenciosos da carga em `estado: incompleto` visível. Rodar
+um cenário qualquer hoje devolve, em boa parte das marcas, uma lista do que
+falta. Essa lista é o trabalho de painel que antecede o comparador ir ao ar.
+
+**Dados que faltam na carga (cada um é um campo no painel):**
+
+- **Ton e PagBank sem `mensalidade`.** InfinitePay e SumUp declaram "sem
+  mensalidade" na própria página e entraram com `0`; Ton e PagBank não tiveram o
+  campo lido na etapa 04, e nulo ali é "não se sabe", nunca zero. Enquanto
+  estiver nulo, todo plano dessas duas sai `incompleto`.
+- **SumUp: nenhum equipamento vinculado a plano**, e os aparelhos entraram sem
+  preço — a página publica só o valor da parcela, e num dos modelos com dois
+  valores sem dizer qual vigora. Qualquer cenário com SumUp fica `incompleto`.
+- **PagBank: o equipamento está vinculado só ao plano "Super Max"**, que é
+  justamente o que não tem taxa. O plano "Taxas iniciais", que carrega as 74
+  taxas, não tem aparelho vinculado — então também sai `incompleto`.
+- **Nenhum plano tem `taxa_antecipacao_mensal`.** Um cenário com antecipação
+  avulsa ligada num prazo que não embute (D+30, parcela a parcela) reporta a
+  falta em vez de estimar. Só a InfinitePay publica prazo longo hoje.
+- **Ton e SumUp sem linha de Pix.** O impedimento de schema acabou; o que falta
+  é a leitura verificada do percentual, que a etapa 04 não registrou.
+- **Voucher continua sem nenhuma taxa** — cenário com vale-refeição é sempre
+  `incompleto`.
+
+**Ramos do motor que só têm cobertura sintética, por falta de dado real:**
+
+- **`faixa_reportada`** — não existe uma única linha em `faixas_reportadas`. O
+  ramo está implementado e testado contra o catálogo sintético, mas só encosta
+  em dado real depois da captação de relatos (etapa 10).
+- **Cupom** — não há cupom cadastrado. Regra 5 está implementada (desconta a
+  adesão, nunca o percentual) e testada no sintético; a validação com cupom real
+  é da etapa 09.
+
+**Decisões tomadas aqui que valem revisitar depois:**
+
+- **`IncideSobre::Equipamento` é tratado igual a `Adesao`** pelo motor: os dois
+  descontam o valor de adesão do par equipamento+plano, porque nesse schema o
+  preço do aparelho *é* a adesão. Se a etapa 09 precisar separar os dois casos,
+  o lugar é `orcamentoDoAparelho()`.
+- **Preço nulo no par equipamento+plano entra como zero, com aviso**, quando o
+  outro preço está preenchido — é a marca dizendo que aquela forma de cobrança
+  não existe ali ("sem aluguel: o aparelho é comprado"). Com os dois nulos, é
+  falta. Se algum dia uma marca deixar um preço em branco por descuido, esse
+  aviso é o que vai denunciar.
+- **Mistura de prazos dentro do mesmo plano gera aviso, não bloqueio.** Se a
+  marca vende mesmo a combinação que o motor montou é pergunta de exibição
+  (etapa 07), não de cálculo.
+
+**Ainda não existe:**
+
+- **Rota servindo o JSON.** `comparador:gerar-json` grava em
+  `public/dados/comparador.json` (fora do Git), e nada consome esse arquivo
+  ainda — a página é a etapa 07.
+- **Nada publicado.** As 964 taxas estão em rascunho (regra 10), então
+  `comparador:gerar-json` sem `--rascunhos` produz arquivo sem número nenhum, e
+  avisa disso. A aprovação em lote no painel é o que destrava.
+
+**Corrigido de passagem:** `APP_TIMEZONE=America/Sao_Paulo` e `APP_LOCALE=pt_BR`
+faltavam no `.env.example` e no `phpunit.xml` — o `.env` local já os tinha. Sem
+isso a suíte rodava em UTC, e o selo de frescor de 45 dias viraria o dia na hora
+errada (regra 11).
