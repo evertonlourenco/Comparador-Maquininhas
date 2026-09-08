@@ -44,14 +44,27 @@ abstract class SeederDeMarca extends Seeder
         );
     }
 
-    protected function fonte(string $url, ?string $observacao = null, FonteTipo $tipo = FonteTipo::SiteOficial): array
-    {
+    /**
+     * @param  string|null  $condicao  Etapa 05: o que o lojista precisa fazer
+     *                                 para a taxa publicada valer - ativar a
+     *                                 chave Pix no aplicativo, por exemplo.
+     *                                 Diferente de observacao, que e nota
+     *                                 interna: a condicao aparece junto do
+     *                                 numero, sempre.
+     */
+    protected function fonte(
+        string $url,
+        ?string $observacao = null,
+        FonteTipo $tipo = FonteTipo::SiteOficial,
+        ?string $condicao = null,
+    ): array {
         return [
             'url_fonte' => $url,
             'fonte_tipo' => $tipo,
             'data_verificacao' => self::VERIFICADO_EM,
             'status' => StatusPublicacao::Rascunho,
             'observacao' => $observacao,
+            'condicao' => $condicao,
         ];
     }
 

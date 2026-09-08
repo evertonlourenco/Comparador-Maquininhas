@@ -193,6 +193,15 @@ final class MotorDeCalculo
         $faltando = [...$faltando, ...$conta['faltando'], ...$aparelho['faltando'], ...$antecipacao['faltando']];
         $avisos = [...$avisos, ...$conta['avisos'], ...$aparelho['avisos'], ...$antecipacao['avisos']];
 
+        // Etapa 05: taxa publicada pode vir condicionada - o Pix a 0% que so
+        // vale com a chave ativada no aplicativo, por exemplo. A condicao anda
+        // colada no numero, nunca sai como nota de rodape opcional.
+        foreach ($linhas as $linha) {
+            if (($linha['condicao'] ?? null) !== null) {
+                $avisos[] = $linha['condicao'];
+            }
+        }
+
         $custoVendas = Dinheiro::arredondar(array_sum(array_map(
             fn (array $l): float => $l['custo'] ?? 0.0,
             $linhas,
@@ -201,10 +210,33 @@ final class MotorDeCalculo
         $total = Dinheiro::arredondar($custoVendas + $conta['custo'] + $aparelho['custo'] + $antecipacao['custo']);
         $completo = $faltando === [];
 
+        // O plano promocional tem estado proprio, e nao "calculado": o numero
+        // dele e verdadeiro e tem prazo de validade. Misturado aos permanentes
+        // ele ganharia a comparacao com um preco que dura 30 dias.
+        $promocional = $plano['tipo_enquadramento'] === 'promocional';
+
+        $estado = match (true) {
+            $promocional => EstadoDoResultado::Promocional,
+            $completo => EstadoDoResultado::Calculado,
+            default => EstadoDoResultado::Incompleto,
+        };
+
+        $chaveDoTotal = match (true) {
+            $promocional && $completo => 'total_mensal_promocional',
+            $promocional => 'total_mensal_promocional_parcial',
+            $completo => 'total_mensal',
+            default => 'total_mensal_parcial',
+        };
+
         return [
             ...$this->esqueleto($marca, $plano, $cenario),
-            'estado' => ($completo ? EstadoDoResultado::Calculado : EstadoDoResultado::Incompleto)->value,
-            'motivo' => $completo ? null : 'Falta dado para fechar este cenário.',
+            'estado' => $estado->value,
+            'motivo' => match (true) {
+                $promocional => $this->motivoDaPromocao($plano),
+                $completo => null,
+                default => 'Falta dado para fechar este cenário.',
+            },
+            'promocao' => $promocional ? $this->promocao($marca, $plano, $cenario) : null,
             'prazos_usados' => array_keys($prazosUsados),
             'equipamento' => $aparelho['equipamento'],
             'adesao' => $aparelho['adesao'],
@@ -214,11 +246,12 @@ final class MotorDeCalculo
                 'conta' => $conta['custo'],
                 'aparelho' => $aparelho['custo'],
                 'antecipacao_avulsa' => $antecipacao['custo'],
-                // O total so se chama total_mensal quando nao falta nada. Sendo
-                // parcial ele muda de nome, pelo mesmo motivo que
-                // faixas_reportadas nao tem coluna "percentual": para que
-                // ninguem leia como fechado um numero que nao esta.
-                ($completo ? 'total_mensal' : 'total_mensal_parcial') => $total,
+                // O total so se chama total_mensal quando nao falta nada e o
+                // plano e permanente. Sendo parcial ou promocional ele muda de
+                // nome, pelo mesmo motivo que faixas_reportadas nao tem coluna
+                // "percentual": para que ninguem leia como fechado, ou como
+                // permanente, um numero que nao e.
+                $chaveDoTotal => $total,
             ],
             'vendas' => $linhas,
             'conta' => $conta['itens'],
@@ -342,6 +375,7 @@ final class MotorDeCalculo
             'enquadramento' => $plano === null ? null : $this->enquadramento($plano),
             'horizonte_meses' => $cenario->horizonteMeses,
             'prazos_usados' => [],
+            'promocao' => null,
             'equipamento' => null,
             'adesao' => null,
             'cupom' => null,
@@ -355,6 +389,62 @@ final class MotorDeCalculo
         ];
     }
 
+    /**
+     * O aviso que precisa acompanhar todo numero promocional. Os dois limites
+     * valem em disjuncao: o que vier antes acaba com a promocao.
+     */
+    private function motivoDaPromocao(array $plano): string
+    {
+        $promocao = $plano['promocao'] ?? null;
+        $limites = [];
+
+        if (($promocao['dias'] ?? null) !== null) {
+            $limites[] = $promocao['dias'].' dias';
+        }
+
+        if (($promocao['valor_processado'] ?? null) !== null) {
+            $limites[] = Dinheiro::real($promocao['valor_processado']).' processados';
+        }
+
+        if ($limites === []) {
+            return 'Tabela de entrada, por tempo limitado. A marca não publicou o prazo exato.';
+        }
+
+        return 'Tabela de entrada: vale por '.implode(' ou até ', $limites)
+            .', o que vier antes. Depois disso o preço muda.';
+    }
+
+    /**
+     * O bloco da promocao, com o plano em que o lojista cai quando ela acaba.
+     *
+     * Sem sucessor declarado, o sucessor e o plano de enquadramento automatico
+     * da propria marca que atende ao faturamento informado - que e como o Ton
+     * funciona. Nao havendo nenhum, sai nulo: melhor dizer que nao se sabe do
+     * que apontar para o plano errado.
+     */
+    private function promocao(array $marca, array $plano, Cenario $cenario): array
+    {
+        $promocao = $plano['promocao'] ?? ['dias' => null, 'valor_processado' => null, 'sucessor_id' => null];
+        $sucessor = null;
+
+        foreach ($this->planosElegiveis($marca, $cenario) as $candidato) {
+            $declarado = $promocao['sucessor_id'] !== null && $candidato['id'] === $promocao['sucessor_id'];
+            $automatico = $promocao['sucessor_id'] === null && $candidato['tipo_enquadramento'] === 'automatico';
+
+            if ($declarado || $automatico) {
+                $sucessor = ['id' => $candidato['id'], 'nome' => $candidato['nome'], 'slug' => $candidato['slug']];
+
+                break;
+            }
+        }
+
+        return [
+            'dias' => $promocao['dias'],
+            'valor_processado' => $promocao['valor_processado'],
+            'sucessor' => $sucessor,
+        ];
+    }
+
     private function enquadramento(array $plano): array
     {
         return [
@@ -362,6 +452,8 @@ final class MotorDeCalculo
             'aviso' => match ($plano['tipo_enquadramento']) {
                 'escolhido' => 'Plano de adesão opcional: o lojista escolhe e assume o compromisso de volume.',
                 'negociado' => 'Plano negociado caso a caso. O percentual publicado é referência, não garantia.',
+                'promocional' => 'Tabela de entrada: o lojista cai nela sozinho ao ativar a maquininha e sai '
+                    .'dela sozinho quando o limite estoura.',
                 default => null,
             },
         ];
@@ -425,6 +517,7 @@ final class MotorDeCalculo
             'custo_percentual' => $custo['custo_percentual'],
             'custo_fixo' => $custo['custo_fixo'],
             'custo' => $custo['custo'],
+            'condicao' => $taxa['condicao'] ?? null,
             'data_verificacao' => $taxa['data_verificacao'],
             'falta' => $custo['falta'] === null ? null : $venda->rotulo().': falta '.$custo['falta'],
         ];
@@ -656,6 +749,14 @@ final class MotorDeCalculo
                 'desconto_do_cupom' => $desconto,
                 'valor_final' => $adesaoFinal,
                 'amortizada_em_meses' => $cenario->horizonteMeses,
+                // Quantas vezes sem juros a marca parcela a adesao, e quanto da
+                // a parcela dela. Nulo e "a marca nao declarou", nunca "e a
+                // vista". Nao confundir com por_mes logo abaixo: aquilo e
+                // criterio nosso de comparacao, isto e oferta da marca.
+                'parcelas_oferecidas' => $equipamento['parcelas_adesao'] ?? null,
+                'parcela_da_marca' => ($equipamento['parcelas_adesao'] ?? null)
+                    ? Dinheiro::arredondar($adesaoFinal / $equipamento['parcelas_adesao'])
+                    : null,
                 // Arredondar a parcela ao centavo faz o produto por 12 nao
                 // reconstituir a adesao exata (199,00 / 12 = 16,58; 16,58 x 12
                 // = 198,96). Por isso valor_final anda junto no resultado.
@@ -850,6 +951,12 @@ final class MotorDeCalculo
             'total_mensal_parcial' => isset($custos['total_mensal_parcial'])
                 ? Dinheiro::real($custos['total_mensal_parcial'])
                 : null,
+            'total_mensal_promocional' => isset($custos['total_mensal_promocional'])
+                ? Dinheiro::real($custos['total_mensal_promocional'])
+                : null,
+            'total_mensal_promocional_parcial' => isset($custos['total_mensal_promocional_parcial'])
+                ? Dinheiro::real($custos['total_mensal_promocional_parcial'])
+                : null,
             'vendas' => $custos === null ? null : Dinheiro::real($custos['vendas']),
             'conta' => $custos === null ? null : Dinheiro::real($custos['conta']),
             'aparelho' => $custos === null ? null : Dinheiro::real($custos['aparelho']),
@@ -864,6 +971,10 @@ final class MotorDeCalculo
                 'valor_final' => Dinheiro::real($adesao['valor_final']),
                 'por_mes' => Dinheiro::real($adesao['por_mes']),
                 'desconto_do_cupom' => Dinheiro::real($adesao['desconto_do_cupom']),
+                // "12x de R$ 16,58" - o jeito como a marca vende a adesao.
+                'parcela_da_marca' => $adesao['parcela_da_marca'] === null
+                    ? null
+                    : $adesao['parcelas_oferecidas'].'x de '.Dinheiro::real($adesao['parcela_da_marca']),
             ],
             'frescor' => [
                 'data_verificacao' => Dinheiro::data($item['frescor']['data_verificacao']),
@@ -905,6 +1016,8 @@ final class MotorDeCalculo
     {
         return match (EstadoDoResultado::from($item['estado'])) {
             EstadoDoResultado::Calculado => (float) $item['custos']['total_mensal'],
+            EstadoDoResultado::Promocional => (float) ($item['custos']['total_mensal_promocional']
+                ?? $item['custos']['total_mensal_promocional_parcial']),
             EstadoDoResultado::Incompleto => (float) $item['custos']['total_mensal_parcial'],
             EstadoDoResultado::FaixaReportada => (float) $item['custos_faixa']['total_mensal_mediana'],
             EstadoDoResultado::SemDadoPublicado => 0.0,

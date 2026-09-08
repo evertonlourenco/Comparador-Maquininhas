@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[Fillable([
     'marca_id', 'nome', 'slug', 'tipo_enquadramento',
     'faturamento_min', 'faturamento_max', 'compromisso',
+    'promocional_dias', 'promocional_valor_processado', 'promocional_sucessor_id',
     'mensalidade', 'tarifa_saque', 'tarifa_ted',
     'tarifa_pix_recebimento', 'tarifa_pix_envio',
     'taxa_antecipacao_mensal', 'condicao_isencao', 'status', 'ordem',
@@ -37,6 +38,8 @@ class Plano extends Model
             'tipo_enquadramento' => TipoEnquadramento::class,
             'faturamento_min' => 'decimal:2',
             'faturamento_max' => 'decimal:2',
+            'promocional_dias' => 'integer',
+            'promocional_valor_processado' => 'decimal:2',
             'mensalidade' => 'decimal:2',
             'tarifa_saque' => 'decimal:2',
             'tarifa_ted' => 'decimal:2',
@@ -53,13 +56,28 @@ class Plano extends Model
         return $this->belongsTo(Marca::class);
     }
 
+    /** Em qual plano o lojista cai quando a promocao acaba, quando declarado. */
+    public function promocionalSucessor(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'promocional_sucessor_id');
+    }
+
+    /**
+     * Etapa 05: tabela de entrada, com prazo para acabar. O motor nunca
+     * ranqueia isto junto dos planos permanentes.
+     */
+    public function ehPromocional(): bool
+    {
+        return $this->tipo_enquadramento === TipoEnquadramento::Promocional;
+    }
+
     /** Custos 2 e 3 da regra 6 vivem no pivot. */
     public function equipamentos(): BelongsToMany
     {
         return $this->belongsToMany(Equipamento::class, 'equipamento_plano')
             ->using(EquipamentoPlano::class)
             ->withPivot([
-                'id', 'preco_adesao', 'preco_adesao_promocional',
+                'id', 'preco_adesao', 'preco_adesao_promocional', 'parcelas_adesao',
                 'aluguel_mensal', 'observacao', 'status',
             ])
             ->withTimestamps();
@@ -85,6 +103,22 @@ class Plano extends Model
      * So o enquadramento automatico usa faixa de faturamento; nos demais o
      * lojista opta (escolhido) ou negocia.
      */
+    /**
+     * Os planos que concorrem de verdade: os permanentes. Exclui o promocional,
+     * que e estado temporario e nao opcao de contratacao.
+     */
+    #[Scope]
+    protected function permanentes(Builder $query): void
+    {
+        $query->where('tipo_enquadramento', '!=', TipoEnquadramento::Promocional);
+    }
+
+    #[Scope]
+    protected function promocionais(Builder $query): void
+    {
+        $query->where('tipo_enquadramento', TipoEnquadramento::Promocional);
+    }
+
     #[Scope]
     protected function paraFaturamento(Builder $query, float|string $faturamentoMensal): void
     {

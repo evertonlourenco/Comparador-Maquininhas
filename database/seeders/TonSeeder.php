@@ -40,10 +40,12 @@ class TonSeeder extends SeederDeMarca
 
         foreach ($this->planos() as $slug => $dados) {
             $planos[$slug] = $this->plano($marca, $dados['nome'], [
-                'tipo_enquadramento' => TipoEnquadramento::Automatico,
+                'tipo_enquadramento' => $dados['enquadramento'] ?? TipoEnquadramento::Automatico,
                 'faturamento_min' => $dados['min'],
                 'faturamento_max' => $dados['max'],
                 'compromisso' => $dados['compromisso'] ?? null,
+                'promocional_dias' => $dados['promocional_dias'] ?? null,
+                'promocional_valor_processado' => $dados['promocional_valor_processado'] ?? null,
                 'status' => StatusItem::Ativo,
                 'ordem' => $dados['ordem'],
             ]);
@@ -64,10 +66,24 @@ class TonSeeder extends SeederDeMarca
     private function planos(): array
     {
         return [
+            // Etapa 05: entrou na etapa 04 como enquadramento automatico de
+            // R$ 2 mil a R$ 5 mil, mas esses R$ 5 mil nunca foram faixa de
+            // faturamento - sao o teto de volume processado da propria
+            // promocao. Gravados assim, o motor ranqueava a tabela de entrada
+            // como se fosse preco permanente, e ela ganhava de todo mundo.
+            //
+            // Os 30 dias ja estavam escritos no compromisso da carga original.
+            // O piso de R$ 2 mil foi descartado: ele nao tem contrapartida nos
+            // termos da promocao e provavelmente era leitura da faixa vizinha.
+            // Confirmar no site antes de publicar.
             'periodo-promocional' => [
-                'nome' => 'Período Promocional', 'min' => 2000, 'max' => 5000, 'ordem' => 0,
-                'compromisso' => 'Tabela promocional de entrada, válida por 30 dias. Depois dela o '
-                    .'lojista passa a ser enquadrado pela faixa de faturamento do mês anterior.',
+                'nome' => 'Período Promocional', 'min' => null, 'max' => null, 'ordem' => 0,
+                'enquadramento' => TipoEnquadramento::Promocional,
+                'promocional_dias' => 30,
+                'promocional_valor_processado' => 5000,
+                'compromisso' => 'Tabela promocional de entrada. Vale por 30 dias ou até R$ 5.000,00 '
+                    .'processados na maquininha, o que vier antes. Depois dela o lojista passa a ser '
+                    .'enquadrado pela faixa de faturamento do mês anterior.',
             ],
             'ate-r-3-mil' => ['nome' => 'Até R$ 3 mil', 'min' => null, 'max' => 2999.99, 'ordem' => 1],
             'de-r-3-mil-a-r-6-mil' => ['nome' => 'De R$ 3 mil a R$ 6 mil', 'min' => 3000, 'max' => 5999.99, 'ordem' => 2],

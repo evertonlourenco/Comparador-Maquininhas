@@ -170,6 +170,17 @@ class ParidadeDoMotorTest extends TestCase
                         'valor_mensal' => '25.000,00', 'quantidade_mensal' => 130],
                 ],
             ]],
+            // A promocao de entrada do Ton, que e onde os dois motores tem de
+            // concordar tanto no estado quanto no texto do aviso de validade.
+            'real: promocao de entrada do Ton' => ['real', [
+                'faturamento_mensal' => '3.000,00', 'hoje' => '2026-09-20', 'prazo' => 'd_1',
+                'vendas' => [
+                    ['tipo_operacao' => 'debito', 'grupo' => 'visa_master', 'parcelas' => 1,
+                        'valor_mensal' => '1.500,00', 'quantidade_mensal' => 80],
+                    ['tipo_operacao' => 'credito_avista', 'grupo' => 'visa_master', 'parcelas' => 1,
+                        'valor_mensal' => '1.500,00', 'quantidade_mensal' => 40],
+                ],
+            ]],
             'real: Pix da InfinitePay' => ['real', [
                 'faturamento_mensal' => '9.999,99', 'hoje' => '2026-09-20', 'prazo' => 'na_hora',
                 'vendas' => [['tipo_operacao' => 'pix', 'valor_mensal' => '2.345,67', 'quantidade_mensal' => 88]],

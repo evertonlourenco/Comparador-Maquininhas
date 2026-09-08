@@ -31,6 +31,10 @@ class PlanosTable
                 TextColumn::make('tipo_enquadramento')
                     ->label('Enquadramento')
                     ->badge()
+                    ->formatStateUsing(fn (TipoEnquadramento $state): string => $state->rotuloCurto())
+                    // A promoção é o único enquadramento que expira, e o
+                    // comparador a trata em bloco próprio. Vale destacar.
+                    ->color(fn (TipoEnquadramento $state): string => $state->ehTemporario() ? 'warning' : 'gray')
                     ->sortable(),
                 TextColumn::make('mensalidade')
                     ->money('BRL', locale: 'pt_BR')

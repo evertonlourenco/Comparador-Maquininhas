@@ -104,6 +104,13 @@ class TaxaDivulgadaForm
                             ->numeric()
                             ->prefix('R$')
                             ->default(0),
+                        TextInput::make('condicao')
+                            ->label('Condição para esta taxa valer')
+                            ->maxLength(255)
+                            ->columnSpanFull()
+                            ->helperText('O que o lojista precisa fazer para o número acima valer — ex.: '
+                                .'"válido com a chave Pix ativada no aplicativo". Diferente de observação: '
+                                .'a condição sai colada no número no comparador, sempre. Vazio = vale sem condição.'),
                     ]),
                 Section::make('Fonte e verificação')
                     ->description('Regra 8: nenhuma taxa entra sem fonte e data de verificação.')

@@ -127,7 +127,9 @@ class MotorSobreACargaRealTest extends TestCase
     {
         $resultado = $this->calcular(10000.0);
 
-        $ton = collect($resultado['itens'])->firstWhere('marca.nome', 'Ton');
+        $ton = collect($resultado['itens'])
+            ->where('marca.nome', 'Ton')
+            ->firstWhere('plano.tipo_enquadramento', 'automatico');
 
         $this->assertSame(EstadoDoResultado::Incompleto->value, $ton['estado']);
         $this->assertContains('mensalidade do plano', $ton['faltando']);
@@ -144,6 +146,83 @@ class MotorSobreACargaRealTest extends TestCase
         // Adesao de R$ 199,00 sem cupom cadastrado, em 12 meses: R$ 16,58.
         $this->assertSame(199.0, $item['adesao']['valor_final']);
         $this->assertSame(16.58, $item['adesao']['por_mes']);
+    }
+
+    /**
+     * O "Periodo Promocional" do Ton vale 30 dias ou ate R$ 5.000,00
+     * processados. Ele entrou na etapa 04 como enquadramento automatico de
+     * R$ 2 mil a R$ 5 mil, e assim o motor o ranqueava contra planos
+     * permanentes - com percentual de entrada, ele ganhava de todo mundo,
+     * inclusive do plano regular do proprio Ton. Vender por permanente uma
+     * taxa de 30 dias e o risco de CDC que a regra 6 existe para evitar.
+     */
+    public function test_a_promocao_de_entrada_nao_disputa_com_preco_permanente(): void
+    {
+        // R$ 3.000,00 e a faixa em que a promocao do Ton aparecia ranqueada.
+        $itens = collect($this->calcular(3000.0)['itens']);
+
+        $promocao = $itens->firstWhere('plano.nome', 'Período Promocional');
+
+        $this->assertNotNull($promocao, 'A promoção não pode sumir: ela existe e o lojista vai cair nela.');
+        $this->assertSame(EstadoDoResultado::Promocional->value, $promocao['estado']);
+
+        // O numero existe, mas nao com o nome do numero permanente.
+        $this->assertArrayNotHasKey('total_mensal', $promocao['custos']);
+        $this->assertStringContainsString('30 dias', $promocao['motivo']);
+        $this->assertStringContainsString('R$ 5.000,00 processados', $promocao['motivo']);
+
+        // E ela diz em qual plano o lojista cai quando a promocao acaba.
+        $this->assertSame('De R$ 3 mil a R$ 6 mil', $promocao['promocao']['sucessor']['nome']);
+
+        // Nenhum item promocional aparece antes de um permanente.
+        $ordens = $itens->map(fn (array $i): int => EstadoDoResultado::from($i['estado'])->ordem());
+        $this->assertSame($ordens->sort()->values()->all(), $ordens->values()->all());
+
+        $primeiroPermanente = $itens->search(fn (array $i): bool => $i['estado'] === EstadoDoResultado::Calculado->value);
+        $posicaoDaPromocao = $itens->search(fn (array $i): bool => $i['estado'] === EstadoDoResultado::Promocional->value);
+
+        $this->assertLessThan($posicaoDaPromocao, $primeiroPermanente);
+    }
+
+    /**
+     * A promocao deixou de usar as colunas de faixa de faturamento, que nunca
+     * foram dela: os R$ 5 mil sao teto de volume processado.
+     */
+    public function test_a_promocao_nao_ocupa_as_colunas_de_faixa_de_faturamento(): void
+    {
+        $promocao = Plano::promocionais()->sole();
+
+        $this->assertNull($promocao->faturamento_min);
+        $this->assertNull($promocao->faturamento_max);
+        $this->assertSame(30, $promocao->promocional_dias);
+        $this->assertSame('5000.00', $promocao->promocional_valor_processado);
+
+        // E some do scope de enquadramento automatico, que so lista permanentes.
+        $this->assertNotContains(
+            $promocao->getKey(),
+            Plano::query()->paraFaturamento(3000.0)->pluck('id')->all(),
+        );
+    }
+
+    /**
+     * A InfinitePay parcela a adesao em 12x sem juros - dado que ja estava na
+     * observacao da carga da etapa 04 e virou campo. O motor precisa separar
+     * essa parcela real da amortizacao que ele proprio faz para comparar.
+     */
+    public function test_a_parcela_da_marca_nao_se_confunde_com_a_amortizacao_do_motor(): void
+    {
+        $item = collect($this->calcular(10000.0)['itens'])->firstWhere('marca.nome', 'InfinitePay');
+
+        $this->assertSame(12, $item['adesao']['parcelas_oferecidas']);
+        $this->assertSame('12x de R$ 16,58', $item['formatado']['adesao']['parcela_da_marca']);
+
+        // Ton nao declarou parcelamento: o campo fica nulo, nunca "à vista".
+        $ton = collect($this->calcular(10000.0)['itens'])
+            ->where('marca.nome', 'Ton')
+            ->firstWhere('plano.tipo_enquadramento', 'automatico');
+
+        $this->assertNull($ton['adesao']['parcelas_oferecidas']);
+        $this->assertNull($ton['formatado']['adesao']['parcela_da_marca']);
     }
 
     private function calcular(float $faturamento, ?string $hoje = null): array

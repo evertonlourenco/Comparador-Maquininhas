@@ -33,9 +33,12 @@ const GRUPO_PADRAO = 'visa_master';
 /** Espelha App\Motor\EstadoDoResultado. */
 export const ESTADOS = {
   calculado: { ordem: 0, ranqueavel: true },
-  faixa_reportada: { ordem: 1, ranqueavel: false },
-  incompleto: { ordem: 2, ranqueavel: false },
-  sem_dado_publicado: { ordem: 3, ranqueavel: false },
+  // Tabela de entrada, com prazo para acabar. Numero verdadeiro, mas nao
+  // disputa posicao com preco permanente.
+  promocional: { ordem: 1, ranqueavel: false },
+  faixa_reportada: { ordem: 2, ranqueavel: false },
+  incompleto: { ordem: 3, ranqueavel: false },
+  sem_dado_publicado: { ordem: 4, ranqueavel: false },
 };
 
 const ROTULOS_DE_OPERACAO = {
@@ -237,14 +240,38 @@ function avaliarComTaxasDivulgadas(catalogo, marca, plano, cenario) {
   faltando = [...faltando, ...conta.faltando, ...aparelho.faltando, ...antecipacao.faltando];
   avisos = [...avisos, ...conta.avisos, ...aparelho.avisos, ...antecipacao.avisos];
 
+  // Taxa publicada pode vir condicionada - o Pix a 0% que so vale com a chave
+  // ativada no aplicativo. A condicao anda colada no numero.
+  for (const linha of linhas) {
+    if ((linha.condicao ?? null) !== null) {
+      avisos.push(linha.condicao);
+    }
+  }
+
   const custoVendas = arredondar(linhas.reduce((soma, l) => soma + (l.custo ?? 0), 0));
   const total = arredondar(custoVendas + conta.custo + aparelho.custo + antecipacao.custo);
   const completo = faltando.length === 0;
+  const promocional = plano.tipo_enquadramento === 'promocional';
+
+  const estado = promocional ? 'promocional' : completo ? 'calculado' : 'incompleto';
+
+  const chaveDoTotal = promocional
+    ? completo
+      ? 'total_mensal_promocional'
+      : 'total_mensal_promocional_parcial'
+    : completo
+      ? 'total_mensal'
+      : 'total_mensal_parcial';
 
   return {
     ...esqueleto(marca, plano, cenario),
-    estado: completo ? 'calculado' : 'incompleto',
-    motivo: completo ? null : 'Falta dado para fechar este cenário.',
+    estado,
+    motivo: promocional
+      ? motivoDaPromocao(plano)
+      : completo
+        ? null
+        : 'Falta dado para fechar este cenário.',
+    promocao: promocional ? promocaoDoPlano(marca, plano, cenario) : null,
     prazos_usados: prazosUsados,
     equipamento: aparelho.equipamento,
     adesao: aparelho.adesao,
@@ -254,8 +281,9 @@ function avaliarComTaxasDivulgadas(catalogo, marca, plano, cenario) {
       conta: conta.custo,
       aparelho: aparelho.custo,
       antecipacao_avulsa: antecipacao.custo,
-      // O total so se chama total_mensal quando nao falta nada.
-      [completo ? 'total_mensal' : 'total_mensal_parcial']: total,
+      // O total so se chama total_mensal quando nao falta nada e o plano e
+      // permanente.
+      [chaveDoTotal]: total,
     },
     vendas: linhas,
     conta: conta.itens,
@@ -364,6 +392,7 @@ function esqueleto(marca, plano, cenario) {
     enquadramento: plano === null ? null : enquadramento(plano),
     horizonte_meses: cenario.horizonte_meses,
     prazos_usados: [],
+    promocao: null,
     equipamento: null,
     adesao: null,
     cupom: null,
@@ -381,9 +410,49 @@ function enquadramento(plano) {
   const avisos = {
     escolhido: 'Plano de adesão opcional: o lojista escolhe e assume o compromisso de volume.',
     negociado: 'Plano negociado caso a caso. O percentual publicado é referência, não garantia.',
+    promocional:
+      'Tabela de entrada: o lojista cai nela sozinho ao ativar a maquininha e sai dela sozinho quando o limite estoura.',
   };
 
   return { tipo: plano.tipo_enquadramento, aviso: avisos[plano.tipo_enquadramento] ?? null };
+}
+
+/** Os dois limites da promocao valem em disjuncao: o que vier antes. */
+function motivoDaPromocao(plano) {
+  const promocao = plano.promocao ?? null;
+  const limites = [];
+
+  if ((promocao?.dias ?? null) !== null) {
+    limites.push(`${promocao.dias} dias`);
+  }
+
+  if ((promocao?.valor_processado ?? null) !== null) {
+    limites.push(`${real(promocao.valor_processado)} processados`);
+  }
+
+  if (limites.length === 0) {
+    return 'Tabela de entrada, por tempo limitado. A marca não publicou o prazo exato.';
+  }
+
+  return `Tabela de entrada: vale por ${limites.join(' ou até ')}, o que vier antes. Depois disso o preço muda.`;
+}
+
+/** O plano em que o lojista cai quando a promocao acaba. */
+function promocaoDoPlano(marca, plano, cenario) {
+  const promocao = plano.promocao ?? { dias: null, valor_processado: null, sucessor_id: null };
+  let sucessor = null;
+
+  for (const candidato of planosElegiveis(marca, cenario)) {
+    const declarado = promocao.sucessor_id !== null && candidato.id === promocao.sucessor_id;
+    const automatico = promocao.sucessor_id === null && candidato.tipo_enquadramento === 'automatico';
+
+    if (declarado || automatico) {
+      sucessor = { id: candidato.id, nome: candidato.nome, slug: candidato.slug };
+      break;
+    }
+  }
+
+  return { dias: promocao.dias, valor_processado: promocao.valor_processado, sucessor };
 }
 
 /** Resolve a quinta dimensao da chave (o prazo) para uma linha de venda. */
@@ -436,6 +505,7 @@ function resolverLinha(catalogo, plano, venda, cenario) {
     custo_percentual: custo.custo_percentual,
     custo_fixo: custo.custo_fixo,
     custo: custo.custo,
+    condicao: taxa.condicao ?? null,
     data_verificacao: taxa.data_verificacao,
     falta: custo.falta === null ? null : `${rotuloDaVenda(venda)}: falta ${custo.falta}`,
   };
@@ -634,6 +704,11 @@ function orcamentoDoAparelho(equipamento, cupom, cenario) {
       desconto_do_cupom: desconto,
       valor_final: adesaoFinal,
       amortizada_em_meses: cenario.horizonte_meses,
+      // Oferta da marca, nao criterio nosso. Nulo e "a marca nao declarou".
+      parcelas_oferecidas: equipamento.parcelas_adesao ?? null,
+      parcela_da_marca: equipamento.parcelas_adesao
+        ? arredondar(adesaoFinal / equipamento.parcelas_adesao)
+        : null,
       por_mes: amortizada,
     },
     cupom: desconto > 0 ? cupom : null,
@@ -757,6 +832,12 @@ function formatar(item) {
   item.formatado = {
     total_mensal: custos?.total_mensal === undefined ? null : real(custos.total_mensal),
     total_mensal_parcial: custos?.total_mensal_parcial === undefined ? null : real(custos.total_mensal_parcial),
+    total_mensal_promocional:
+      custos?.total_mensal_promocional === undefined ? null : real(custos.total_mensal_promocional),
+    total_mensal_promocional_parcial:
+      custos?.total_mensal_promocional_parcial === undefined
+        ? null
+        : real(custos.total_mensal_promocional_parcial),
     vendas: custos === null ? null : real(custos.vendas),
     conta: custos === null ? null : real(custos.conta),
     aparelho: custos === null ? null : real(custos.aparelho),
@@ -776,6 +857,11 @@ function formatar(item) {
             valor_final: real(adesao.valor_final),
             por_mes: real(adesao.por_mes),
             desconto_do_cupom: real(adesao.desconto_do_cupom),
+            // "12x de R$ 16,58" - o jeito como a marca vende a adesao.
+            parcela_da_marca:
+              adesao.parcela_da_marca === null
+                ? null
+                : `${adesao.parcelas_oferecidas}x de ${real(adesao.parcela_da_marca)}`,
           },
     frescor: { data_verificacao: formatarData(item.frescor.data_verificacao), dias: item.frescor.dias },
   };
@@ -805,6 +891,8 @@ function chaveDeOrdenacao(item) {
   switch (item.estado) {
     case 'calculado':
       return Number(item.custos.total_mensal);
+    case 'promocional':
+      return Number(item.custos.total_mensal_promocional ?? item.custos.total_mensal_promocional_parcial);
     case 'incompleto':
       return Number(item.custos.total_mensal_parcial);
     case 'faixa_reportada':

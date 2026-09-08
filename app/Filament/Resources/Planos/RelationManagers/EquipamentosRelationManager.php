@@ -36,6 +36,15 @@ class EquipamentosRelationManager extends RelationManager
                     ->label('Adesão promocional')
                     ->numeric()
                     ->prefix('R$'),
+                TextInput::make('parcelas_adesao')
+                    ->label('Adesão parcelada em')
+                    ->numeric()
+                    ->minValue(1)
+                    ->maxValue(24)
+                    ->suffix('x sem juros')
+                    ->helperText('Em quantas vezes sem juros a marca parcela a adesão. Vazio = a marca não '
+                        .'declarou — nunca significa "só à vista". O comparador separa esta parcela real da '
+                        .'amortização que ele mesmo faz para comparar custo mensal.'),
                 TextInput::make('aluguel_mensal')
                     ->label('Aluguel mensal')
                     ->numeric()
@@ -62,6 +71,9 @@ class EquipamentosRelationManager extends RelationManager
                 TextColumn::make('pivot.preco_adesao_promocional')
                     ->label('Adesão promo.')
                     ->money('BRL', locale: 'pt_BR'),
+                TextColumn::make('pivot.parcelas_adesao')
+                    ->label('Parcelas')
+                    ->formatStateUsing(fn (?int $state): string => $state ? "{$state}x" : '—'),
                 TextColumn::make('pivot.aluguel_mensal')
                     ->label('Aluguel')
                     ->money('BRL', locale: 'pt_BR'),
@@ -78,6 +90,7 @@ class EquipamentosRelationManager extends RelationManager
                         $action->getRecordSelect(),
                         TextInput::make('preco_adesao')->label('Adesão')->numeric()->prefix('R$'),
                         TextInput::make('preco_adesao_promocional')->label('Adesão promocional')->numeric()->prefix('R$'),
+                        TextInput::make('parcelas_adesao')->label('Adesão em')->numeric()->minValue(1)->maxValue(24)->suffix('x'),
                         TextInput::make('aluguel_mensal')->label('Aluguel mensal')->numeric()->prefix('R$'),
                     ]),
             ])

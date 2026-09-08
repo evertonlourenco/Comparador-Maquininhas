@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Model;
 #[Table('taxas_divulgadas')]
 #[Fillable([
     'plano_id', 'grupo_bandeira_id', 'prazo_recebimento_id',
-    'tipo_operacao', 'parcelas', 'percentual', 'valor_fixo',
+    'tipo_operacao', 'parcelas', 'percentual', 'valor_fixo', 'condicao',
     'url_fonte', 'fonte_tipo', 'data_verificacao', 'verificado_por',
     'status', 'observacao',
 ])]

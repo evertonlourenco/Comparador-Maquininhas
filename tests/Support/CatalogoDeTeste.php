@@ -14,6 +14,8 @@ namespace Tests\Support;
  * As cinco marcas cobrem os quatro estados da regra 4 e o enquadramento da
  * regra 3:
  *   Alfa     - tabela completa, cupom vigente, aparelho comprado. CALCULADO.
+ *              Tem tambem uma tabela de entrada com prazo para acabar, que
+ *              sai em PROMOCIONAL e nunca disputa posicao com ela.
  *   Beta     - so recebe em 1 dia util e nao publica parcelado. INCOMPLETO
  *              quando o cenario pede o que ela nao tem.
  *   Gama     - nao publica tabela, tem faixa reportada. FAIXA_REPORTADA.
@@ -76,7 +78,10 @@ final class CatalogoDeTeste
                 'equipamentos' => [
                     // Aparelho comprado: aluguel nulo com adesao preenchida e a
                     // marca dizendo que aluguel nao existe aqui.
-                    self::equipamento(100, 'Aparelho A', adesao: 199.0, promocional: null, aluguel: null),
+                    // As 10 parcelas diferem do horizonte de 12 meses de
+                    // proposito: e o que prova que a parcela da marca e a
+                    // amortizacao do motor sao dois numeros distintos.
+                    self::equipamento(100, 'Aparelho A', adesao: 199.0, promocional: null, aluguel: null, parcelas: 10),
                 ],
                 'taxas' => [
                     self::taxa('debito', 'visa_master', 1, 'd_1', 1.0),
@@ -85,7 +90,26 @@ final class CatalogoDeTeste
                     // A unica taxa do catalogo com valor fixo por transacao.
                     self::taxa('credito_parcelado', 'visa_master', 6, 'parcela_a_parcela', 4.0, valorFixo: 0.5),
                     self::taxa('debito', 'demais', 1, 'd_1', 2.5),
-                    self::taxa('pix', 'pix', 1, 'na_hora', 0.0),
+                    // Taxa publicada que depende de uma acao do lojista. Nao e
+                    // promocao (nao vence) nem nota interna: e condicao, e sai
+                    // colada no numero.
+                    self::taxa('pix', 'pix', 1, 'na_hora', 0.0,
+                        condicao: 'Válido com a chave Pix ativada no aplicativo da marca.'),
+                ],
+                'faixas' => [],
+            ], [
+                // Tabela de entrada: 30 dias ou R$ 5.000,00 processados, o que
+                // vier antes. E o percentual mais baixo do catalogo inteiro -
+                // exatamente por isso ela nao pode ser ranqueada.
+                ...self::plano(11, 'Alfa Entrada', 'promocional'),
+                'promocao' => ['dias' => 30, 'valor_processado' => 5000.0, 'sucessor_id' => null],
+                'conta' => self::conta(mensalidade: 0.0, antecipacao: 2.0),
+                'equipamentos' => [
+                    self::equipamento(100, 'Aparelho A', adesao: 199.0, promocional: null, aluguel: null, parcelas: 10),
+                ],
+                'taxas' => [
+                    self::taxa('debito', 'visa_master', 1, 'd_1', 0.5),
+                    self::taxa('credito_avista', 'visa_master', 1, 'd_1', 1.5),
                 ],
                 'faixas' => [],
             ]],
@@ -184,6 +208,7 @@ final class CatalogoDeTeste
             'faturamento_min' => $min,
             'faturamento_max' => $max,
             'compromisso' => null,
+            'promocao' => null,
         ];
     }
 
@@ -205,8 +230,14 @@ final class CatalogoDeTeste
         ];
     }
 
-    private static function equipamento(int $id, string $nome, ?float $adesao, ?float $promocional, ?float $aluguel): array
-    {
+    private static function equipamento(
+        int $id,
+        string $nome,
+        ?float $adesao,
+        ?float $promocional,
+        ?float $aluguel,
+        ?int $parcelas = null,
+    ): array {
         return [
             'id' => $id,
             'nome' => $nome,
@@ -214,6 +245,9 @@ final class CatalogoDeTeste
             'tipo' => 'pos',
             'preco_adesao' => $adesao,
             'preco_adesao_promocional' => $promocional,
+            // Nulo e "a marca nao declarou em quantas vezes parcela", nunca
+            // "so a vista".
+            'parcelas_adesao' => $parcelas,
             'aluguel_mensal' => $aluguel,
         ];
     }
@@ -225,6 +259,7 @@ final class CatalogoDeTeste
         string $prazo,
         float $percentual,
         float $valorFixo = 0.0,
+        ?string $condicao = null,
     ): array {
         return [
             'tipo_operacao' => $tipo,
@@ -233,6 +268,7 @@ final class CatalogoDeTeste
             'prazo' => $prazo,
             'percentual' => $percentual,
             'valor_fixo' => $valorFixo,
+            'condicao' => $condicao,
             'data_verificacao' => self::VERIFICADO_EM,
             'url_fonte' => 'https://exemplo.test/taxas',
         ];

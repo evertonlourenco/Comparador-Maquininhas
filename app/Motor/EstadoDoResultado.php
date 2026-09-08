@@ -17,6 +17,14 @@ enum EstadoDoResultado: string
     case Calculado = 'calculado';
 
     /**
+     * Tabela de entrada, com prazo para acabar (etapa 05). O numero e
+     * verdadeiro e publicado, mas dura 30 dias ou um teto de volume
+     * processado - entao nao disputa posicao com preco permanente. Nao existe
+     * a chave total_mensal aqui: so total_mensal_promocional.
+     */
+    case Promocional = 'promocional';
+
+    /**
      * O plano tem dado publicado, mas falta alguma peca que este cenario
      * especifico exige - uma taxa naquele prazo, o preco do aparelho, a
      * mensalidade. O total sai como parcial e a lista de faltas vai junto.
@@ -47,9 +55,10 @@ enum EstadoDoResultado: string
     {
         return match ($this) {
             self::Calculado => 0,
-            self::FaixaReportada => 1,
-            self::Incompleto => 2,
-            self::SemDadoPublicado => 3,
+            self::Promocional => 1,
+            self::FaixaReportada => 2,
+            self::Incompleto => 3,
+            self::SemDadoPublicado => 4,
         };
     }
 
@@ -57,6 +66,7 @@ enum EstadoDoResultado: string
     {
         return match ($this) {
             self::Calculado => 'Calculado',
+            self::Promocional => 'Promoção de entrada, por tempo limitado',
             self::Incompleto => 'Falta dado para este cenário',
             self::FaixaReportada => 'Faixa reportada por lojistas',
             self::SemDadoPublicado => 'Sem dado publicado',

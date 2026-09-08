@@ -338,6 +338,106 @@ class MotorDeCalculoTest extends TestCase
     }
 
     // ------------------------------------------------------------------
+    // Promocao de entrada: numero verdadeiro, com prazo de validade
+    // ------------------------------------------------------------------
+
+    public function test_promocao_de_entrada_tem_estado_proprio_e_nao_se_chama_total_mensal(): void
+    {
+        $promo = $this->item($this->calcular(), 'Alfa', 'Alfa Entrada');
+
+        $this->assertSame(EstadoDoResultado::Promocional->value, $promo['estado']);
+
+        // Vendas: R$ 1.000,00 a 0,50% = R$ 5,00; R$ 2.000,00 a 1,50% = R$ 30,00.
+        // Aparelho: adesao R$ 199,00 menos o cupom de R$ 50,00, em 12 meses =
+        // R$ 12,42. Total R$ 47,42 - mais barato que qualquer permanente.
+        $this->assertSame(47.42, $promo['custos']['total_mensal_promocional']);
+
+        // E justamente por ser o mais barato e que ele nao pode usar o nome do
+        // numero permanente.
+        $this->assertArrayNotHasKey('total_mensal', $promo['custos']);
+        $this->assertSame('R$ 47,42', $promo['formatado']['total_mensal_promocional']);
+        $this->assertNull($promo['formatado']['total_mensal']);
+    }
+
+    public function test_a_promocao_diz_os_dois_limites_e_o_plano_seguinte(): void
+    {
+        $promo = $this->item($this->calcular(), 'Alfa', 'Alfa Entrada');
+
+        // Os dois limites valem em disjuncao: o que vier antes.
+        $this->assertStringContainsString('30 dias', $promo['motivo']);
+        $this->assertStringContainsString('R$ 5.000,00 processados', $promo['motivo']);
+        $this->assertStringContainsString('o que vier antes', $promo['motivo']);
+
+        $this->assertSame(30, $promo['promocao']['dias']);
+        $this->assertSame(5000.0, $promo['promocao']['valor_processado']);
+
+        // Sem sucessor declarado, o sucessor e o plano automatico da marca.
+        $this->assertSame('Plano Único', $promo['promocao']['sucessor']['nome']);
+    }
+
+    public function test_a_promocao_nunca_aparece_antes_de_um_preco_permanente(): void
+    {
+        $itens = $this->calcular()['itens'];
+
+        $posicaoDaPromocao = null;
+        $ultimoPermanente = null;
+
+        foreach ($itens as $i => $item) {
+            if ($item['estado'] === EstadoDoResultado::Promocional->value) {
+                $posicaoDaPromocao ??= $i;
+            }
+
+            if ($item['estado'] === EstadoDoResultado::Calculado->value) {
+                $ultimoPermanente = $i;
+            }
+        }
+
+        $this->assertNotNull($posicaoDaPromocao, 'A promoção não some: o lojista vai cair nela.');
+        $this->assertGreaterThan($ultimoPermanente, $posicaoDaPromocao);
+    }
+
+    // ------------------------------------------------------------------
+    // Taxa condicionada e parcelamento da adesao
+    // ------------------------------------------------------------------
+
+    public function test_condicao_da_taxa_sai_colada_no_resultado(): void
+    {
+        $alfa = $this->item($this->calcular([
+            'prazo' => 'na_hora',
+            'vendas' => [['tipo_operacao' => 'pix', 'valor_mensal' => '500,00', 'quantidade_mensal' => 30]],
+        ]), 'Alfa');
+
+        // O Pix a 0% da Alfa so vale com a chave ativada no aplicativo. O
+        // numero e verdadeiro, mas nao vale sozinho.
+        $this->assertSame(0.0, $alfa['custos']['vendas']);
+        $this->assertContains('Válido com a chave Pix ativada no aplicativo da marca.', $alfa['avisos']);
+        $this->assertSame(
+            'Válido com a chave Pix ativada no aplicativo da marca.',
+            $alfa['vendas'][0]['condicao'],
+        );
+    }
+
+    public function test_a_parcela_da_marca_e_a_amortizacao_do_motor_sao_numeros_diferentes(): void
+    {
+        $alfa = $this->item($this->calcular(), 'Alfa');
+
+        // A Alfa parcela a adesao em 10x: R$ 149,00 / 10 = R$ 14,90.
+        $this->assertSame(10, $alfa['adesao']['parcelas_oferecidas']);
+        $this->assertSame(14.9, $alfa['adesao']['parcela_da_marca']);
+        $this->assertSame('10x de R$ 14,90', $alfa['formatado']['adesao']['parcela_da_marca']);
+
+        // O motor amortiza em 12 meses para comparar: R$ 12,42. Sao coisas
+        // diferentes, e so a segunda entra na soma do custo mensal.
+        $this->assertSame(12.42, $alfa['adesao']['por_mes']);
+        $this->assertSame(12.42, $alfa['custos']['aparelho']);
+
+        // A Beta nao declarou parcelamento: nulo, nunca "à vista".
+        $beta = $this->item($this->calcular(), 'Beta');
+        $this->assertNull($beta['adesao']['parcelas_oferecidas']);
+        $this->assertNull($beta['formatado']['adesao']['parcela_da_marca']);
+    }
+
+    // ------------------------------------------------------------------
     // Ordenacao
     // ------------------------------------------------------------------
 
@@ -392,11 +492,24 @@ class MotorDeCalculoTest extends TestCase
             'valor_mensal' => '2.000,00', 'quantidade_mensal' => 20];
     }
 
-    /** O item do resultado daquela marca. Falha claro quando ela sumiu. */
-    private function item(array $resultado, string $marca): array
+    /**
+     * O item do resultado daquela marca. Falha claro quando ela sumiu.
+     *
+     * Ignora o plano promocional por padrao: ele e estado temporario da marca,
+     * nao a oferta permanente dela. Para chegar nele, informe o nome do plano.
+     */
+    private function item(array $resultado, string $marca, ?string $plano = null): array
     {
         foreach ($resultado['itens'] as $item) {
-            if ($item['marca']['nome'] === $marca) {
+            if ($item['marca']['nome'] !== $marca) {
+                continue;
+            }
+
+            if ($plano === null && ($item['plano']['tipo_enquadramento'] ?? null) === 'promocional') {
+                continue;
+            }
+
+            if ($plano === null || $item['plano']['nome'] === $plano) {
                 return $item;
             }
         }

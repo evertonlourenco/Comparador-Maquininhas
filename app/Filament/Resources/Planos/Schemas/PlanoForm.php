@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Planos\Schemas;
 use App\Enums\StatusItem;
 use App\Enums\TipoEnquadramento;
 use App\Models\Marca;
+use App\Models\Plano;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -86,6 +87,32 @@ class PlanoForm
                         ->label('Faturamento máximo')
                         ->numeric()
                         ->prefix('R$'),
+                ]),
+            Section::make('Promoção de entrada')
+                ->description('Etapa 05: tabela de entrada, com prazo para acabar. O comparador nunca '
+                    .'ranqueia isto junto dos planos permanentes — mostra em bloco próprio, com a validade à vista.')
+                ->columns(3)
+                ->visible(fn (Get $get): bool => self::enquadramentoDe($get('tipo_enquadramento')) === TipoEnquadramento::Promocional)
+                ->components([
+                    TextInput::make('promocional_dias')
+                        ->label('Dura quantos dias')
+                        ->numeric()
+                        ->minValue(1)
+                        ->suffix('dias')
+                        ->helperText('Vazio = a marca não publica prazo em dias.'),
+                    TextInput::make('promocional_valor_processado')
+                        ->label('Ou até processar')
+                        ->numeric()
+                        ->prefix('R$')
+                        ->helperText('Teto de volume processado na maquininha. Não é faixa de faturamento.'),
+                    Select::make('promocional_sucessor_id')
+                        ->label('Depois cai no plano')
+                        ->options(fn (Get $get) => Plano::query()
+                            ->where('marca_id', $get('marca_id'))
+                            ->where('tipo_enquadramento', '!=', TipoEnquadramento::Promocional)
+                            ->pluck('nome', 'id'))
+                        ->searchable()
+                        ->helperText('Vazio = cai no enquadramento automático da marca, conforme o faturamento.'),
                 ]),
             Section::make('Compromisso')
                 ->visible(fn (Get $get): bool => self::enquadramentoDe($get('tipo_enquadramento')) === TipoEnquadramento::Escolhido)

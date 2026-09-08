@@ -140,6 +140,14 @@ final class CatalogoDoComparador
                 'faturamento_min' => Dinheiro::doBanco($plano->faturamento_min),
                 'faturamento_max' => Dinheiro::doBanco($plano->faturamento_max),
                 'compromisso' => $plano->compromisso,
+                // Etapa 05: preenchido so no enquadramento promocional. Os dois
+                // limites valem em disjuncao - o que vier antes. Nulo em um
+                // deles e "esse limite nao existe", nunca zero.
+                'promocao' => $plano->ehPromocional() ? [
+                    'dias' => $plano->promocional_dias,
+                    'valor_processado' => Dinheiro::doBanco($plano->promocional_valor_processado),
+                    'sucessor_id' => $plano->promocional_sucessor_id,
+                ] : null,
                 // Custo da conta. Nulo aqui e "nao se sabe", nunca zero - o
                 // motor trata os dois de forma diferente de proposito.
                 'conta' => [
@@ -157,6 +165,7 @@ final class CatalogoDoComparador
                     'tipo' => $equipamento->tipo->value,
                     'preco_adesao' => Dinheiro::doBanco($equipamento->pivot->preco_adesao),
                     'preco_adesao_promocional' => Dinheiro::doBanco($equipamento->pivot->preco_adesao_promocional),
+                    'parcelas_adesao' => $equipamento->pivot->parcelas_adesao,
                     'aluguel_mensal' => Dinheiro::doBanco($equipamento->pivot->aluguel_mensal),
                 ])->values()->all(),
                 'taxas' => $plano->taxasDivulgadas->map(fn ($taxa): array => [
@@ -166,6 +175,9 @@ final class CatalogoDoComparador
                     'prazo' => $taxa->prazoRecebimento->codigo,
                     'percentual' => Dinheiro::doBanco($taxa->percentual),
                     'valor_fixo' => Dinheiro::doBanco($taxa->valor_fixo),
+                    // O que o lojista precisa fazer para este numero valer.
+                    // Vai junto do numero, sempre - nao e nota interna.
+                    'condicao' => $taxa->condicao,
                     'data_verificacao' => $taxa->data_verificacao?->toDateString(),
                     'url_fonte' => $taxa->url_fonte,
                 ])->values()->all(),

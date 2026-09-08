@@ -204,6 +204,11 @@ class InfinitePaySeeder extends SeederDeMarca
                 $plano->getKey() => [
                     'preco_adesao' => 199.00,
                     'preco_adesao_promocional' => null,
+                    // Etapa 05: as 12 vezes ja estavam na observacao desta
+                    // mesma carga ("12x de R$ 16,58"). Agora sao campo, para o
+                    // motor distinguir a parcela que a marca oferece da
+                    // amortizacao que ele proprio faz para comparar.
+                    'parcelas_adesao' => 12,
                     'aluguel_mensal' => null,
                     'observacao' => 'R$ 199,00 a vista ou 12x de R$ 16,58, com frete gratis. '
                         .'Preco de compra da primeira maquininha, sem aluguel.',

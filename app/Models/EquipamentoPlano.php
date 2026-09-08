@@ -22,6 +22,7 @@ class EquipamentoPlano extends Pivot
         return [
             'preco_adesao' => 'decimal:2',
             'preco_adesao_promocional' => 'decimal:2',
+            'parcelas_adesao' => 'integer',
             'aluguel_mensal' => 'decimal:2',
             'status' => StatusItem::class,
         ];
@@ -31,5 +32,26 @@ class EquipamentoPlano extends Pivot
     protected function precoAdesaoVigente(): Attribute
     {
         return Attribute::get(fn (): ?string => $this->preco_adesao_promocional ?? $this->preco_adesao);
+    }
+
+    /**
+     * A parcela que a marca de fato oferece, quando ela declara em quantas
+     * vezes sem juros parcela a adesao.
+     *
+     * Nao confundir com a amortizacao do motor: aquela e criterio nosso para
+     * comparar custo unico num comparativo mensal, esta e oferta da marca.
+     * Nulo aqui significa "a marca nao declarou", nunca "e a vista".
+     */
+    protected function parcelaDaAdesao(): Attribute
+    {
+        return Attribute::get(function (): ?string {
+            $vigente = $this->preco_adesao_vigente;
+
+            if ($vigente === null || ! $this->parcelas_adesao) {
+                return null;
+            }
+
+            return bcdiv((string) $vigente, (string) $this->parcelas_adesao, 2);
+        });
     }
 }
