@@ -46,7 +46,10 @@ Estas regras vêm da análise de viabilidade e não devem ser simplificadas:
 1. **Prazo de recebimento é dimensão da taxa**, não atributo da marca. A chave de uma
    taxa é: marca + plano + tipo de operação + número de parcelas + prazo.
 2. **Parcelas são inteiro de 1 a 21**, nunca faixas agrupadas. Agrupar só na exibição.
-3. **Plano é entidade própria**, com `tipo_enquadramento`: automatico | escolhido | negociado.
+3. **Plano é entidade própria**, com `tipo_enquadramento`: automatico | escolhido |
+   negociado | **promocional**. O promocional é o único que expira — tabela de entrada
+   com prazo (30 dias, ou um teto de volume processado, o que vier antes). Ele nunca
+   disputa posição com preço permanente no comparador.
 4. **Duas classes de dado de taxa, que nunca se misturam:**
    - `taxa_divulgada` — publicada pela marca, com `url_fonte` e `data_verificacao`
    - `faixa_reportada` — mediana/mín/máx/`n_relatos`/período, para Cielo, Rede, GetNet e
@@ -259,6 +262,12 @@ valor da parcela, e num dos modelos com dois valores sem dizer qual vigora.
   `url_fonte` para citar, e carregar só a promocional venderia como permanente
   uma taxa que dura 30 dias. Se a tabela aparecer em página aberta, o campo é
   um clique no painel.
+
+  **Revisitável desde a etapa 05:** o impedimento era não haver como carregar
+  uma tabela promocional sem vendê-la como permanente. Agora há —
+  `tipo_enquadramento: promocional`. Se a taxa dos 30 dias estiver em página
+  aberta e com prazo declarado, ela pode entrar como plano promocional, e o
+  comparador a exibe em bloco próprio, com a validade à vista.
 - **Pix: resolvido na etapa 05.** O impedimento era de schema, não de dado —
   não havia grupo de bandeira onde a linha coubesse. Com o grupo técnico `pix`
   criado, entrou a carga da InfinitePay: 0% nas quatro faixas, prazo "na hora",
@@ -413,14 +422,58 @@ número que fecha.
 o serviço. Quem não faz TED nenhum no mês não precisa saber a tarifa de TED.
 A mensalidade é a exceção: ela é cobrada sempre.
 
-### Os quatro estados (regra 4 no formato do resultado)
+### Promoção de entrada não é preço permanente
 
-Só `calculado` é ranqueado por preço. Os outros três vêm em blocos próprios,
-depois, com o motivo à vista — assim uma mediana de relatos nunca disputa a
-primeira posição com um número publicado. No estado `faixa_reportada` **não
-existe a chave `total_mensal`**, só `total_mensal_minimo`, `_mediana` e
-`_maximo`. Marca sem dado nenhum aparece com o motivo e sem número: zero seria
-mentira.
+Marcas oferecem tabela de entrada válida por ~30 dias **ou** até um teto de volume
+processado, o que vier antes; depois o lojista cai automaticamente em outro plano.
+A carga da etapa 04 gravou a do Ton como faixa de faturamento de R$ 2 mil a R$ 5
+mil — mas esses R$ 5 mil são teto de volume processado, não faturamento. O motor
+a ranqueava contra planos permanentes e ela ganhava de todo mundo, inclusive do
+plano regular da própria marca.
+
+A resposta não é escolher entre comparar só o regular ou só o promocional: é
+**comparar por preço permanente e manter a promoção visível em bloco próprio**,
+com a validade colada nela. `EstadoDoResultado::Promocional` fica entre
+`calculado` e `faixa_reportada`, e o total **não se chama `total_mensal`** — é
+`total_mensal_promocional`. O bloco `promocao` carrega os dois limites e o plano
+em que o lojista cai depois (o sucessor declarado, ou o enquadramento automático
+da marca para aquele faturamento).
+
+### Taxa condicionada ≠ taxa promocional
+
+`taxas_divulgadas.condicao` é o que o lojista precisa **fazer** para o número
+valer — o Pix a 0% do Ton depende de ativar a chave Pix no aplicativo. Isso não
+vence, então não é promoção; e não é `observacao`, que é nota interna. A condição
+sai colada no número, sempre, e entra nos avisos do resultado. Pix a 0% **por 30
+dias** é outra coisa: isso é plano promocional.
+
+### Parcela da marca ≠ amortização do motor
+
+`equipamento_plano.parcelas_adesao` guarda em quantas vezes sem juros a marca
+parcela a adesão. Sem esse campo os dois números colidiam: "12x de R$ 16,58"
+(oferta da marca, fato) e a amortização em 12 meses (critério nosso para trazer
+custo único ao comparativo mensal). O resultado traz `parcela_da_marca` e
+`por_mes` separados, e **só `por_mes` entra na soma do custo mensal**. Nulo em
+`parcelas_adesao` é "a marca não declarou", nunca "só à vista".
+
+### Os cinco estados (regra 4 no formato do resultado)
+
+Só `calculado` é ranqueado por preço. Os outros quatro vêm em blocos próprios,
+depois, com o motivo à vista — assim uma mediana de relatos, ou um preço de 30
+dias, nunca disputa a primeira posição com um número publicado e permanente.
+
+| Estado | Chave do total |
+|---|---|
+| `calculado` | `total_mensal` |
+| `promocional` | `total_mensal_promocional` |
+| `faixa_reportada` | `total_mensal_minimo` / `_mediana` / `_maximo` |
+| `incompleto` | `total_mensal_parcial` |
+| `sem_dado_publicado` | nenhuma — `custos` é nulo |
+
+O nome da chave muda junto com o estado de propósito: é o mesmo truque de
+`faixas_reportadas` não ter coluna `percentual`. Um número que não é permanente,
+não é exato ou não fecha não pode ter o nome do número que é. Marca sem dado
+nenhum aparece com o motivo e sem número: zero seria mentira.
 
 ### Regra 8 e regra 5 são recalculadas, nunca gravadas
 
@@ -499,6 +552,27 @@ falta. Essa lista é o trabalho de painel que antecede o comparador ir ao ar.
 
 **Dados que faltam na carga (cada um é um campo no painel):**
 
+- **Ton: Pix a 0% mediante ativação da chave no aplicativo.** O campo
+  `taxas_divulgadas.condicao` existe e é exatamente para isso, mas a linha não
+  entrou: falta a URL da página do Ton que publica essa condição. Regra 6 não
+  admite taxa sem fonte, nem quando a informação está correta.
+- **Pix promocional a 0% por 30 dias** existe em algumas marcas. Isso não é
+  `condicao` — é plano promocional, e já é representável. Falta identificar
+  quais marcas e ler a fonte de cada uma.
+- **Parcelamento da adesão declarado só na InfinitePay** (12x). A informação de
+  que praticamente todas parcelam em até 12x sem juros é provável, mas provável
+  não entra: `parcelas_adesao` fica nulo até cada marca ser lida, e nulo aqui é
+  "não declarado", nunca "só à vista".
+- **Ton, promoção de entrada: o piso de R$ 2.000 foi descartado.** A carga da
+  etapa 04 tinha `faturamento_min = 2000` no plano promocional; ele não tem
+  contrapartida nos termos da promoção (30 dias ou R$ 5 mil processados) e
+  provavelmente era leitura da faixa vizinha. Confirmar no site antes de
+  publicar.
+- **Nenhuma outra marca tem plano promocional cadastrado.** Só o Ton foi
+  identificado na etapa 04. Se PagBank, SumUp ou InfinitePay tiverem tabela de
+  entrada, ela hoje está ausente ou — pior — pode estar misturada como faixa de
+  faturamento, do jeito que a do Ton estava. Vale uma passada marca a marca.
+
 - **Ton e PagBank sem `mensalidade`.** InfinitePay e SumUp declaram "sem
   mensalidade" na própria página e entraram com `0`; Ton e PagBank não tiveram o
   campo lido na etapa 04, e nulo ali é "não se sabe", nunca zero. Enquanto
@@ -540,6 +614,21 @@ falta. Essa lista é o trabalho de painel que antecede o comparador ir ao ar.
 - **Mistura de prazos dentro do mesmo plano gera aviso, não bloqueio.** Se a
   marca vende mesmo a combinação que o motor montou é pergunta de exibição
   (etapa 07), não de cálculo.
+
+**Atributos de comparação que ainda não têm onde morar:**
+
+Não são custo — não entram no cálculo — mas são o que desempata duas marcas de
+taxa parecida, e hoje não há campo para eles:
+
+- **Garantia do equipamento**, que varia bastante: algumas marcas dão vitalícia,
+  outras 1 ou 2 anos.
+- **Frete**, que via de regra é grátis para todo o país, e **chip e bobina**, que
+  vêm sem custo. Como são grátis, o efeito no custo é zero e o motor não muda;
+  o valor está em poder afirmar isso na página, com fonte.
+
+São campos de catálogo (`equipamentos` e/ou `marcas`) e trabalho de exibição —
+etapas 07 e 08. Ficaram de fora da etapa 05 de propósito: acrescentar coluna sem
+dado verificado só cria campo vazio, e nenhum deles muda um centavo do cálculo.
 
 **Ainda não existe:**
 
