@@ -9,6 +9,7 @@ use App\Models\Marca;
 use App\Models\Plano;
 use App\Models\PrazoRecebimento;
 use App\Models\User;
+use DomainException;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -30,6 +31,39 @@ trait TemChaveDeTaxa
         static::saving(function (Model $taxa): void {
             if ($taxa->plano_id && ($taxa->isDirty('plano_id') || $taxa->marca_id === null)) {
                 $taxa->marca_id = Plano::whereKey($taxa->plano_id)->value('marca_id');
+            }
+        });
+
+        // Etapa 05, decisao 1: o grupo pix existe so para dar lugar a taxa de
+        // Pix, que nao tem bandeira. Ele nao vale para cartao, e nenhum grupo
+        // de cartao vale para Pix. Sem esta guarda o grupo tecnico viraria um
+        // balde solto onde qualquer linha caberia.
+        static::saving(function (Model $taxa): void {
+            if (! $taxa->grupo_bandeira_id || ! $taxa->tipo_operacao) {
+                return;
+            }
+
+            $codigo = GrupoBandeira::whereKey($taxa->grupo_bandeira_id)->value('codigo');
+
+            if ($codigo === null) {
+                return;
+            }
+
+            $ehPix = $taxa->tipo_operacao === TipoOperacao::Pix;
+            $grupoEhDePix = $codigo === GrupoBandeira::PIX;
+
+            if ($ehPix && ! $grupoEhDePix) {
+                throw new DomainException(
+                    'Taxa de Pix so entra no grupo "'.GrupoBandeira::PIX.'": Pix nao tem bandeira. '
+                    .'Grupo recebido: "'.$codigo.'".'
+                );
+            }
+
+            if (! $ehPix && $grupoEhDePix) {
+                throw new DomainException(
+                    'O grupo "'.GrupoBandeira::PIX.'" so aceita taxa de Pix. '
+                    .'Tipo de operacao recebido: "'.$taxa->tipo_operacao->value.'".'
+                );
             }
         });
     }

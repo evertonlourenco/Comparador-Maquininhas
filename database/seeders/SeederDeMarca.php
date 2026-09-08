@@ -82,6 +82,19 @@ abstract class SeederDeMarca extends Seeder
     }
 
     /**
+     * Etapa 05, decisao 1: o Pix nao tem bandeira e por isso nao tinha grupo
+     * onde entrar. Agora tem um grupo tecnico proprio, e o helper e o unico
+     * caminho para grava-lo - assim nenhuma carga cai na tentacao de escolher
+     * visa_master "porque a coluna e obrigatoria".
+     *
+     * Pix nao parcela: parcelas e sempre 1.
+     */
+    protected function pix(Plano $plano, string $prazo, float $percentual, array $fonte): void
+    {
+        $this->taxa($plano, TipoOperacao::Pix, GrupoBandeira::PIX, $prazo, 1, $percentual, $fonte);
+    }
+
+    /**
      * Uma tabela de credito inteira, do jeito que a marca publica: o indice 0
      * do array e 1x (credito a vista) e os seguintes sao 2x, 3x... (credito
      * parcelado). Regra 2: cada parcela vira uma linha propria, nunca faixa.

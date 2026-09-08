@@ -78,7 +78,9 @@ class LancamentoEmLote extends Page
                             ->disabled(fn (Get $get): bool => blank($get('marca_id'))),
                         Select::make('grupo_bandeira_id')
                             ->label('Grupo de bandeiras')
-                            ->options(GrupoBandeira::query()->orderBy('ordem')->pluck('nome_exibicao', 'id'))
+                            // A grade e de credito (1x a 21x): o grupo tecnico do
+                            // Pix nao cabe aqui (etapa 05, decisao 1).
+                            ->options(GrupoBandeira::query()->deCartao()->orderBy('ordem')->pluck('nome_exibicao', 'id'))
                             ->required(),
                     ]),
                 Section::make('Fonte e verificação')

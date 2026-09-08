@@ -5,6 +5,7 @@ namespace App\Filament\Resources\PrazoRecebimentos\Schemas;
 use App\Models\PrazoRecebimento;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
@@ -50,6 +51,13 @@ class PrazoRecebimentoForm
                             ->numeric()
                             ->default(0)
                             ->required(),
+                        Toggle::make('antecipacao_embutida')
+                            ->label('Antecipação já embutida no percentual')
+                            ->default(false)
+                            ->helperText('Ligue quando a marca só oferece este prazo antecipando o recebível e '
+                                .'cobrando por isso dentro do percentual da taxa — é o caso de "na hora", "em 1 '
+                                .'dia útil" e "em 14 dias". Com isso ligado, o motor de cálculo não soma a '
+                                .'antecipação avulsa do plano por cima, para não cobrar o mesmo adiantamento duas vezes.'),
                         Textarea::make('descricao')
                             ->label('Descrição')
                             ->columnSpanFull()

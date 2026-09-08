@@ -29,6 +29,10 @@ class PrazoRecebimentosTable
                     ->numeric()
                     ->placeholder('conforme as parcelas')
                     ->sortable(),
+                IconColumn::make('antecipacao_embutida')
+                    ->label('Antecipa')
+                    ->boolean()
+                    ->tooltip('O percentual publicado neste prazo já cobra o adiantamento — o motor não soma a antecipação avulsa por cima.'),
                 IconColumn::make('reservado')
                     ->label('Curado')
                     ->boolean()

@@ -49,7 +49,16 @@ class FaixaReportadaForm
                             ->disabled(fn (Get $get): bool => blank($get('marca_id_filtro'))),
                         Select::make('grupo_bandeira_id')
                             ->label('Grupo de bandeiras')
-                            ->options(GrupoBandeira::query()->orderBy('ordem')->pluck('nome_exibicao', 'id'))
+                            // Etapa 05, decisao 1: Pix so aceita o grupo "pix" e o
+                            // grupo "pix" so aceita Pix. O model recusa o contrario
+                            // com DomainException; aqui a lista nem oferece o erro.
+                            ->options(fn (Get $get) => GrupoBandeira::query()
+                                ->paraOperacao($get('tipo_operacao'))
+                                ->orderBy('ordem')
+                                ->pluck('nome_exibicao', 'id'))
+                            ->helperText(fn (Get $get): string => self::tipoOperacaoDe($get('tipo_operacao')) === TipoOperacao::Pix
+                                ? 'O Pix não passa por bandeira: o grupo "Pix" é técnico e existe só para dar lugar a esta taxa.'
+                                : 'Escolha o tipo de operação primeiro — ele define quais grupos aparecem aqui.')
                             ->required(),
                         Select::make('prazo_recebimento_id')
                             ->label('Prazo de recebimento')
@@ -59,7 +68,12 @@ class FaixaReportadaForm
                             ->options(TipoOperacao::class)
                             ->required()
                             ->live()
-                            ->afterStateUpdated(fn (Set $set, TipoOperacao|string|null $state) => $set('parcelas', self::tipoOperacaoDe($state)?->parcelaMinima())),
+                            ->afterStateUpdated(function (Set $set, TipoOperacao|string|null $state): void {
+                                $set('parcelas', self::tipoOperacaoDe($state)?->parcelaMinima());
+                                // O grupo valido muda junto com o tipo; manter o
+                                // anterior deixaria o Select com um id fora da lista.
+                                $set('grupo_bandeira_id', null);
+                            }),
                         TextInput::make('parcelas')
                             ->numeric()
                             ->required()

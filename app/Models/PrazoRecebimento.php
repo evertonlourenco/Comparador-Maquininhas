@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * uma coluna inteira na taxa.
  */
 #[Table('prazos_recebimento')]
-#[Fillable(['codigo', 'nome_exibicao', 'descricao', 'dias', 'ordem'])]
+#[Fillable(['codigo', 'nome_exibicao', 'descricao', 'dias', 'antecipacao_embutida', 'ordem'])]
 class PrazoRecebimento extends Model
 {
     public const NA_HORA = 'na_hora';
@@ -37,8 +37,40 @@ class PrazoRecebimento extends Model
     {
         return [
             'dias' => 'integer',
+            'antecipacao_embutida' => 'boolean',
             'ordem' => 'integer',
         ];
+    }
+
+    /**
+     * Etapa 05, decisao 3: quando o percentual da taxa ja embute a antecipacao
+     * automatica, o motor nao pode somar a antecipacao avulsa do plano por
+     * cima - seria cobrar o mesmo adiantamento duas vezes.
+     */
+    public function embuteAntecipacao(): bool
+    {
+        return (bool) $this->antecipacao_embutida;
+    }
+
+    /**
+     * Quantos meses de antecipacao avulsa uma venda deste prazo custa, dado o
+     * numero de parcelas.
+     *
+     * - Prazo com dias definidos: dias/30. D+30 = 1 mes, que e a convencao do
+     *   proprio campo taxa_antecipacao_mensal (percentual ao mes).
+     * - parcela_a_parcela (dias = null): a parcela i cai no mes i, entao
+     *   antecipar a venda inteira custa
+     *       soma(i = 1..n) de (V/n) x taxa x i  =  V x taxa x (n+1)/2
+     *   ou seja, (n+1)/2 meses equivalentes. Para 1x da 1 mes, o que fecha
+     *   com o caso de parcela unica.
+     */
+    public function mesesDeAntecipacao(int $parcelas): float
+    {
+        if ($this->dias !== null) {
+            return $this->dias / 30;
+        }
+
+        return ($parcelas + 1) / 2;
     }
 
     public function taxasDivulgadas(): HasMany

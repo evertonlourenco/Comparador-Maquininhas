@@ -114,6 +114,24 @@ class InfinitePaySeeder extends SeederDeMarca
             }
         }
 
+        // Pix. A mesma leitura de infinitepay.io/taxas que ja sustenta
+        // "sem aluguel, sem tarifa de conta e Pix gratuito" nos campos de
+        // tarifa do plano: 0% em todas as faixas de faturamento. Cai na hora,
+        // que e como o Pix funciona, e nao parcela.
+        //
+        // Ate a etapa 05 esta linha nao existia por falta de grupo de bandeira
+        // para ela - nao por falta de dado.
+        $fontePix = $this->fonte(
+            self::URL,
+            'A pagina de taxas da InfinitePay declara Pix gratuito, sem percentual e sem tarifa, '
+            .'em todas as faixas de faturamento. Gravado no grupo tecnico "pix", que existe porque '
+            .'o Pix nao passa por bandeira.',
+        );
+
+        foreach ($planos as $plano) {
+            $this->pix($plano, PrazoRecebimento::NA_HORA, 0, $fontePix);
+        }
+
         $this->equipamento($marca->getKey(), $planos);
     }
 

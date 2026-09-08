@@ -30,7 +30,8 @@ class BandeirasRelationManager extends RelationManager
             ->components([
                 Select::make('grupo_bandeira_id')
                     ->label('Grupo de bandeiras')
-                    ->options(GrupoBandeira::query()->orderBy('ordem')->pluck('nome_exibicao', 'id'))
+                    // O grupo tecnico do Pix nao agrupa bandeira nenhuma (etapa 05, decisao 1).
+                    ->options(GrupoBandeira::query()->deCartao()->orderBy('ordem')->pluck('nome_exibicao', 'id'))
                     ->required(),
             ]);
     }
@@ -57,7 +58,8 @@ class BandeirasRelationManager extends RelationManager
                         $action->getRecordSelect(),
                         Select::make('grupo_bandeira_id')
                             ->label('Grupo de bandeiras')
-                            ->options(GrupoBandeira::query()->orderBy('ordem')->pluck('nome_exibicao', 'id'))
+                            // O grupo tecnico do Pix nao agrupa bandeira nenhuma (etapa 05, decisao 1).
+                            ->options(GrupoBandeira::query()->deCartao()->orderBy('ordem')->pluck('nome_exibicao', 'id'))
                             ->required(),
                     ]),
             ])
