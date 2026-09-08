@@ -179,6 +179,56 @@ Em PHP, `TaxaDivulgada` recusa marca com `publica_tabela = false` (regra 4), lan
 estrutura, não dados de etapa 04 — os models referenciam esses códigos por constante
 (`PrazoRecebimento::NA_HORA`, `GrupoBandeira::VISA_MASTER`).
 
+### Carga de dados (etapa 04)
+
+Os dados reais vivem em seeders versionados, não em dump — assim a carga é
+reproduzível, revisável no diff e reexecutável. Todos usam `updateOrCreate`:
+rodar `php artisan db:seed` de novo atualiza, nunca duplica.
+
+| Seeder | O que carrega |
+|---|---|
+| `AdquirentesSeeder` | 6 adquirentes, cada um confirmado no rodapé ou no texto institucional do site da própria marca |
+| `BandeirasSeeder` | 13 bandeiras, só as que aparecem em alguma marca já carregada |
+| `MarcasSeeder` | 7 marcas + pivot `bandeira_marca` com o grupo de cada uma |
+| `PagBankSeeder`, `InfinitePaySeeder`, `TonSeeder` | planos, equipamentos com preço de adesão, e a tabela de taxas |
+
+**`DatabaseSeeder` não usa `WithoutModelEvents`, e isso é deliberado.** O trait
+vem do scaffolding do Laravel e desligaria os eventos de model — justamente o
+hook de `TemChaveDeTaxa`, único lugar que preenche `marca_id` a partir do plano
+(regra 1), e a guarda de `TaxaDivulgada` que recusa marca com
+`publica_tabela = false` (regra 4). Com eventos desligados a carga gravaria
+`marca_id` nulo e furaria a regra 4 em silêncio.
+
+**Estado da carga, verificado em 08/09/2026** — 882 taxas divulgadas, todas em
+rascunho (regra 10), todas com `url_fonte` e `data_verificacao`:
+
+| Marca | Publica tabela | Planos | Taxas |
+|---|---|---|---|
+| Ton | sim | 6 faixas de faturamento | 528 (2 prazos × 2 grupos × 1x a 21x) |
+| InfinitePay | sim | 4 faixas de faturamento | 280 (3 prazos × 2 grupos × 1x a 12x) |
+| PagBank | sim | 3 | 74 (3 prazos × 2 grupos, parcelado único de 2x a 12x) |
+| Stone, Cielo, Rede, GetNet | não | — | 0 — ver abaixo |
+
+**O que ainda não entrou, e por quê:**
+
+- **Faixas reportadas: nenhuma.** Cielo, Rede, GetNet e Stone estão cadastradas
+  como marca, mas `faixas_reportadas` exige `n_relatos`, `periodo_inicio` e
+  `periodo_fim`. Isso não se levanta em site oficial — vem da captação de
+  relatos da etapa 10. Marca sem dado nenhum é o estado honesto, e o Painel
+  Inicial já sinaliza.
+- **Pix não tem nenhuma linha**, apesar de InfinitePay e Ton publicarem Pix a
+  0%. `grupo_bandeira_id` é NOT NULL e Pix não tem bandeira — não existe grupo
+  correto para ele. Escolher um seria inventar dimensão. Decidir isso é da
+  etapa 05, junto com o motor de cálculo.
+- **PagBank: os planos Essencial e Super Max entraram sem taxa.** A página que
+  os publica dá percentual sem dizer prazo de recebimento nem grupo de
+  bandeiras — faltam duas das cinco dimensões da chave da regra 1. As taxas do
+  PagBank vêm todas da página Taxas e Tarifas, que é dimensional, e ficam no
+  plano "Taxas iniciais", nome que é o que a própria página usa.
+- **Voucher: nenhuma taxa.** O Ton aceita Alelo, Pluxee, Ticket, Up Brasil e VR
+  (vinculadas no pivot, no grupo `voucher`), mas não publica o percentual
+  delas. O PagBank diz explicitamente que voucher é negociado com a bandeira.
+
 ### Limitações conhecidas
 
 - **Taxa por bandeira individual não é representável.** A granularidade é o grupo. Se
