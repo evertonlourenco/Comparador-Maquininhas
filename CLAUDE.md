@@ -190,9 +190,28 @@ estrutura, não dados de etapa 04 — os models referenciam esses códigos por c
 
 ## Painel admin (Filament)
 
-Recursos em `app/Filament/Resources`: Marcas, Planos, Equipamentos, Taxas Divulgadas,
-Faixas Reportadas, Cupons. Cada um segue o padrão gerado pelo `filament:make-resource`
-(Resource + `Schemas/*Form` + `Tables/*Table` + `Pages`), não embutido.
+Recursos em `app/Filament/Resources`, agrupados na navegação:
+
+| Grupo | Recursos |
+|---|---|
+| Catálogo | Marcas, Planos, Equipamentos, Cupons |
+| Taxas | Taxas Divulgadas, Faixas Reportadas |
+| Dimensões | Adquirentes, Bandeiras, Grupos de bandeiras, Prazos de recebimento |
+
+Cada um segue o padrão gerado pelo `filament:make-resource` (Resource + `Schemas/*Form`
++ `Tables/*Table` + `Pages`), não embutido. **Toda tabela do domínio tem CRUD pelo
+painel** — incluir uma marca, um equipamento, uma bandeira ou até um grupo de bandeiras
+novo não exige tocar em código nem rodar seeder.
+
+**Dimensão curada não é editável à vontade.** `grupos_bandeiras` e `prazos_recebimento`
+ganharam CRUD, mas os códigos que o código-fonte referencia por constante
+(`GrupoBandeira::RESERVADOS`, `PrazoRecebimento::RESERVADOS`) têm o campo `codigo`
+desabilitado e não dehidratado no formulário, e a exclusão bloqueada. Renomear
+`visa_master` pelo painel quebraria silenciosamente quem compara com a constante.
+Criar um grupo ou prazo **novo** continua livre — é exatamente o caso que motivou
+essas dimensões serem tabela e não enum. Adquirente com marca apontando para ele
+(inclusive soft-deletada, que a FK `restrictOnDelete` ainda enxerga) também não é
+excluível.
 
 **Cupom pluraliza errado em inglês.** `Str::plural('cupom')` dá `cupoms`. O slug da
 rota e os labels do `CupomResource` são fixados manualmente (`cupons`) — se um novo

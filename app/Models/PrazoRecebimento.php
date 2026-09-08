@@ -19,10 +19,19 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class PrazoRecebimento extends Model
 {
     public const NA_HORA = 'na_hora';
+
     public const D1 = 'd_1';
+
     public const D14 = 'd_14';
+
     public const D30 = 'd_30';
+
     public const PARCELA_A_PARCELA = 'parcela_a_parcela';
+
+    /** Referenciados por constante no codigo - ver GrupoBandeira::RESERVADOS. */
+    public const RESERVADOS = [
+        self::NA_HORA, self::D1, self::D14, self::D30, self::PARCELA_A_PARCELA,
+    ];
 
     protected function casts(): array
     {
@@ -40,5 +49,15 @@ class PrazoRecebimento extends Model
     public function faixasReportadas(): HasMany
     {
         return $this->hasMany(FaixaReportada::class);
+    }
+
+    public function estaReservado(): bool
+    {
+        return in_array($this->codigo, self::RESERVADOS, true);
+    }
+
+    public function estaEmUso(): bool
+    {
+        return $this->taxasDivulgadas()->exists() || $this->faixasReportadas()->exists();
     }
 }

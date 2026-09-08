@@ -20,4 +20,14 @@ class Adquirente extends Model
     {
         return $this->hasMany(Marca::class);
     }
+
+    /**
+     * Marca soft-deletada continua sendo linha no banco, e o restrictOnDelete
+     * da FK conta com ela. Por isso withTrashed: o painel precisa saber que o
+     * DELETE vai falhar antes de tentar.
+     */
+    public function estaEmUso(): bool
+    {
+        return $this->marcas()->withTrashed()->exists();
+    }
 }
