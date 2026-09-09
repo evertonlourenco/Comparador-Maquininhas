@@ -56,6 +56,11 @@ class MarcaForm
                             ->helperText('Se desligado, a marca só admite faixas reportadas (regra 4) — Cielo, Rede, GetNet e Stone, por exemplo.')
                             ->default(true)
                             ->inline(false),
+                        Toggle::make('aceita_relatos')
+                            ->label('Aceita relatos de lojistas')
+                            ->helperText('Etapa 10: aparece no select de /enviar-proposta. Hoje, só faz sentido para marca que não publica tabela.')
+                            ->default(false)
+                            ->inline(false),
                         Select::make('status')
                             ->options(StatusMarca::class)
                             ->required()

@@ -2,12 +2,17 @@
 
 namespace App\Filament\Widgets;
 
+use App\Enums\StatusRevisao;
 use App\Filament\Resources\Cupons\CupomResource;
 use App\Filament\Resources\Marcas\MarcaResource;
+use App\Filament\Resources\PropostasRecebidas\PropostaRecebidaResource;
+use App\Filament\Resources\RelatosTaxaIncorreta\RelatoTaxaIncorretaResource;
 use App\Filament\Resources\TaxaDivulgadas\TaxaDivulgadaResource;
 use App\Models\Cupom;
 use App\Models\FaixaReportada;
 use App\Models\Marca;
+use App\Models\PropostaRecebida;
+use App\Models\RelatoTaxaIncorreta;
 use App\Models\TaxaDivulgada;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -37,6 +42,11 @@ class PainelInicial extends StatsOverviewWidget
             ->whereDoesntHave('faixasReportadas')
             ->count();
 
+        // Etapa 10: as duas filas de revisão humana da captação de relatos —
+        // regra 10 na forma mais forte, nada delas publica sozinho.
+        $propostasPendentes = PropostaRecebida::query()->where('status', StatusRevisao::Pendente)->count();
+        $relatosTaxaPendentes = RelatoTaxaIncorreta::query()->where('status', StatusRevisao::Pendente)->count();
+
         return [
             Stat::make('Taxas não verificadas há +30 dias', $taxasNaoVerificadas)
                 ->description('Somando taxas divulgadas e faixas reportadas')
@@ -53,6 +63,16 @@ class PainelInicial extends StatsOverviewWidget
                 ->color($marcasSemTaxa > 0 ? 'warning' : 'success')
                 ->url(MarcaResource::getUrl())
                 ->icon('heroicon-o-building-storefront'),
+            Stat::make('Propostas pendentes de revisão', $propostasPendentes)
+                ->description('Relatos de /enviar-proposta ainda não revisados')
+                ->color($propostasPendentes > 0 ? 'warning' : 'success')
+                ->url(PropostaRecebidaResource::getUrl())
+                ->icon('heroicon-o-inbox-arrow-down'),
+            Stat::make('Relatos de taxa incorreta pendentes', $relatosTaxaPendentes)
+                ->description('Avisos do botão "reportar taxa errada" ainda não revisados')
+                ->color($relatosTaxaPendentes > 0 ? 'warning' : 'success')
+                ->url(RelatoTaxaIncorretaResource::getUrl())
+                ->icon('heroicon-o-flag'),
         ];
     }
 }
