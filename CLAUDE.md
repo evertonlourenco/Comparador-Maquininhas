@@ -300,7 +300,6 @@ valor da parcela, e num dos modelos com dois valores sem dizer qual vigora.
   não precisa de migration).
 - **Sem histórico de taxa.** Aprovar é editar no lugar. A etapa 14 (monitor de mudanças)
   vai precisar de uma tabela de staging própria.
-- **Sem rastreamento de cliques de cupom** — etapa 09.
 
 ## Painel admin (Filament)
 
@@ -809,9 +808,10 @@ cada arrasto de slider viraria ruído.
 - **Faixa reportada só foi vista com dado sintético**, porque não existe linha
   em `faixas_reportadas` (etapa 10). O bloco foi conferido injetando uma faixa
   no catálogo já carregado no navegador.
-- **Sem logo de marca e sem link de afiliado no resultado.** Os dois entram com
-  as páginas de marca (etapa 08) e a de cupons (etapa 09) — hoje o cartão mostra
-  o cupom que o motor aplicou, mas não leva a lugar nenhum.
+- **Sem logo de marca no resultado.** Entra quando o cartão do comparador
+  ganhar espaço para isso — não é uma pendência de dado, é de layout.
+  ~~O cupom que o motor aplicou não levava a lugar nenhum.~~ Resolvido na
+  etapa 09: o código do cupom no cartão agora é link para `/cupom/{slug}`.
 - **Navegação do cabeçalho continua vazia**, porque as outras páginas ainda não
   existem. Link morto é pior que cabeçalho sem link.
 - **Produtos "celular como maquininha" continuam fora**, como a etapa 04 deixou.
@@ -916,6 +916,110 @@ caixa, `data-ir-comparar` no botão. O link montado é `/?m=slug1,slug2` — o
 mesmo parâmetro `m` que `resources/js/comparador/estado.mjs` já lê na home
 (regra: lista de marcas por slug, `*` para "todas").
 
+## Cupons e rastreamento de cliques (etapa 09)
+
+`/cupons` (listagem consolidada) e `/cupom/{slug}` (uma página por marca,
+otimizada para a busca "cupom NOME_DA_MARCA"), mais o log de clique em "usar
+cupom" e de cópia de código. Como as páginas de marca (etapa 08), renderiza
+do banco — sem pico de vídeo nesta rota.
+
+| Arquivo | Papel |
+|---|---|
+| `App\Http\Controllers\CupomController` | `index()` e `show()`. Só marca com cupom vigente entra |
+| `App\Http\Controllers\EventoCupomController` | `POST /eventos/cupons`, chamado pelo fetch do app.js |
+| `App\Models\EventoCupom` | Log de eventos — não é entidade de domínio, não tem CRUD |
+| `resources/views/cupons.blade.php`, `cupom.blade.php` | As duas páginas |
+| `resources/views/components/bloco-cupom.blade.php` | O bloco reaproveitável (etapa 08), agora com rastreamento |
+| `resources/js/app.js` | `rastrearEventoCupom()`, ligada aos cliques de copiar e de usar |
+| `App\Filament\Resources\EventosCupom\EventoCupomResource` | Só listagem, para reconciliar com o relatório do parceiro |
+
+### Ordenar por maior desconto é ordenar por reais, nunca por percentual solto
+
+Um cupom de R$ 50 e um cupom de 10% não são comparáveis no número bruto. A
+única unidade comum é o quanto cada um economiza em reais — a mesma conta que
+`EconomiaDoCupom` já fazia para o CTA da página de marca (etapa 08), agora
+reaproveitada em `CupomController::index()`. Um cupom percentual cuja marca
+não tem preço de adesão verificado em lugar nenhum não tem como converter:
+fica por último, nunca no topo por acaso de ordenação de array — o mesmo
+instinto da regra 6 aplicado à ordenação, não só ao número exibido.
+
+### O bloco de cupom aprendeu a rastrear sem deixar de ser opcional
+
+`x-bloco-cupom` ganhou dois props novos, `marcaSlug` e `origem`
+(`App\Enums\PaginaOrigemCupom`: `marca` | `cupons` | `cupom_marca`). Com os
+dois presentes, o botão de copiar e o de "usar cupom" ganham
+`data-marca`/`data-cupom`/`data-origem`, que `resources/js/app.js` lê para
+disparar o evento. Sem eles — o guia visual, que só mostra o bloco como
+amostra — nada é rastreado, porque não existe cupom de amostra para
+reconciliar com relatório nenhum.
+
+**Blade não aceita `@if` dentro da tag de abertura de um componente.** A
+primeira tentativa (`@if ($rastreia) data-marca="..." @endif` dentro de
+`<x-botao ...>`) quebrou o parser de atributos do compilador de tags —
+`ParseError` genérico, longe da linha real. O jeito certo é um atributo
+dinâmico que resolve para `null`: `:data-marca="$rastreia ? $marcaSlug :
+null"`. `ComponentAttributeBag::__toString()` omite sozinho qualquer atributo
+`null`/`false`, e `true` puro vira `atributo="atributo"` — o que já bastava
+para o seletor `[data-usar-cupom]` do app.js.
+
+A página de marca (etapa 08) tinha dois botões de "usar cupom" fora do
+bloco reaproveitável — um dentro do `x-bloco-cupom` do cabeçalho, outro
+montado à mão no CTA final. Os dois precisaram dos mesmos três atributos:
+rastreamento é por clique, não por componente.
+
+### O resultado do comparador ganhou link para a página do cupom
+
+Pendência da etapa 07: o cartão do comparador já mostrava "cupom X", mas sem
+lugar para ir. Reescrever esse bloco inteiro em Alpine para espelhar
+`x-bloco-cupom` pediria um gêmeo em JavaScript a mais (no padrão de
+`resumo.mjs`) só para um link — desproporcional ao ganho. A saída mais barata
+e honesta: o código do cupom em `resultado-comparado.blade.php` virou uma
+âncora para `/cupom/` + `item.marca.slug`, usando o slug que o JSON já
+carrega. Sem esse link ser um clique de "usar cupom" (ele leva à nossa
+própria página, não ao site da marca com o cupom aplicado), ele não dispara
+evento — só o clique de fato na página de destino dispara.
+
+### `eventos_cupom`: log, não entidade de domínio
+
+Uma linha por clique em "usar cupom" ou por cópia de código: `marca_id`,
+`cupom_id` (nulo-ao-apagar), `codigo` (uma foto do código no momento do
+clique), `tipo_evento`, `pagina_origem` e `created_at`. `codigo` existe
+separado de `cupom_id` de propósito — o cupom pode vencer ou ser editado
+depois, e a reconciliação do fim do mês precisa do código que o lojista viu
+na hora, não do estado atual da linha em `cupons`. Sem CRUD no painel: editar
+um evento à mão invalidaria a reconciliação. `EventoCupomResource` só lista,
+com filtro por marca, tipo e período.
+
+### O POST de rastreamento não pode travar o lojista
+
+`EventoCupomController` não tem sessão nem autenticação — é telemetria
+pública, chamada por `fetch(..., { keepalive: true })` para sobreviver a uma
+navegação que já começou (o link de afiliado abre em nova aba, mas o
+princípio vale). Marca ou código que não batem mais viram `204 No Content`
+sem gravar nada, nunca um erro 500 que apareceria no console do lojista por
+um cupom que o admin editou entre o carregamento da página e o clique.
+`<meta name="csrf-token">`, novo no layout, é o que permite esse fetch passar
+pelo `VerifyCsrfToken` do grupo `web` sem endpoint `api.php` separado.
+
+### O aviso das taxas não podia ficar implícito em lugar nenhum
+
+Pedido explícito, texto exato, em `/cupons` e em cada `/cupom/{slug}`: "As
+taxas exibidas aqui são exatamente as mesmas do site oficial de cada marca.
+Nosso link não altera sua taxa — só acrescenta desconto na adesão." Isso é
+além do texto mais curto que já vive dentro de `x-bloco-cupom` — a frase
+pedida é mais explícita e fica em destaque próprio no topo da página, não só
+dentro do cartão do cupom.
+
+### SEO da página de cupom
+
+`schema` do tipo `Offer` (não `Product` — o objeto vendido é o desconto, não
+a maquininha), com `seller`, `validFrom`/`validThrough` e `price`/
+`priceCurrency` só quando `EconomiaDoCupom` consegue calcular um valor em
+reais (regra 6 vale para dado estruturado também: sem preço verificado, sem
+afirmação de preço). `sitemap.xml` ganhou `/cupons` e `/cupom/{slug}` — este
+último só para marca com `whereHas('cupons', fn ($q) => $q->vigentes())`, a
+mesma regra que já tira a marca da listagem.
+
 
 
 - [x] **01** — Ambiente local, Filament, Git e CLAUDE.md
@@ -926,7 +1030,7 @@ mesmo parâmetro `m` que `resources/js/comparador/estado.mjs` já lê na home
 - [x] **06** — Identidade visual e design system
 - [x] **07** — O comparador
 - [x] **08** — Páginas de marca e listagem
-- [ ] 09 — Página de cupons
+- [x] **09** — Página de cupons
 - [ ] 10 — Metodologia e captação de relatos
 - [ ] 11 — Deploy, SSH, backup e commits
 - [ ] 12 — Cloudflare, medição e performance

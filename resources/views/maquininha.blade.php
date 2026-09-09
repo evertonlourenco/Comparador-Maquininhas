@@ -74,6 +74,8 @@
                 <x-bloco-cupom
                     :codigo="$cupomDestaque->codigo"
                     :marca="$marca->nome"
+                    :marca-slug="$marca->slug"
+                    origem="marca"
                     :descricao="$cupomDestaque->descricao"
                     :valor="$cupomDestaque->valor"
                     :tipo-desconto="$cupomDestaque->tipo_desconto"
@@ -304,7 +306,15 @@
                     @endif
                 </p>
                 <div class="mt-5">
-                    <x-botao :href="$cupomDestaque->link_afiliado" afiliado tamanho="grande">
+                    <x-botao
+                        :href="$cupomDestaque->link_afiliado"
+                        afiliado
+                        tamanho="grande"
+                        data-usar-cupom
+                        data-marca="{{ $marca->slug }}"
+                        data-cupom="{{ $cupomDestaque->codigo }}"
+                        data-origem="marca"
+                    >
                         Abrir o site da {{ $marca->nome }} com o cupom
                     </x-botao>
                 </div>

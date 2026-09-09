@@ -45,6 +45,40 @@ document.querySelectorAll('[data-alternar-tema]').forEach((botao) => {
     });
 });
 
+/**
+ * Etapa 09: um evento por clique em "usar cupom" (data-usar-cupom) ou por
+ * copia de codigo (data-copiar, quando tambem carrega data-marca/data-cupom/
+ * data-origem — x-bloco-cupom so os inclui quando recebe marcaSlug e origem).
+ * "Fire and forget": uma falha de rede nao pode travar a copia nem a
+ * navegacao do lojista, entao o erro so cai no console.
+ */
+function rastrearEventoCupom(tipoEvento, alvo) {
+    const marca = alvo.dataset.marca;
+    const codigo = alvo.dataset.cupom;
+    const origem = alvo.dataset.origem;
+    if (!marca || !codigo || !origem) return;
+
+    const token = document.querySelector('meta[name="csrf-token"]')?.content;
+    if (!token) return;
+
+    fetch('/eventos/cupons', {
+        method: 'POST',
+        keepalive: true,
+        headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            'X-CSRF-TOKEN': token,
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: JSON.stringify({
+            marca,
+            codigo,
+            tipo_evento: tipoEvento,
+            pagina_origem: origem,
+        }),
+    }).catch(() => {});
+}
+
 document.addEventListener('click', async (evento) => {
     const botao = evento.target.closest('[data-copiar]');
     if (!botao) return;
@@ -59,6 +93,15 @@ document.addEventListener('click', async (evento) => {
         // visivel na tela ao lado do botao, entao da para copiar a mao.
         avisar('Não foi possível copiar. Selecione o código na tela.');
     }
+
+    rastrearEventoCupom('copiar_codigo', botao);
+});
+
+document.addEventListener('click', (evento) => {
+    const link = evento.target.closest('[data-usar-cupom]');
+    if (!link) return;
+
+    rastrearEventoCupom('usar_cupom', link);
 });
 
 /**

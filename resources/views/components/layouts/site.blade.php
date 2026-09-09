@@ -25,6 +25,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light dark">
+    {{-- Etapa 09: o fetch de rastreamento de cupom em resources/js/app.js le
+         este token para o POST em /eventos/cupons passar pelo VerifyCsrfToken. --}}
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>{{ $titulo ? $titulo.' — Comparador de Maquininhas' : 'Comparador de Maquininhas' }}</title>
     @if ($descricao)

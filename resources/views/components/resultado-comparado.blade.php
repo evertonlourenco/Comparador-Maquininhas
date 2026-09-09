@@ -109,7 +109,12 @@
                                             <span>
                                                 Sem cupom:
                                                 <span class="numero line-through" x-text="item.comparacao.custo_inicial.formatado.sem_cupom"></span>
-                                                · cupom <span class="numero font-medium text-aferido" x-text="item.comparacao.custo_inicial.cupom"></span>
+                                                · cupom
+                                                <a
+                                                    class="numero font-medium text-aferido underline underline-offset-2 hover:no-underline"
+                                                    :href="'/cupom/' + item.marca.slug"
+                                                    x-text="item.comparacao.custo_inicial.cupom"
+                                                ></a>
                                             </span>
                                         </template>
                                         <template x-if="! item.comparacao.custo_inicial.tem_cupom">

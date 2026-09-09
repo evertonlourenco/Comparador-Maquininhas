@@ -13,6 +13,12 @@
     // Regra 5: cupom vencido some sozinho. Desligue so no guia visual, para
     // mostrar como ele fica.
     'ocultarVencido' => true,
+    // Etapa 09: com os dois presentes, "copiar código" e "usar cupom" ganham
+    // os atributos que resources/js/app.js le para registrar o evento. Sem
+    // eles (o guia visual, por exemplo), o bloco funciona igual e so nao
+    // rastreia nada — nao existe cupom de amostra para reconciliar.
+    'marcaSlug' => null,
+    'origem' => null,
 ])
 
 @php
@@ -39,6 +45,8 @@
     };
 
     $tom = $vencido ? 'vencido' : ($vencendo ? 'reportado' : 'aferido');
+
+    $rastreia = $marcaSlug && $origem;
 @endphp
 
 @if ($vencido && $ocultarVencido)
@@ -72,9 +80,16 @@
                 <code class="numero rounded-selo border border-dashed border-contorno bg-superficie px-3 py-2 text-base font-medium tracking-wider {{ $vencido ? 'line-through text-tinta-suave' : '' }}">{{ $codigo }}</code>
 
                 @unless ($vencido)
+                    {{-- Blade nao aceita @if dentro da tag de um componente: um
+                         atributo dinamico nulo e o jeito certo de tornar o
+                         data-* condicional — ComponentAttributeBag omite
+                         null/false sozinho. --}}
                     <x-botao
                         variante="secundaria"
                         data-copiar="{{ $codigo }}"
+                        :data-marca="$rastreia ? $marcaSlug : null"
+                        :data-cupom="$rastreia ? $codigo : null"
+                        :data-origem="$rastreia ? $origem : null"
                         class="text-miudo"
                     >Copiar código</x-botao>
                 @endunless
@@ -105,7 +120,16 @@
         @unless ($vencido)
             @if ($url)
                 <div class="border-t border-regua bg-superficie px-4 py-3">
-                    <x-botao :href="$url" afiliado largo tamanho="grande">
+                    <x-botao
+                        :href="$url"
+                        afiliado
+                        largo
+                        tamanho="grande"
+                        :data-usar-cupom="$rastreia"
+                        :data-marca="$rastreia ? $marcaSlug : null"
+                        :data-cupom="$rastreia ? $codigo : null"
+                        :data-origem="$rastreia ? $origem : null"
+                    >
                         Abrir {{ $marca ? 'o site da '.$marca : 'o site oficial' }} com o cupom
                     </x-botao>
                 </div>
