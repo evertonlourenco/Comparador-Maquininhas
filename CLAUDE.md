@@ -36,6 +36,11 @@ php artisan comparador:gerar-json
 php artisan comparador:gerar-json --rascunhos   # só para conferir em localhost
 ```
 
+```bash
+npm run build      # fontes entram no bundle, servidas do proprio dominio
+node scripts/verifica-contraste.mjs   # le a paleta do app.css e confere WCAG AA
+```
+
 O teste de paridade entre o motor em PHP e o motor em JavaScript chama `node`.
 Sem Node no PATH ele se marca como skipped em vez de passar em silêncio.
 
@@ -525,6 +530,100 @@ aviso. A antecipação avulsa (`planos.taxa_antecipacao_mensal`) só incide sobr
 que ainda não foi antecipado, sobre o valor que sobra a receber (venda menos a
 taxa), pelos meses de espera do recebível.
 
+## Identidade visual (etapa 06)
+
+Direção **"Boletim"**: a referência é a folha de boletim de consumo impressa, não o
+painel de fintech. Papel, tinta, fio de 1px e espaço em branco — sem sombra, sem
+gradiente, e dois raios de borda no arquivo inteiro (2px em botão e etiqueta, 3px em
+bloco). A escolha não é de gosto: um site que parece boletim de consumo faz a regra 6
+("nenhuma taxa sem fonte e data") parecer óbvia em vez de burocrática.
+
+| Arquivo | Papel |
+|---|---|
+| `resources/css/app.css` | Toda a paleta, tipografia e escala. Fonte única da verdade |
+| `scripts/verifica-contraste.mjs` | Lê o `app.css` e confere WCAG AA nos dois temas |
+| `resources/views/components/layouts/site.blade.php` | Layout base, tema sem piscar, pular-para-conteúdo |
+| `resources/views/components/*.blade.php` | Os componentes do portal |
+| `resources/views/guia-visual.blade.php` | `/guia-visual` — folha de amostra, `noindex` |
+| `tests/Feature/Interface/ComponentesDoPortalTest.php` | O que uma view não pode quebrar em silêncio |
+
+**A cor não decora: cada acento nomeia um estado que o domínio já definiu.**
+
+| Token | O que significa |
+|---|---|
+| `aferido` (verde) | Taxa divulgada pela marca, dentro dos 45 dias (regras 4 e 8) |
+| `reportado` (ocre) | Faixa de relatos, promoção de entrada, taxa condicionada, dado a vencer |
+| `vencido` (vermelho) | Cupom fora da validade, verificação degradada, erro de campo |
+| `contorno` | Borda de campo e de botão — existe separado da `régua` por causa do contraste |
+
+**Tipografia:** Newsreader nos títulos, IBM Plex Sans no texto, IBM Plex Mono em todo
+número, via `@utility numero` com `tabular-nums`. O monoespaçado não é enfeite — é o
+que faz a vírgula alinhar numa coluna de 21 parcelas (regra 11). As três famílias são
+baixadas no build pelo `laravel-vite-plugin` e servidas do próprio domínio: nenhuma
+requisição a terceiro na visita.
+
+### Decisões que o CSS carrega
+
+**Tokens semânticos, não utilitários `dark:`.** Trocar o tema troca o valor do token,
+nunca a classe no markup — por isso não há um único `dark:` nos componentes. O
+`@theme inline` do Tailwind 4 é o que permite isso: a utilitária compila para
+`var(--cor-papel)` e o valor é redefinido pelo tema.
+
+**O tema mora num atributo no `<html>`, escrito antes da primeira pintura** por script
+inline no layout. Sem JavaScript não há atributo, e aí o bloco de
+`prefers-color-scheme` assume — por isso a paleta escura aparece **duas vezes** no
+`app.css`, e por isso `verifica-contraste.mjs` compara os dois blocos e reprova se um
+andar sem o outro. `light-dark()` do CSS resolveria isso numa linha, mas falha duro
+(token vazio, página quebrada) em navegador anterior a 2024, e o público chega por
+celular de ciclo longo.
+
+**`régua` e `contorno` são tokens diferentes de propósito.** O fio de tabela é
+decorativo — a zebra, o cabeçalho e o espaço já separam as células —, então a WCAG
+1.4.11 não o alcança e ele pode ser sutil, como pede a direção. Já a borda de um campo
+*é* a única pista de que ali há um controle, e precisa de 3:1. Misturar os dois num
+token só forçaria a escolha entre um fio feio e um campo inacessível.
+
+**O anel de foco tem 2px de folga (`outline-offset`), sempre.** Assim ele encosta no
+papel dos dois lados e nunca no preenchimento do botão — que é o que faz o contraste
+do anel ser conferível contra uma cor só.
+
+### O que os componentes já sabem do domínio
+
+- `<x-selo-frescor>` recalcula o nível pela mesma constante de 45 dias quando não
+  recebe `nivel` do model (regra 8). Aceita `:nivel` e `:dias` direto de `TemFrescor`.
+- `<x-bloco-cupom>` **não renderiza nada** quando a validade passou (regra 5), e traz
+  a frase "a taxa pelo nosso link é a mesma do site oficial" colada no bloco. O botão
+  sai com `rel="sponsored nofollow"`.
+- `<x-tabela-taxas classe="reportada">` imprime intervalo com mediana rotulada e
+  número de relatos — nunca um número isolado —, e a etiqueta da outra classe não
+  aparece na mesma tabela (regra 4).
+- `<x-tabela-taxas>` cola a `condicao` embaixo do percentual, e taxa ausente vira
+  "não publicada", nunca zero.
+- `<x-cartao-marca>` mapeia `EstadoDoResultado` para tom: só `calculado` sai em
+  `aferido`; `promocional` e `faixa_reportada` em `reportado`; `incompleto` e
+  `sem_dado_publicado` em `apagado`.
+- `<x-campo>` não tem caminho que produza campo sem `<label for>`. Dinheiro entra com
+  prefixo `R$` e `inputmode="decimal"`, nunca `type="number"` (regra 11).
+
+### Acessibilidade
+
+Conferida, não declarada. `verifica-contraste.mjs` reprova o build lógico se um
+hexadecimal do `app.css` cair abaixo de 4,5:1 em texto ou 3:1 em contorno de controle,
+nos dois temas. `ComponentesDoPortalTest` varre o HTML renderizado do `/guia-visual` e
+falha se qualquer `<input>`, `<select>` ou `<textarea>` estiver sem `<label for>`.
+Somam-se: foco visível em tudo que recebe foco, link "pular para o conteúdo" como
+primeiro focável com `<main tabindex="-1">`, tabela larga rolável e alcançável pelo
+teclado (`role="region"` + `tabindex="0"`), alvo de toque de 44px, e
+`prefers-reduced-motion` desligando transição.
+
+### Pendente da etapa 06
+
+- **`/` ainda é o `welcome.blade.php` do scaffolding.** A home é trabalho da etapa 07.
+- **Navegação e links de rodapé são vazios por padrão** — as páginas das etapas 07 a 10
+  entregam os seus. Link morto no cabeçalho é pior que cabeçalho sem link.
+- **Nenhum logo de marca no guia visual**: `<x-cartao-marca>` cai na inicial da marca
+  quando não recebe `logo`. Os arquivos entram com as páginas de marca (etapa 08).
+
 ## Etapas concluídas
 
 - [x] **01** — Ambiente local, Filament, Git e CLAUDE.md
@@ -532,7 +631,7 @@ taxa), pelos meses de espera do recebível.
 - [x] **03** — Painel admin no Filament
 - [x] **04** — Carga dos dados reais
 - [x] **05** — Motor de cálculo
-- [ ] 06 — Identidade visual e design system
+- [x] **06** — Identidade visual e design system
 - [ ] 07 — O comparador
 - [ ] 08 — Páginas de marca e listagem
 - [ ] 09 — Página de cupons

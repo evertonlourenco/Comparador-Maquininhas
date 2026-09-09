@@ -8,9 +8,18 @@ export default defineConfig({
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.js'],
             refresh: true,
+            // Direcao "Boletim" (etapa 06). O plugin baixa e serve local:
+            // nenhuma requisicao a terceiro na visita, que e o que a regra 9
+            // pede da pagina publica.
             fonts: [
-                bunny('Instrument Sans', {
+                bunny('Newsreader', {
                     weights: [400, 500, 600],
+                }),
+                bunny('IBM Plex Sans', {
+                    weights: [400, 500, 600],
+                }),
+                bunny('IBM Plex Mono', {
+                    weights: [400, 500],
                 }),
             ],
         }),
