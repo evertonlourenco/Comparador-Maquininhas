@@ -35,4 +35,22 @@ return [
         ],
     ],
 
+    // Etapa 10: só carrega o gtag.js depois do aceite no banner de cookies
+    // (resources/views/components/banner-cookies.blade.php). Vazio até a
+    // etapa de lançamento — o gate já funciona, só falta o ID.
+    'ga4' => [
+        'id' => env('GA4_MEASUREMENT_ID'),
+    ],
+
+    // Etapa 10: identidade do controlador para /privacidade e /termos.
+    // Ainda não definida — nome final da ferramenta, CNPJ e e-mail de
+    // contato ficam para a etapa de lançamento (ver "Pendente da etapa 10"
+    // no CLAUDE.md). As views mostram um texto honesto de "a definir"
+    // enquanto isto estiver vazio — nunca um dado inventado.
+    'legal' => [
+        'razao_social' => env('LEGAL_RAZAO_SOCIAL'),
+        'cnpj' => env('LEGAL_CNPJ'),
+        'email_contato' => env('LEGAL_EMAIL_CONTATO'),
+    ],
+
 ];

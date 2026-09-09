@@ -17,6 +17,11 @@
     'diasFrescor' => null,
     'periodoInicio' => null,
     'periodoFim' => null,
+
+    // Etapa 10: sem marcaSlug o botão "reportar taxa errada" não aparece —
+    // é o caso do guia-visual, que só mostra dado de amostra.
+    'marcaSlug' => null,
+    'marcaNome' => null,
 ])
 
 @php
@@ -173,5 +178,7 @@
         @endif
 
         {{ $slot }}
+
+        <x-formulario-taxa-incorreta :marca-slug="$marcaSlug" :contexto="trim(($marcaNome ?? '').' — '.($titulo ?? ''), ' —')" />
     </div>
 </figure>

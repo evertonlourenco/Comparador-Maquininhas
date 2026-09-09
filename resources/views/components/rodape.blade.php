@@ -24,7 +24,11 @@
                 <ul class="flex flex-wrap gap-x-5 gap-y-2">
                     @foreach ($links as $item)
                         <li>
-                            <a href="{{ $item['href'] }}" class="text-sm text-link underline underline-offset-4 hover:no-underline">{{ $item['rotulo'] }}</a>
+                            <a
+                                href="{{ $item['href'] }}"
+                                @if ($item['atributo'] ?? null) {{ $item['atributo'] }} @endif
+                                class="text-sm text-link underline underline-offset-4 hover:no-underline"
+                            >{{ $item['rotulo'] }}</a>
                         </li>
                     @endforeach
                 </ul>

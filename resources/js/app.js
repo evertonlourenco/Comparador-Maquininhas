@@ -140,3 +140,160 @@ document.querySelectorAll('[data-selecao-marcas]').forEach((raiz) => {
 
     atualizar();
 });
+
+/**
+ * Etapa 10: consentimento de cookies. O banner so aparece quando ainda nao
+ * ha escolha salva; "Aceitar" e o unico caminho que chama carregarAnalytics()
+ * — "Recusar" so grava a escolha e esconde. Numa visita nova com "aceito" ja
+ * salvo, o analytics carrega direto: o consentimento ja tinha sido dado
+ * antes, entao carregar de novo nao fere "so depois do aceite".
+ */
+function carregarAnalytics() {
+    const ga4Id = document.querySelector('meta[name="ga4-id"]')?.content;
+    if (!ga4Id || document.querySelector('[data-gtag-script]')) return;
+
+    const script = document.createElement('script');
+    script.async = true;
+    script.dataset.gtagScript = '';
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(ga4Id)}`;
+    document.head.appendChild(script);
+
+    window.dataLayer = window.dataLayer || [];
+    function gtag() {
+        window.dataLayer.push(arguments);
+    }
+    gtag('js', new Date());
+    gtag('config', ga4Id, { anonymize_ip: true });
+}
+
+function lerConsentimentoCookies() {
+    try {
+        return localStorage.getItem('consentimento_cookies');
+    } catch (e) {
+        return null;
+    }
+}
+
+function gravarConsentimentoCookies(valor) {
+    try {
+        localStorage.setItem('consentimento_cookies', valor);
+    } catch (e) {
+        // Sem armazenamento: o banner volta a aparecer na proxima visita, e
+        // tudo bem — nao ha analytics sendo carregado indevidamente por isso.
+    }
+}
+
+const bannerCookies = document.querySelector('[data-banner-cookies]');
+
+if (bannerCookies) {
+    const consentimento = lerConsentimentoCookies();
+
+    if (consentimento === 'aceito') {
+        carregarAnalytics();
+    } else if (consentimento !== 'recusado') {
+        bannerCookies.hidden = false;
+    }
+
+    bannerCookies.querySelector('[data-cookies-aceitar]')?.addEventListener('click', () => {
+        gravarConsentimentoCookies('aceito');
+        bannerCookies.hidden = true;
+        carregarAnalytics();
+    });
+
+    bannerCookies.querySelector('[data-cookies-recusar]')?.addEventListener('click', () => {
+        gravarConsentimentoCookies('recusado');
+        bannerCookies.hidden = true;
+    });
+}
+
+document.querySelectorAll('[data-gerenciar-cookies]').forEach((link) => {
+    link.addEventListener('click', (evento) => {
+        evento.preventDefault();
+        gravarConsentimentoCookies('');
+        if (bannerCookies) bannerCookies.hidden = false;
+    });
+});
+
+/**
+ * Etapa 10: o formulario "reportar taxa errada" (x-formulario-taxa-incorreta),
+ * reaproveitado em toda <x-tabela-taxas>. Sem JavaScript o form e um POST
+ * comum, que recarrega a pagina com a mensagem de confirmacao — aqui e so o
+ * reforco progressivo, para nao perder o lugar da tabela na tela.
+ */
+document.querySelectorAll('[data-form-taxa-incorreta]').forEach((form) => {
+    const status = form.querySelector('[data-status-taxa-incorreta]');
+
+    form.addEventListener('submit', async (evento) => {
+        evento.preventDefault();
+
+        const token = document.querySelector('meta[name="csrf-token"]')?.content;
+        if (!token) {
+            form.submit();
+            return;
+        }
+
+        const botao = form.querySelector('button[type="submit"]');
+        if (botao) botao.disabled = true;
+
+        try {
+            const resposta = await fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': token,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: new FormData(form),
+            });
+
+            if (resposta.ok) {
+                form.hidden = true;
+                if (status) {
+                    status.hidden = false;
+                    status.textContent = 'Obrigado! Vamos conferir essa taxa.';
+                }
+                avisar('Obrigado! Vamos conferir essa taxa.');
+            } else {
+                const corpo = await resposta.json().catch(() => null);
+                const mensagem = corpo?.errors?.mensagem?.[0] || 'Não foi possível enviar. Tente de novo.';
+                if (status) {
+                    status.hidden = false;
+                    status.textContent = mensagem;
+                }
+                if (botao) botao.disabled = false;
+            }
+        } catch (e) {
+            // Sem rede: deixa o formulario nativo assumir na proxima tentativa.
+            if (botao) botao.disabled = false;
+        }
+    });
+});
+
+/**
+ * Etapa 10: linhas de taxa repetiveis em /enviar-proposta. Quatro linhas
+ * fixas (debito, credito a vista, credito parcelado, Pix) ja funcionam sem
+ * JavaScript nenhum — isto so acrescenta um botao para casos que precisem de
+ * mais de uma faixa de parcelamento, por exemplo.
+ */
+const containerLinhasTaxa = document.querySelector('[data-linhas-taxa]');
+const modeloLinhaTaxa = document.querySelector('[data-modelo-linha-taxa]');
+const botaoAdicionarLinhaTaxa = document.querySelector('[data-adicionar-linha-taxa]');
+
+if (containerLinhasTaxa && modeloLinhaTaxa && botaoAdicionarLinhaTaxa) {
+    let indiceLinhaTaxa = containerLinhasTaxa.querySelectorAll('[data-linha-taxa]').length;
+
+    botaoAdicionarLinhaTaxa.addEventListener('click', () => {
+        const linha = modeloLinhaTaxa.content.firstElementChild.cloneNode(true);
+
+        linha.querySelectorAll('[name]').forEach((campo) => {
+            campo.name = campo.name.replace('__INDICE__', String(indiceLinhaTaxa));
+            campo.id = campo.id ? campo.id.replace('__INDICE__', String(indiceLinhaTaxa)) : campo.id;
+        });
+        linha.querySelectorAll('label[for]').forEach((rotulo) => {
+            rotulo.htmlFor = rotulo.htmlFor.replace('__INDICE__', String(indiceLinhaTaxa));
+        });
+
+        containerLinhasTaxa.appendChild(linha);
+        indiceLinhaTaxa += 1;
+    });
+}

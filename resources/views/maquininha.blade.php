@@ -128,6 +128,8 @@
                             :titulo="$bloco['plano']->nome"
                             :linhas="$bloco['linhas']"
                             coluna-rotulo="Linha de venda"
+                            :marca-slug="$marca->slug"
+                            :marca-nome="$marca->nome"
                         />
 
                         @if ($bloco['plano']->ehPromocional())

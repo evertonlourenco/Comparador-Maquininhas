@@ -2,7 +2,10 @@
     'titulo' => null,
     'descricao' => null,
     'navegacao' => [],
-    'linksRodape' => [],
+    // Etapa 10: nulo cai no padrão de Navegacao::rodape() — toda página
+    // ganha os links institucionais de graça. Uma página pode passar `[]`
+    // explicitamente para não ter nenhum, se algum dia precisar.
+    'linksRodape' => null,
     'atualizadoEm' => null,
     'indexavel' => true,
     // URL canonica da pagina (etapa 08). So faz sentido em pagina com
@@ -19,6 +22,11 @@
     'scripts' => [],
 ])
 
+@php
+    $linksRodape ??= \App\Support\Navegacao::rodape();
+    $ga4Id = config('services.ga4.id');
+@endphp
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -28,6 +36,12 @@
     {{-- Etapa 09: o fetch de rastreamento de cupom em resources/js/app.js le
          este token para o POST em /eventos/cupons passar pelo VerifyCsrfToken. --}}
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    {{-- Etapa 10: só existe quando GA4_MEASUREMENT_ID está configurado — o
+         banner de cookies só injeta o gtag.js quando esta meta existe *e*
+         o consentimento foi aceito. Sem ID, o gate fica pronto e inerte. --}}
+    @if ($ga4Id)
+        <meta name="ga4-id" content="{{ $ga4Id }}">
+    @endif
 
     <title>{{ $titulo ? $titulo.' — Comparador de Maquininhas' : 'Comparador de Maquininhas' }}</title>
     @if ($descricao)
@@ -70,6 +84,14 @@
 
     <x-cabecalho :navegacao="$navegacao" />
 
+    {{-- Confirmacao pos-envio dos formularios da etapa 10 (proposta, taxa
+         incorreta) quando o navegador nao roda JavaScript — com JS, o
+         proprio formulario mostra a confirmacao inline e este flash nunca
+         chega a existir. --}}
+    @if (session('sucesso'))
+        <p role="status" class="mx-auto w-full max-w-5xl px-4 pt-4 text-sm text-aferido sm:px-6">{{ session('sucesso') }}</p>
+    @endif
+
     {{-- tabindex="-1" para o link de pular entregar o foco de fato. --}}
     <main id="conteudo" tabindex="-1" class="flex-1 focus:outline-none">
         {{ $slot }}
@@ -79,5 +101,7 @@
 
     {{-- Confirmacoes curtas (copiar cupom) chegam aqui para o leitor de tela. --}}
     <div data-avisos role="status" aria-live="polite" class="sr-only"></div>
+
+    <x-banner-cookies />
 </body>
 </html>

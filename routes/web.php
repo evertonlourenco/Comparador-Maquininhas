@@ -4,13 +4,14 @@ use App\Http\Controllers\ComparadorController;
 use App\Http\Controllers\CupomController;
 use App\Http\Controllers\EventoCupomController;
 use App\Http\Controllers\MarcaController;
+use App\Http\Controllers\PropostaController;
+use App\Http\Controllers\RelatoTaxaIncorretoController;
 use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Route;
 
 // Etapa 07: o comparador e a home. Nao ha pagina de entrada antes dele — quem
 // chega pelo video quer a conta, e uma tela intermediaria so custaria um
-// clique. A metodologia (etapa 10) ainda falta e entra na navegacao quando
-// existir.
+// clique.
 Route::get('/', ComparadorController::class)->name('comparador');
 
 // Etapa 08: listagem de marcas e a pagina individual de cada uma.
@@ -21,6 +22,19 @@ Route::get('/maquininha/{marca}', [MarcaController::class, 'show'])->name('maqui
 Route::get('/cupons', [CupomController::class, 'index'])->name('cupons.index');
 Route::get('/cupom/{marca}', [CupomController::class, 'show'])->name('cupons.show');
 Route::post('/eventos/cupons', EventoCupomController::class)->name('eventos.cupons');
+
+// Etapa 10: metodologia, LGPD, captação de relatos e o botão "reportar taxa
+// errada" reaproveitável (ver x-tabela-taxas e x-formulario-taxa-incorreta).
+Route::view('/metodologia', 'metodologia')->name('metodologia');
+Route::view('/privacidade', 'privacidade')->name('privacidade');
+Route::view('/termos', 'termos')->name('termos');
+
+Route::get('/enviar-proposta', [PropostaController::class, 'create'])->name('propostas.create');
+Route::post('/enviar-proposta', [PropostaController::class, 'store'])
+    ->middleware('throttle:propostas')->name('propostas.store');
+
+Route::post('/eventos/taxa-incorreta', RelatoTaxaIncorretoController::class)
+    ->middleware('throttle:relatos-taxa')->name('eventos.taxa-incorreta');
 
 Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
 
