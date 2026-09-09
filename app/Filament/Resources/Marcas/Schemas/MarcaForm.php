@@ -81,6 +81,14 @@ class MarcaForm
                             ->saveUploadedFileUsing(fn (TemporaryUploadedFile $file): ?string => ImagemSeguraWebp::salvar($file, 'marcas/logos'))
                             ->helperText('JPEG, PNG, GIF ou WebP — convertido para WebP automaticamente. O tipo é validado pelo conteúdo real do arquivo, não pela extensão.'),
                     ]),
+                Section::make('Vídeo')
+                    ->description('Etapa 08: o vídeo do canal embutido na página da marca. Vazio, a seção não aparece.')
+                    ->components([
+                        TextInput::make('youtube_video_id')
+                            ->label('ID do vídeo no YouTube')
+                            ->helperText('Só o ID — o trecho depois de "v=" no link do vídeo, ex.: dQw4w9WgXcQ.')
+                            ->maxLength(20),
+                    ]),
                 Section::make('Reclame Aqui')
                     ->columns(3)
                     ->description('Regra 8: nota manual, com data de consulta e link. Nunca raspar.')

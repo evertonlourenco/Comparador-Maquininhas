@@ -60,3 +60,40 @@ document.addEventListener('click', async (evento) => {
         avisar('Não foi possível copiar. Selecione o código na tela.');
     }
 });
+
+/**
+ * A listagem de marcas (etapa 08): marcar caixas de "comparar" monta o link
+ * para o comparador com `?m=slug1,slug2` — o mesmo parametro que
+ * resources/js/comparador/estado.mjs le na home. Vanilla, sem Alpine: essa
+ * pagina nao precisa do bundle do comparador so por causa de uma caixa de
+ * selecao.
+ */
+document.querySelectorAll('[data-selecao-marcas]').forEach((raiz) => {
+    const irComparar = raiz.querySelector('[data-ir-comparar]');
+    if (!irComparar) return;
+
+    const contadores = raiz.querySelectorAll('[data-contagem-selecionadas]');
+    const hrefBase = irComparar.getAttribute('href') || '/';
+
+    function atualizar() {
+        const slugs = Array.from(raiz.querySelectorAll('[data-marca-checkbox]:checked'))
+            .map((caixa) => caixa.value)
+            .sort();
+
+        irComparar.href = slugs.length ? `${hrefBase}?m=${slugs.join(',')}` : hrefBase;
+        irComparar.classList.toggle('pointer-events-none', slugs.length === 0);
+        irComparar.setAttribute('aria-disabled', String(slugs.length === 0));
+
+        contadores.forEach((contador) => {
+            contador.textContent = String(slugs.length);
+        });
+    }
+
+    raiz.addEventListener('change', (evento) => {
+        if (evento.target.matches('[data-marca-checkbox]')) {
+            atualizar();
+        }
+    });
+
+    atualizar();
+});

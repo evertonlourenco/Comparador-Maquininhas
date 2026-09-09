@@ -7,15 +7,17 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 #[Table('marcas')]
 #[Fillable([
-    'adquirente_id', 'nome', 'slug', 'site_url', 'logo_path', 'descricao',
+    'adquirente_id', 'nome', 'slug', 'site_url', 'logo_path', 'descricao', 'youtube_video_id',
     'reclame_aqui_nota', 'reclame_aqui_url', 'reclame_aqui_consultado_em',
     'publica_tabela', 'status', 'ordem',
 ])]
@@ -32,6 +34,12 @@ class Marca extends Model
             'status' => StatusMarca::class,
             'ordem' => 'integer',
         ];
+    }
+
+    /** logo_path e caminho relativo no disco 'public' — nunca a URL pronta. */
+    protected function logoUrl(): Attribute
+    {
+        return Attribute::get(fn (): ?string => $this->logo_path ? Storage::disk('public')->url($this->logo_path) : null);
     }
 
     public function adquirente(): BelongsTo

@@ -17,6 +17,7 @@
 <x-layouts.site
     titulo="Comparador de taxas de maquininhas"
     descricao="Compare o custo real das maquininhas de cartão para o seu faturamento e o seu mix de vendas. Taxas com a fonte e a data em que foram conferidas."
+    :navegacao="$navegacao ?? []"
     :atualizado-em="$atualizadoEm"
     :scripts="['resources/js/comparador.js']"
 >

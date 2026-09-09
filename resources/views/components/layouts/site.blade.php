@@ -5,6 +5,14 @@
     'linksRodape' => [],
     'atualizadoEm' => null,
     'indexavel' => true,
+    // URL canonica da pagina (etapa 08). So faz sentido em pagina com
+    // conteudo unico e indexavel — o guia visual, por exemplo, nao passa isto.
+    'canonical' => null,
+    // Dados estruturados schema.org (Product, Review, ItemList...), como
+    // array PHP — serializado aqui em JSON-LD. Nulo quando a pagina nao tem
+    // o que declarar: regra 6 vale tambem aqui, sem dado verificado nao sai
+    // afirmacao estruturada nenhuma.
+    'schema' => null,
     // Entradas do Vite alem do par basico. O comparador (etapa 07) traz
     // Alpine e os dois motores, e eles nao tem por que pesar nas outras
     // paginas.
@@ -22,9 +30,16 @@
     @if ($descricao)
         <meta name="description" content="{{ $descricao }}">
     @endif
+    @if ($canonical)
+        <link rel="canonical" href="{{ $canonical }}">
+    @endif
     @unless ($indexavel)
         <meta name="robots" content="noindex, nofollow">
     @endunless
+
+    @if ($schema)
+        <script type="application/ld+json">{!! json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
+    @endif
 
     {{-- Antes da folha de estilo, para o tema nao piscar. Se o script falhar
          ou o JavaScript estiver desligado, nao ha atributo e o

@@ -818,7 +818,105 @@ cada arrasto de slider viraria ruído.
   A pergunta de tratá-los como maquininha ficou para quando houver página de
   marca onde eles caibam.
 
-## Etapas concluídas
+## Páginas de marca e listagem (etapa 08)
+
+`/maquininhas` (grade) e `/maquininha/{slug}` (página individual), servidas do
+banco — ao contrário do comparador, aqui não vale a regra 9: não há pico de
+visita de vídeo nesta rota, e o conteúdo precisa estar no HTML da primeira
+resposta para valer alguma coisa em SEO.
+
+| Arquivo | Papel |
+|---|---|
+| `App\Http\Controllers\MarcaController` | `index()` e `show()`. Monta o `schema` (JSON-LD) e a meta descrição de cada página |
+| `App\Http\Controllers\SitemapController` | `/sitemap.xml`, via `DOMDocument` — nunca uma view Blade (ver abaixo) |
+| `App\Support\Marcas\ResumoDeMarca` | Os quatro dados do cartão da listagem: mensalidade, prazo mais rápido, faixa de taxa |
+| `App\Support\Marcas\TabelaDeTaxasDaMarca` | Um bloco de `<x-tabela-taxas>` por plano, com o rótulo de `VendaDoCenario` (etapa 07) reaproveitado |
+| `App\Support\Marcas\VantagensDaMarca` | As frases da seção 6 — só o que um campo do catálogo sustenta |
+| `App\Support\Marcas\EconomiaDoCupom` | A economia em reais do CTA |
+| `App\Support\Navegacao` | O menu do cabeçalho, agora com "Marcas" — reaproveitado pelo comparador |
+| `resources/views/maquininhas.blade.php`, `maquininha.blade.php` | As duas páginas |
+
+### A ordem das oito seções da página individual é decisão de produto
+
+Primeiro o que decide (nota do Reclame Aqui, cupom), depois o que explica
+(sobre, taxas, aparelhos, bandeiras, vantagens), por fim o vídeo e o convite
+para contratar: cabeçalho → sobre a marca → tabela de taxas → equipamentos →
+bandeiras → vantagens → vídeo → CTA. `PaginasDeMarcaTest` cobra essa ordem no
+HTML.
+
+### Regra 4 e regra 8 chegaram inteiras nas duas páginas
+
+O cartão da listagem etiqueta a faixa de taxa como "faixa reportada" quando a
+marca não publica tabela — nunca o mesmo número de quem publica. E como a
+página individual mistura taxas verificadas em datas diferentes numa mesma
+tabela ("completa, por plano e prazo"), o selo de frescor do rodapé de
+`<x-tabela-taxas>` (que fala de uma data só) não bastava — ele agora é por
+linha, um `<x-selo-frescor compacto>` colado em cada número, mantendo o selo
+agregado como estava para quem passa `dataVerificacao` na tabela inteira (o
+guia visual, com dado de amostra). O componente decide sozinho qual dos dois
+mostrar no rodapé: se alguma linha carrega a chave `data_verificacao`, o selo
+agregado desaparece de lá (repetir os dois seria a mesma data duas vezes) e só
+sobra o link de fonte, quando houver.
+
+### Nota do Reclame Aqui: campo manual, sem raspagem (regra 8)
+
+`marcas.reclame_aqui_nota` já existia desde a etapa 02. A página só lê — não
+existe caminho novo de coleta automática, e a seção inteira some quando o
+campo está vazio (não vira "0/10").
+
+### A economia do cupom nunca é um percentual solto
+
+Regra 5: o cupom desconta a adesão ou o aparelho, nunca a taxa. Um desconto em
+valor já é reais por si só. Um desconto percentual só vira reais quando colado
+a um preço de adesão real e verificado (o mais barato entre os equipamentos
+que a marca vende hoje — a amarra do cupom a um equipamento específico, se
+houver, restringe a busca a ele). Sem um preço para aplicar, `EconomiaDoCupom`
+devolve `null` e a tela cai para "use o cupom X na adesão", sem número — o
+mesmo instinto da regra 6 aplicado fora da taxa.
+
+### Vídeo do canal: campo novo, vazio por padrão
+
+`marcas.youtube_video_id` (migration de 09/09/2026) guarda só o ID do vídeo,
+não a URL inteira — é o que o player embutido (`youtube-nocookie.com/embed/`)
+pede. Sem preenchimento no painel, a seção 7 simplesmente não aparece; não há
+"espaço reservado" vazio na tela.
+
+### SEO
+
+- **Title e meta description próprios**: o layout já montava `<title>` e
+  `<meta name="description">` desde a etapa 06 — a página individual só
+  passa `titulo="{$marca->nome}: taxas, cupom e maquininhas"` (o layout cola
+  o sufixo do site) e uma `metaDescricao()` que usa a descrição cadastrada
+  (truncada a 155 caracteres) ou cai para uma frase genérica com o nome da
+  marca, nunca vazia.
+- **Canonical**: prop nova em `x-layouts.site` (`:canonical`). Só as páginas
+  com conteúdo único e indexável passam algo — o guia visual, por exemplo,
+  continua sem.
+- **Dados estruturados**: prop `:schema` no mesmo layout, serializada como
+  `<script type="application/ld+json">`. A listagem declara `ItemList`; a
+  página individual declara `Product`, e só acrescenta `Review` quando a nota
+  do Reclame Aqui existe ("onde couber" — regra 6 vale também para uma
+  afirmação estruturada: sem dado verificado, sem `Review`).
+- **`sitemap.xml`**: `SitemapController` monta o XML com `DOMDocument`, de
+  propósito sem passar por uma view Blade — um `.blade.php` começando com
+  `<?xml ...?>` corre o risco de o compilador do Blade (que gera PHP) ler
+  aquilo como uma tag curta do próprio PHP. Lista a home, `/maquininhas` e
+  cada marca **ativa** (`Marca::ativas()`) — uma marca pausada ou
+  descontinuada não tem página pública (`MarcaController::show()` também
+  filtra por `ativas()`, então a URL dá 404) nem entra no mapa.
+
+### A caixa de "comparar" na listagem é vanilla, não Alpine
+
+O comparador (etapa 07) tem entrada própria no Vite exatamente para o Alpine
+e os dois motores não pesarem nas outras páginas. A listagem só precisa
+marcar caixas e montar um link — por isso isso mora em `resources/js/app.js`
+(carregado em toda página), no mesmo padrão `data-*` de `data-alternar-tema`
+e `data-copiar`: `data-selecao-marcas` na raiz, `data-marca-checkbox` em cada
+caixa, `data-ir-comparar` no botão. O link montado é `/?m=slug1,slug2` — o
+mesmo parâmetro `m` que `resources/js/comparador/estado.mjs` já lê na home
+(regra: lista de marcas por slug, `*` para "todas").
+
+
 
 - [x] **01** — Ambiente local, Filament, Git e CLAUDE.md
 - [x] **02** — Schema do banco
@@ -827,7 +925,7 @@ cada arrasto de slider viraria ruído.
 - [x] **05** — Motor de cálculo
 - [x] **06** — Identidade visual e design system
 - [x] **07** — O comparador
-- [ ] 08 — Páginas de marca e listagem
+- [x] **08** — Páginas de marca e listagem
 - [ ] 09 — Página de cupons
 - [ ] 10 — Metodologia e captação de relatos
 - [ ] 11 — Deploy, SSH, backup e commits

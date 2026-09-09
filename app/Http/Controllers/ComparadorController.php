@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\Navegacao;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\File;
@@ -36,6 +37,7 @@ class ComparadorController extends Controller
             'atualizadoEm' => $existe
                 ? Carbon::createFromTimestamp(File::lastModified($arquivo))
                 : null,
+            'navegacao' => Navegacao::principal('comparador'),
         ]);
     }
 }

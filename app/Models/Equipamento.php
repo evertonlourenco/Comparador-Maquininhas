@@ -8,11 +8,13 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * So o que e do aparelho. Preco de adesao e aluguel nao moram aqui: a mesma
@@ -39,6 +41,12 @@ class Equipamento extends Model
             'status' => StatusItem::class,
             'ordem' => 'integer',
         ];
+    }
+
+    /** imagem_path e caminho relativo no disco 'public' — nunca a URL pronta. */
+    protected function imagemUrl(): Attribute
+    {
+        return Attribute::get(fn (): ?string => $this->imagem_path ? Storage::disk('public')->url($this->imagem_path) : null);
     }
 
     public function marca(): BelongsTo

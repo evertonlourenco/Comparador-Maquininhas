@@ -29,6 +29,10 @@
     // coluna vazia em tabela estreita de celular e espaco roubado.
     $temFixo = $linhas->contains(fn ($l) => ($l['fixo'] ?? null) !== null);
     $temPrazo = $linhas->contains(fn ($l) => ($l['prazo'] ?? null) !== null);
+    // Uma tabela com selo por linha ja diz a data de cada numero; repetir o
+    // selo agregado no rodape so faria sentido se alguem passasse a data da
+    // tabela inteira de proposito (como faz o guia visual, com dado de amostra).
+    $temFrescorPorLinha = $linhas->contains(fn ($l) => array_key_exists('data_verificacao', $l));
 
     $cabecalho = 'px-3 py-2 text-etiqueta font-semibold uppercase text-tinta-suave';
     $celula = 'px-3 py-2 align-top';
@@ -95,6 +99,11 @@
                             </td>
                             <td class="{{ $celula }} numero whitespace-nowrap font-medium text-reportado">
                                 {{ Dinheiro::percentual((float) $linha['mediana']) }}
+                                {{-- Uma tabela "completa" cruza varias linhas verificadas em datas
+                                     diferentes; o selo do rodape sozinho nao da conta disso. --}}
+                                @if (array_key_exists('data_verificacao', $linha))
+                                    <x-selo-frescor compacto class="mt-0.5 whitespace-normal font-normal" :data="$linha['data_verificacao']" :fonte="$linha['url_fonte'] ?? null" />
+                                @endif
                             </td>
                             <td class="{{ $celula }} numero text-right whitespace-nowrap">{{ $linha['relatos'] }}</td>
                         @else
@@ -108,6 +117,12 @@
                                 {{-- Taxa condicionada: a condicao sai colada no numero, sempre. --}}
                                 @if ($linha['condicao'] ?? null)
                                     <span class="mt-0.5 block text-miudo whitespace-normal text-reportado">{{ $linha['condicao'] }}</span>
+                                @endif
+
+                                {{-- Selo por linha (opcional): so a linha, e nao a tabela inteira,
+                                     sabe quando aquele numero foi conferido. --}}
+                                @if (array_key_exists('data_verificacao', $linha))
+                                    <x-selo-frescor compacto class="mt-0.5 whitespace-normal" :data="$linha['data_verificacao']" :fonte="$linha['url_fonte'] ?? null" />
                                 @endif
                             </td>
 
@@ -142,13 +157,20 @@
             </p>
         @endif
 
-        <x-selo-frescor
-            :data="$dataVerificacao"
-            :nivel="$nivelFrescor"
-            :dias="$diasFrescor"
-            :fonte="$fonte"
-            :fonte-rotulo="$fonteRotulo"
-        />
+        @if ($dataVerificacao || ! $temFrescorPorLinha)
+            <x-selo-frescor
+                :data="$dataVerificacao"
+                :nivel="$nivelFrescor"
+                :dias="$diasFrescor"
+                :fonte="$fonte"
+                :fonte-rotulo="$fonteRotulo"
+            />
+        @elseif ($fonte)
+            <p class="text-miudo">
+                <a href="{{ $fonte }}" target="_blank" rel="noopener noreferrer nofollow"
+                   class="text-link underline underline-offset-2 hover:no-underline">{{ $fonteRotulo }}<span class="sr-only"> (abre em nova aba)</span></a>
+            </p>
+        @endif
 
         {{ $slot }}
     </div>
