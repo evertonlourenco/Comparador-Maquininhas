@@ -78,7 +78,7 @@ class EquipamentoForm
                         ->visibility('public')
                         ->maxSize(2048)
                         ->rules([fn () => ImagemSeguraWebp::regraDeValidacao()])
-                        ->saveUploadedFileUsing(fn (TemporaryUploadedFile $file): ?string => ImagemSeguraWebp::salvar($file, 'equipamentos'))
+                        ->saveUploadedFileUsing(fn (TemporaryUploadedFile $file): ?string => ImagemSeguraWebp::salvar($file->getRealPath(), 'equipamentos'))
                         ->helperText('JPEG, PNG, GIF ou WebP — convertido para WebP automaticamente. O tipo é validado pelo conteúdo real do arquivo, não pela extensão.'),
                 ]),
         ];

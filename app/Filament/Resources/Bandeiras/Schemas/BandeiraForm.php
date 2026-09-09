@@ -46,7 +46,7 @@ class BandeiraForm
                             ->visibility('public')
                             ->maxSize(2048)
                             ->rules([fn () => ImagemSeguraWebp::regraDeValidacao()])
-                            ->saveUploadedFileUsing(fn (TemporaryUploadedFile $file): ?string => ImagemSeguraWebp::salvar($file, 'bandeiras'))
+                            ->saveUploadedFileUsing(fn (TemporaryUploadedFile $file): ?string => ImagemSeguraWebp::salvar($file->getRealPath(), 'bandeiras'))
                             ->helperText('JPEG, PNG, GIF ou WebP — convertido para WebP automaticamente. O tipo é validado pelo conteúdo real do arquivo, não pela extensão.'),
                     ]),
             ]);

@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Storage;
 #[Fillable([
     'adquirente_id', 'nome', 'slug', 'site_url', 'logo_path', 'descricao', 'youtube_video_id',
     'reclame_aqui_nota', 'reclame_aqui_url', 'reclame_aqui_consultado_em',
-    'publica_tabela', 'status', 'ordem',
+    'publica_tabela', 'aceita_relatos', 'status', 'ordem',
 ])]
 class Marca extends Model
 {
@@ -31,6 +31,7 @@ class Marca extends Model
             'reclame_aqui_nota' => 'decimal:1',
             'reclame_aqui_consultado_em' => 'date',
             'publica_tabela' => 'boolean',
+            'aceita_relatos' => 'boolean',
             'status' => StatusMarca::class,
             'ordem' => 'integer',
         ];
@@ -93,5 +94,22 @@ class Marca extends Model
     protected function ativas(Builder $query): void
     {
         $query->where('status', StatusMarca::Ativa);
+    }
+
+    /** Etapa 10: marca que aparece no select de /enviar-proposta. */
+    #[Scope]
+    protected function aceitamRelatos(Builder $query): void
+    {
+        $query->where('aceita_relatos', true);
+    }
+
+    public function propostasRecebidas(): HasMany
+    {
+        return $this->hasMany(PropostaRecebida::class);
+    }
+
+    public function relatosTaxaIncorreta(): HasMany
+    {
+        return $this->hasMany(RelatoTaxaIncorreta::class);
     }
 }

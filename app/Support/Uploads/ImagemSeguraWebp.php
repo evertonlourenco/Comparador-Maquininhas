@@ -15,6 +15,11 @@ use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
  *    coisa e rejeitado.
  * 2. Toda imagem aceita e convertida para WebP antes de ir para o disco,
  *    independente do formato original.
+ *
+ * salvar() recebe o caminho absoluto do arquivo, nao o objeto de upload do
+ * Livewire (etapa 10) — assim App\Support\Uploads\AnexoDeProposta, que lida
+ * com upload HTTP comum fora do Filament, reaproveita o mesmo metodo em vez
+ * de duplicar a conversao para WebP.
  */
 final class ImagemSeguraWebp
 {
@@ -54,20 +59,26 @@ final class ImagemSeguraWebp
         };
     }
 
+    /** Se o mime real informado e um dos formatos de imagem aceitos. */
+    public static function ehImagemAceita(?string $tipo): bool
+    {
+        return isset(self::CRIADORES[$tipo]);
+    }
+
     /**
-     * Converte o arquivo temporario para WebP e grava no disco informado.
+     * Converte o arquivo no caminho informado para WebP e grava no disco.
      * Retorna o caminho relativo gravado, ou null se o tipo real nao for aceito.
      */
-    public static function salvar(TemporaryUploadedFile $file, string $diretorio, string $disco = 'public'): ?string
+    public static function salvar(string $caminhoAbsoluto, string $diretorio, string $disco = 'public'): ?string
     {
-        $tipo = self::tipoReal($file->getRealPath());
+        $tipo = self::tipoReal($caminhoAbsoluto);
         $criador = self::CRIADORES[$tipo] ?? null;
 
         if ($criador === null) {
             return null;
         }
 
-        $imagem = @$criador($file->getRealPath());
+        $imagem = @$criador($caminhoAbsoluto);
 
         if ($imagem === false) {
             return null;
