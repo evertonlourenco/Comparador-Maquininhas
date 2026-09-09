@@ -186,6 +186,12 @@
         outline-offset: 2px;
     }
 
+    /* Alpine so resolve x-show/x-if depois de iniciar. Sem isto, o bloco de
+       resultado pisca inteiro antes de sumir (etapa 07). */
+    [x-cloak] {
+        display: none !important;
+    }
+
     ::selection {
         background-color: var(--cor-aferido-fundo);
         color: var(--cor-aferido);

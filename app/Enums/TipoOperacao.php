@@ -18,9 +18,9 @@ enum TipoOperacao: string implements HasLabel
     public function getLabel(): string
     {
         return match ($this) {
-            self::Debito => 'Debito',
-            self::CreditoAvista => 'Credito a vista',
-            self::CreditoParcelado => 'Credito parcelado',
+            self::Debito => 'Débito',
+            self::CreditoAvista => 'Crédito à vista',
+            self::CreditoParcelado => 'Crédito parcelado',
             self::Pix => 'Pix',
         };
     }

@@ -182,8 +182,16 @@ final class MotorDeCalculo
         }
 
         if (count($prazosUsados) > 1) {
+            // Pelo nome de exibicao da dimensao, e nao pelo codigo: este aviso
+            // sai direto na tela do lojista (etapa 07), e "d_1, na_hora" nao
+            // quer dizer nada para quem tem uma padaria.
+            $nomes = array_map(
+                fn (string $codigo): string => $catalogo['prazos'][$codigo]['nome'] ?? $codigo,
+                array_keys($prazosUsados),
+            );
+
             $avisos[] = 'Este plano foi comparado usando mais de um prazo de recebimento ('
-                .implode(', ', array_keys($prazosUsados)).'). Confira se a marca vende essa combinação.';
+                .implode(', ', $nomes).'). Confira se a marca vende essa combinação.';
         }
 
         $conta = $this->custoDaConta($plano, $cenario);
@@ -278,7 +286,7 @@ final class MotorDeCalculo
             $faixa = $this->faixaDaLinha($plano, $venda, $cenario);
 
             if ($faixa === null) {
-                $falta = 'faixa reportada para '.$venda->rotulo();
+                $falta = 'faixa reportada para '.$venda->rotulo($catalogo['grupos']);
                 $faltando[] = $falta;
                 $linhas[] = ['venda' => $venda->paraArray(), 'falta' => $falta];
 
@@ -484,8 +492,10 @@ final class MotorDeCalculo
                 'venda' => $venda->paraArray(),
                 'prazo' => null,
                 'custo' => null,
-                'falta' => 'taxa de '.$venda->rotulo()
-                    .($cenario->prazo === null ? '' : ' no prazo '.$cenario->prazo),
+                'falta' => 'taxa de '.$venda->rotulo($catalogo['grupos'])
+                    .($cenario->prazo === null
+                        ? ''
+                        : ' no prazo '.($catalogo['prazos'][$cenario->prazo]['nome'] ?? $cenario->prazo)),
             ];
         }
 
@@ -519,7 +529,7 @@ final class MotorDeCalculo
             'custo' => $custo['custo'],
             'condicao' => $taxa['condicao'] ?? null,
             'data_verificacao' => $taxa['data_verificacao'],
-            'falta' => $custo['falta'] === null ? null : $venda->rotulo().': falta '.$custo['falta'],
+            'falta' => $custo['falta'] === null ? null : $venda->rotulo($catalogo['grupos']).': falta '.$custo['falta'],
         ];
     }
 
@@ -807,7 +817,7 @@ final class MotorDeCalculo
             $prazo = $catalogo['prazos'][$linha['prazo']];
 
             if ($prazo['antecipacao_embutida']) {
-                $avisos[] = 'Antecipação não foi cobrada em '.$venda->rotulo().': o percentual do prazo "'
+                $avisos[] = 'Antecipação não foi cobrada em '.$venda->rotulo($catalogo['grupos']).': o percentual do prazo "'
                     .$prazo['nome'].'" já embute o adiantamento.';
 
                 continue;
@@ -827,7 +837,7 @@ final class MotorDeCalculo
             );
 
             $total += $custo['custo'];
-            $itens[] = ['venda' => $venda->rotulo(), 'meses' => $custo['meses'], 'custo' => $custo['custo']];
+            $itens[] = ['venda' => $venda->rotulo($catalogo['grupos']), 'meses' => $custo['meses'], 'custo' => $custo['custo']];
         }
 
         return [

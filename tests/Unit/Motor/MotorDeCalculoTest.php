@@ -176,8 +176,13 @@ class MotorDeCalculoTest extends TestCase
         $alfa = $this->item($this->calcular(['prazo' => 'd_30']), 'Alfa');
 
         // A Alfa so publica debito em 1 dia util: pedir 30 dias falta o dado.
+        // A falta sai pelo nome de exibicao das dimensoes, e nao pelo codigo:
+        // ela vai direto para a tela do lojista (etapa 07).
         $this->assertSame(EstadoDoResultado::Incompleto->value, $alfa['estado']);
-        $this->assertStringContainsString('Debito', implode(' ', $alfa['faltando']));
+        $this->assertStringContainsString(
+            'taxa de Débito (Visa e Mastercard) no prazo Em 30 dias',
+            implode(' ', $alfa['faltando']),
+        );
 
         // Total parcial nunca se chama total_mensal.
         $this->assertArrayNotHasKey('total_mensal', $alfa['custos']);

@@ -47,8 +47,17 @@ final readonly class VendaDoCenario
         );
     }
 
-    /** Como a linha aparece no resultado e nos avisos de falta. */
-    public function rotulo(): string
+    /**
+     * Como a linha aparece no resultado e nos avisos de falta.
+     *
+     * Os grupos entram por parametro porque este rotulo sai direto na tela do
+     * lojista (etapa 07): "Débito (Visa e Mastercard)" e uma frase, "debito
+     * (visa_master)" e um identificador de banco. Sem a dimensao em maos, o
+     * codigo continua sendo o melhor que da para dizer.
+     *
+     * @param  array<string, array{nome: string}>|null  $grupos
+     */
+    public function rotulo(?array $grupos = null): string
     {
         $base = $this->tipoOperacao->getLabel();
 
@@ -56,7 +65,11 @@ final readonly class VendaDoCenario
             $base .= " em {$this->parcelas}x";
         }
 
-        return $this->tipoOperacao === TipoOperacao::Pix ? $base : "{$base} ({$this->grupo})";
+        if ($this->tipoOperacao === TipoOperacao::Pix) {
+            return $base;
+        }
+
+        return "{$base} (".($grupos[$this->grupo]['nome'] ?? $this->grupo).')';
     }
 
     public function paraArray(): array

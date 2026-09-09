@@ -618,11 +618,205 @@ teclado (`role="region"` + `tabindex="0"`), alvo de toque de 44px, e
 
 ### Pendente da etapa 06
 
-- **`/` ainda é o `welcome.blade.php` do scaffolding.** A home é trabalho da etapa 07.
-- **Navegação e links de rodapé são vazios por padrão** — as páginas das etapas 07 a 10
+- ~~**`/` ainda é o `welcome.blade.php` do scaffolding.**~~ Resolvido na etapa 07: a
+  home é o comparador, e o `welcome.blade.php` saiu do repositório.
+- **Navegação e links de rodapé são vazios por padrão** — as páginas das etapas 08 a 10
   entregam os seus. Link morto no cabeçalho é pior que cabeçalho sem link.
 - **Nenhum logo de marca no guia visual**: `<x-cartao-marca>` cai na inicial da marca
   quando não recebe `logo`. Os arquivos entram com as páginas de marca (etapa 08).
+
+## O comparador (etapa 07)
+
+A home é o comparador. Não há página de entrada antes dele: quem chega pelo
+vídeo quer a conta, e uma tela intermediária só custaria um clique.
+
+| Arquivo | Papel |
+|---|---|
+| `app/Http/Controllers/ComparadorController` | Só `stat` no JSON, para a data do rodapé. Zero consulta ao banco |
+| `resources/views/comparador.blade.php` | As quatro perguntas e os blocos de resultado |
+| `resources/views/components/resultado-comparado.blade.php` | O cartão dos estados de número único |
+| `resources/views/components/detalhe-do-resultado.blade.php` | A conta aberta, dentro de um `<details>` |
+| `App\Motor\ResumoDoComparador` | Os quatro números da tela, derivados do motor |
+| `resources/js/comparador/resumo.mjs` | O gêmeo em JavaScript |
+| `resources/js/comparador.js` | O componente Alpine: cenário, cálculo e URL |
+| `resources/js/comparador/segmentos.mjs` | Os presets de mix por segmento |
+| `resources/js/comparador/estado.mjs` | O estado na barra de endereços |
+| `scripts/verifica-resumo-js.mjs` | Compara as duas implementações do resumo |
+| `tests/Feature/Comparador/ParidadeDoResumoTest.php` | Paridade + os quatro números conferidos à mão |
+| `tests/Feature/Comparador/PaginaDoComparadorTest.php` | Ordem das perguntas, regra 9 e rótulo em todo campo |
+| `tests/Support/CenariosDeBorda.php` | Os casos de borda da etapa 05, usados pelos dois testes de paridade |
+
+**Alpine.js, e nada além.** Entrada própria no Vite (`resources/js/comparador.js`),
+para que Alpine e os dois motores não pesem nas páginas das etapas 08 a 10. O
+bundle da página fica em ~28 KB comprimidos, servidos do próprio domínio.
+
+### A ordem das quatro perguntas é decisão de produto
+
+1. **Faturamento mensal** — o único número que todo lojista sabe de cabeça.
+2. **Mix de vendas** — o que de fato decide o resultado: a mesma marca ganha ou
+   perde conforme se venda mais em débito ou mais em parcelado. Entra por botão
+   de segmento (padaria, salão, loja de roupas, food truck, feira, delivery,
+   oficina, outro), com os controles finos atrás de um `<details>`.
+3. **Prazo de recebimento** — a quinta dimensão da chave da regra 1. O padrão é
+   "tanto faz", que vira `prazo: null` e deixa o motor escolher o mais barato.
+4. **Marcas**, ou **"Escolha por mim"**, que seleciona todas e rola até o
+   resultado.
+
+`PaginaDoComparadorTest` cobra essa ordem no HTML: trocar duas seções de lugar
+quebra o teste, e é para quebrar.
+
+### Os presets de segmento não são dado verificado, e a tela diz isso
+
+Os mixes de `segmentos.mjs` não têm `fonte` nem `data_verificacao`, e não têm
+porque não existe pesquisa pública de mix de meios de pagamento por segmento na
+granularidade que a tela pede. São ponto de partida plausível, declarado na
+própria tela como palpite editável.
+
+A distinção importa porque as duas coisas se parecem e são opostas: **a regra 6
+vale para taxa, que é afirmação nossa sobre a marca; o mix é o lojista
+descrevendo o próprio negócio**, e o único remédio possível é deixar os
+controles à mão. Taxa errada é risco de CDC; mix errado é o usuário se
+descrevendo mal.
+
+A soma dos quatro percentuais é menor que 100 de propósito — o resto é dinheiro
+em espécie, que não passa na maquininha e não custa taxa nenhuma. O resultado
+mostra os dois valores lado a lado, senão a "taxa efetiva" pareceria incidir
+sobre o faturamento inteiro.
+
+**O slider para no espaço que sobrou** em vez de deixar a soma passar de 100%.
+As alternativas eram piores: passar de 100 apaga o resultado inteiro num
+arrasto, e reequilibrar as outras faixas sozinho mexeria em números que a pessoa
+não pediu para mexer. Para subir uma faixa é preciso baixar outra — que é a
+verdade do problema. (Uma URL montada à mão ainda pode trazer soma inválida; aí
+a tela avisa e não calcula.)
+
+**Visa e Mastercard começam em 100%**, e não num número "mais realista". O grupo
+de bandeiras é dimensão da chave da regra 1 e a SumUp não publica taxa fora
+dessas duas. Chutar 15% em "demais bandeiras" jogaria marcas para o bloco "falta
+dado" por causa de um número que o lojista não informou. Quem vende bastante em
+Elo ou Amex ajusta no controle fino, com o aviso do lado explicando o efeito.
+
+**O ticket médio existe para virar quantidade de transações**, que o motor
+precisa quando a taxa cobra valor fixo por venda. Ticket zerado devolve
+quantidade nula — o estado honesto de "não informei" —, e aí o motor declara a
+falta em vez de estimar.
+
+### Os quatro números da tela
+
+`App\Motor\ResumoDoComparador` é camada separada, e não mais campos dentro de
+`MotorDeCalculo`: o motor responde "quanto custa", que é pergunta de domínio;
+o resumo responde "como esse custo se lê na tela". Separado, o motor da etapa 05
+continua sendo a fonte da verdade e nenhuma mudança de layout mexe nele.
+
+| Número | Conta |
+|---|---|
+| Custo mensal recorrente | `total mensal − adesão amortizada` — o que continua saindo do caixa depois que a adesão for paga |
+| Taxa efetiva combinada | `custo mensal recorrente ÷ volume vendido × 100` |
+| Custo inicial | a adesão, **sem cupom e com cupom** (regra 5) |
+| Quanto sobra no mês | `faturamento − total mensal` |
+
+**A taxa efetiva vem em duas.** A combinada tem mensalidade e aluguel dentro,
+porque eles saem do caixa do mesmo jeito; ao lado dela sai
+`taxa_efetiva_das_vendas`, só o percentual das taxas. Na Alfa do catálogo
+sintético as duas coincidem; na Epsilon, que cobra R$ 49,90 de mensalidade e
+tem o menor percentual do catálogo, a combinada é mais que o dobro da outra.
+**Um comparador que mostrasse só a das vendas apontaria para a Epsilon.**
+
+**Quanto sobra usa o total, e não o recorrente**, porque a adesão é dinheiro que
+sai de verdade no primeiro ano. O horizonte da amortização anda junto no
+resultado, então o divisor nunca fica escondido.
+
+**O nome de cada chave muda com o estado**, exatamente como no motor:
+`custo_mensal_recorrente_promocional`, `_parcial`, `_promocional_parcial`, e as
+três pontas (`_minimo`/`_mediana`/`_maximo`, com o gênero certo em
+`taxa_..._minima` e `sobra_..._minima`) na faixa reportada. Quem exibe é
+obrigado a olhar para o estado antes de achar a chave. `campo()` e `campoTexto()`
+no componente Alpine resolvem o sufixo — e **devolvem nulo em faixa reportada de
+propósito**: lá o sufixo é `_faixa`, que não existe como chave, e não há caminho
+por onde uma mediana de relatos escorregue para o lugar de um número publicado.
+Um total parcial ainda ganha "— parcial" colado no rótulo na tela.
+
+### Faixa reportada tem markup próprio, não uma variante do cartão
+
+O bloco de `faixa_reportada` é escrito à parte, com borda tracejada, tom
+`reportado`, as três pontas lado a lado, o número de relatos (intervalo quando
+as linhas divergem — média de relatos seria mais um número inventado) e o aviso
+de que o preço depende de negociação. Reaproveitar o cartão dos outros estados
+com um `x-if` a mais seria abrir a porta para a mediana aparecer onde deveria
+estar uma taxa publicada.
+
+Melhor e pior saem só do bloco `calculado`, e o veredito do topo só aparece com
+duas marcas ranqueáveis ou mais.
+
+### O estado mora na URL
+
+O lojista tem de poder mandar o resultado no WhatsApp. Chaves curtas e valores
+legíveis (`?f=10000&s=padaria&mix=34-20-2-19`), número cru com ponto decimal (a
+URL não é texto de tela — regra 11 vale para o que se digita e para o que se lê),
+e só entra o que difere do padrão *daquele segmento*: `?s=oficina` sozinho já
+significa a oficina inteira. A lista de marcas usa `*` para "todas", que é o que
+"Escolha por mim" deixa — assim o link continua valendo quando uma marca nova
+entrar no catálogo, em vez de congelar as nove de hoje.
+
+### Regra 9, cobrada e não só prometida
+
+`PaginaDoComparadorTest::test_a_pagina_nao_consulta_o_banco` liga o query log e
+falha se qualquer consulta escapar. A carga chega em pico de vídeo: uma consulta
+que se infiltre ali só apareceria no pior dia possível. O único toque no disco é
+um `stat` no JSON, para a data do rodapé e para a página saber avisar quando o
+arquivo não foi gerado (o estado normal de um clone novo — `/public/dados` está
+fora do Git).
+
+### Strings do motor que passaram a sair na tela
+
+Mensagens que antes só apareciam em teste agora vão para o lojista, e três
+carregavam identificador de banco:
+
+- `VendaDoCenario::rotulo()` recebe a dimensão de grupos e imprime "Débito (Visa
+  e Mastercard)" em vez de "Debito (visa_master)". Sem a dimensão em mãos, o
+  código continua sendo o melhor que dá para dizer.
+- O aviso de mistura de prazos e a falta de taxa citam o `nome_exibicao` do
+  prazo, não o código: "no prazo Em 30 dias", não "no prazo d_30".
+- `TipoOperacao::getLabel()` ganhou acento — vale também para o painel.
+- `DimensoesSeeder` acentuou `nome_exibicao` e `descricao` das dimensões
+  curadas. Comentário de código no projeto segue sem acento; **texto que vai
+  para a tela, não.**
+
+As três primeiras mudam a saída dos dois motores ao mesmo tempo, e os testes de
+paridade cobram isso.
+
+### Acessibilidade
+
+`PaginaDoComparadorTest` varre o HTML e exige rótulo em todo controle —
+inclusive nos que o Alpine cria depois: `<input>` com `id` fixo precisa de
+`<label for>`; com `:id` ligado, precisa do `:for` equivalente. Somam-se: botão
+de segmento com `aria-pressed`, `<output for>` em cada slider, alvo de toque de
+44px, tabela de detalhe rolável e alcançável pelo teclado, e um `role="status"`
+curto que anuncia só o vencedor — a tela inteira não pode ser `aria-live`, ou
+cada arrasto de slider viraria ruído.
+
+### Pendente da etapa 07
+
+- **Só a InfinitePay fecha a conta hoje.** Com a carga da etapa 04, um cenário
+  padrão devolve 1 marca em `calculado`, 1 em `promocional`, 3 em `incompleto` e
+  7 em `sem dado publicado`. Não é bug do comparador: é a lista de campos
+  pendentes ao fim da etapa 05 aparecendo na tela. Enquanto Ton e PagBank não
+  tiverem `mensalidade` e a SumUp não tiver preço de aparelho, o bloco ranqueado
+  fica com uma marca só — e sem duas marcas não há melhor nem pior.
+- **Nada publicado (regra 10).** O JSON de hoje é gerado com `--rascunhos`, e a
+  página carimba um aviso vermelho quando lê `contem_rascunhos`. A aprovação em
+  lote no painel é o que destrava o lançamento.
+- **Faixa reportada só foi vista com dado sintético**, porque não existe linha
+  em `faixas_reportadas` (etapa 10). O bloco foi conferido injetando uma faixa
+  no catálogo já carregado no navegador.
+- **Sem logo de marca e sem link de afiliado no resultado.** Os dois entram com
+  as páginas de marca (etapa 08) e a de cupons (etapa 09) — hoje o cartão mostra
+  o cupom que o motor aplicou, mas não leva a lugar nenhum.
+- **Navegação do cabeçalho continua vazia**, porque as outras páginas ainda não
+  existem. Link morto é pior que cabeçalho sem link.
+- **Produtos "celular como maquininha" continuam fora**, como a etapa 04 deixou.
+  A pergunta de tratá-los como maquininha ficou para quando houver página de
+  marca onde eles caibam.
 
 ## Etapas concluídas
 
@@ -632,7 +826,7 @@ teclado (`role="region"` + `tabindex="0"`), alvo de toque de 44px, e
 - [x] **04** — Carga dos dados reais
 - [x] **05** — Motor de cálculo
 - [x] **06** — Identidade visual e design system
-- [ ] 07 — O comparador
+- [x] **07** — O comparador
 - [ ] 08 — Páginas de marca e listagem
 - [ ] 09 — Página de cupons
 - [ ] 10 — Metodologia e captação de relatos
@@ -731,12 +925,13 @@ dado verificado só cria campo vazio, e nenhum deles muda um centavo do cálculo
 
 **Ainda não existe:**
 
-- **Rota servindo o JSON.** `comparador:gerar-json` grava em
-  `public/dados/comparador.json` (fora do Git), e nada consome esse arquivo
-  ainda — a página é a etapa 07.
+- ~~**Rota servindo o JSON.**~~ Resolvido na etapa 07, e sem rota: o arquivo em
+  `public/dados/comparador.json` é servido estaticamente pelo próprio servidor
+  web, e o comparador o consome por `fetch`. Nenhum PHP no caminho (regra 9).
 - **Nada publicado.** As 964 taxas estão em rascunho (regra 10), então
   `comparador:gerar-json` sem `--rascunhos` produz arquivo sem número nenhum, e
-  avisa disso. A aprovação em lote no painel é o que destrava.
+  avisa disso. A aprovação em lote no painel é o que destrava. Desde a etapa 07,
+  a própria página carimba um aviso vermelho quando lê `contem_rascunhos`.
 
 **Corrigido de passagem:** `APP_TIMEZONE=America/Sao_Paulo` e `APP_LOCALE=pt_BR`
 faltavam no `.env.example` e no `phpunit.xml` — o `.env` local já os tinha. Sem

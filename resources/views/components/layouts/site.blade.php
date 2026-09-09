@@ -5,6 +5,10 @@
     'linksRodape' => [],
     'atualizadoEm' => null,
     'indexavel' => true,
+    // Entradas do Vite alem do par basico. O comparador (etapa 07) traz
+    // Alpine e os dois motores, e eles nao tem por que pesar nas outras
+    // paginas.
+    'scripts' => [],
 ])
 
 <!DOCTYPE html>
@@ -38,7 +42,7 @@
     </script>
 
     @fonts
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @vite(array_merge(['resources/css/app.css', 'resources/js/app.js'], $scripts))
 </head>
 <body class="flex min-h-dvh flex-col bg-papel text-tinta antialiased">
     <a href="#conteudo"

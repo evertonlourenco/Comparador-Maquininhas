@@ -6,7 +6,13 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
     plugins: [
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.js'],
+            // O comparador e entrada propria: Alpine e os dois motores so
+            // pesam na pagina que os usa (etapa 07).
+            input: [
+                'resources/css/app.css',
+                'resources/js/app.js',
+                'resources/js/comparador.js',
+            ],
             refresh: true,
             // Direcao "Boletim" (etapa 06). O plugin baixa e serve local:
             // nenhuma requisicao a terceiro na visita, que e o que a regra 9

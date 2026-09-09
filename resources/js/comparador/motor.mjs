@@ -42,9 +42,9 @@ export const ESTADOS = {
 };
 
 const ROTULOS_DE_OPERACAO = {
-  debito: 'Debito',
-  credito_avista: 'Credito a vista',
-  credito_parcelado: 'Credito parcelado',
+  debito: 'Débito',
+  credito_avista: 'Crédito à vista',
+  credito_parcelado: 'Crédito parcelado',
   pix: 'Pix',
 };
 
@@ -95,14 +95,23 @@ export function normalizarCenario(dados) {
   };
 }
 
-function rotuloDaVenda(venda) {
+/**
+ * Os grupos entram por parametro porque este rotulo sai direto na tela do
+ * lojista (etapa 07): "Débito (Visa e Mastercard)" e uma frase, "debito
+ * (visa_master)" e um identificador de banco.
+ */
+function rotuloDaVenda(venda, grupos = null) {
   let base = ROTULOS_DE_OPERACAO[venda.tipo_operacao];
 
   if (venda.tipo_operacao === 'credito_parcelado') {
     base += ` em ${venda.parcelas}x`;
   }
 
-  return venda.tipo_operacao === 'pix' ? base : `${base} (${venda.grupo})`;
+  if (venda.tipo_operacao === 'pix') {
+    return base;
+  }
+
+  return `${base} (${grupos?.[venda.grupo]?.nome ?? venda.grupo})`;
 }
 
 // ---------------------------------------------------------------------------
@@ -227,8 +236,13 @@ function avaliarComTaxasDivulgadas(catalogo, marca, plano, cenario) {
   }
 
   if (prazosUsados.length > 1) {
+    // Pelo nome de exibicao da dimensao, e nao pelo codigo: este aviso sai
+    // direto na tela do lojista (etapa 07), e "d_1, na_hora" nao quer dizer
+    // nada para quem tem uma padaria.
+    const nomes = prazosUsados.map((codigo) => catalogo.prazos[codigo]?.nome ?? codigo);
+
     avisos.push(
-      `Este plano foi comparado usando mais de um prazo de recebimento (${prazosUsados.join(', ')}). ` +
+      `Este plano foi comparado usando mais de um prazo de recebimento (${nomes.join(', ')}). ` +
         'Confira se a marca vende essa combinação.',
     );
   }
@@ -304,7 +318,7 @@ function avaliarComFaixaReportada(catalogo, marca, plano, cenario) {
     const faixa = faixaDaLinha(plano, venda, cenario);
 
     if (faixa === null) {
-      const falta = `faixa reportada para ${rotuloDaVenda(venda)}`;
+      const falta = `faixa reportada para ${rotuloDaVenda(venda, catalogo.grupos)}`;
       faltando.push(falta);
       linhas.push({ venda, falta });
       continue;
@@ -471,7 +485,10 @@ function resolverLinha(catalogo, plano, venda, cenario) {
       prazo: null,
       custo: null,
       falta:
-        `taxa de ${rotuloDaVenda(venda)}` + (cenario.prazo === null ? '' : ` no prazo ${cenario.prazo}`),
+        `taxa de ${rotuloDaVenda(venda, catalogo.grupos)}` +
+        (cenario.prazo === null
+          ? ''
+          : ` no prazo ${catalogo.prazos[cenario.prazo]?.nome ?? cenario.prazo}`),
     };
   }
 
@@ -507,7 +524,7 @@ function resolverLinha(catalogo, plano, venda, cenario) {
     custo: custo.custo,
     condicao: taxa.condicao ?? null,
     data_verificacao: taxa.data_verificacao,
-    falta: custo.falta === null ? null : `${rotuloDaVenda(venda)}: falta ${custo.falta}`,
+    falta: custo.falta === null ? null : `${rotuloDaVenda(venda, catalogo.grupos)}: falta ${custo.falta}`,
   };
 }
 
@@ -750,7 +767,7 @@ function custoDaAntecipacaoAvulsa(catalogo, plano, cenario, linhas) {
 
     if (prazo.antecipacao_embutida) {
       avisos.push(
-        `Antecipação não foi cobrada em ${rotuloDaVenda(venda)}: o percentual do prazo "${prazo.nome}" já embute o adiantamento.`,
+        `Antecipação não foi cobrada em ${rotuloDaVenda(venda, catalogo.grupos)}: o percentual do prazo "${prazo.nome}" já embute o adiantamento.`,
       );
       return;
     }
@@ -763,7 +780,7 @@ function custoDaAntecipacaoAvulsa(catalogo, plano, cenario, linhas) {
     const custo = antecipacaoDaLinha(catalogo, plano, venda, { prazo: linha.prazo }, linha.custo ?? 0, cenario);
 
     total += custo.custo;
-    itens.push({ venda: rotuloDaVenda(venda), meses: custo.meses, custo: custo.custo });
+    itens.push({ venda: rotuloDaVenda(venda, catalogo.grupos), meses: custo.meses, custo: custo.custo });
   });
 
   return { custo: arredondar(total), faltando, avisos, itens };
