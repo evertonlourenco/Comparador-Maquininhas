@@ -16,7 +16,7 @@ Monetização: links de afiliado com cupom de desconto na adesão.
 | Produção | Hostinger Cloud Startup + Cloudflare |
 
 Local: `/Users/Everton/Claude Code/Herd/comparador-maquininhas` → http://comparador-maquininhas.test
-Repositório: `git@github.com:evertonlourenco/comparador-maquininhas.git` (privado)
+Repositório: `git@github.com:evertonlourenco/Comparador-Maquininhas.git` (privado)
 
 Nota: o caminho do projeto contém um espaço ("Claude Code"). Sempre entre aspas em comandos de shell.
 
@@ -1118,13 +1118,28 @@ PHP completo, e span de aspas dentro de um atributo é outro ponto cego dele.
 
 ### Pendente da etapa 10
 
-- **Nome final da ferramenta, logo, domínio de produção, identificação do
-  controlador (razão social/CNPJ) e e-mail de contato de `/privacidade`**
-  ainda não foram decididos — ficam para uma etapa própria no fim do
-  projeto, junto do lançamento. `config('services.legal.*')` (env
-  `LEGAL_RAZAO_SOCIAL`, `LEGAL_CNPJ`, `LEGAL_EMAIL_CONTATO`) está vazio até
-  lá, e as páginas mostram um aviso honesto de "a definir" em vez de
-  inventar um dado.
+- ~~**Nome final da ferramenta, domínio de produção, identificação do
+  controlador e e-mail de contato de `/privacidade`**~~ — **decididos na
+  etapa 11.** A ferramenta é o **Máquina Certa**, em
+  `https://maquinacerta.com.br`. `config('services.legal.*')` deixa de ser
+  vazio: `LEGAL_RAZAO_SOCIAL="Monetizando - Marketing e Consultoria Ltda"`,
+  `LEGAL_CNPJ=40.986.808/0001-04`, `LEGAL_EMAIL_CONTATO=contato@maquinacerta.com.br`.
+  Os três vivem só no `.env` de produção — o `.env.example` continua com os
+  campos comentados, e em local as páginas seguem mostrando o aviso honesto
+  de "a definir".
+- **Logo e identidade visual próprios do Máquina Certa ainda não existem.**
+  Decisão do Everton na etapa 11: a identidade específica da marca será
+  criada depois, e o front-end (paleta, tipografia, componentes da etapa 06)
+  será ajustado a ela **no fim do projeto**, não agora. Até lá o portal vai
+  ao ar com o design system genérico da etapa 06, que é funcional e passa no
+  contraste WCAG AA (`node scripts/verifica-contraste.mjs`). Quando a
+  identidade chegar, o ponto de entrada é a paleta de tokens em
+  `resources/css/app.css`: os componentes só citam classes semânticas
+  (`text-tinta`, `bg-papel`, `border-contorno`), nunca um hexadecimal, então
+  trocar a marca é mexer no valor do token — não na view. O que a troca
+  provavelmente pede além disso: tipografia (as fontes entram no bundle, ver
+  etapa 06) e a direção "Boletim" descrita no cabeçalho do próprio app.css,
+  que é escolha de design, não de código.
 - **`GA4_MEASUREMENT_ID` vazio** até a etapa de lançamento — o gate do
   banner de cookies já funciona, só falta o ID.
 - **O resultado do comparador (Alpine sobre o JSON estático, regra 9) ainda
