@@ -64,7 +64,7 @@
                                     nome="taxas[{{ $i }}][parcelas]"
                                     id="taxa-{{ $i }}-parcelas"
                                     tipo="number"
-                                    :valor="old(\"taxas.$i.parcelas\", $tipo->parcelaMinima())"
+                                    :valor="old('taxas.'.$i.'.parcelas', $tipo->parcelaMinima())"
                                     min="{{ $tipo->parcelaMinima() }}"
                                     max="{{ $tipo->parcelaMaxima() }}"
                                     class="w-24"
@@ -77,7 +77,7 @@
                                 id="taxa-{{ $i }}-percentual"
                                 sufixo="%"
                                 inputmode="decimal"
-                                :valor="old(\"taxas.$i.percentual\")"
+                                :valor="old('taxas.'.$i.'.percentual')"
                                 class="w-32"
                             />
                         </div>

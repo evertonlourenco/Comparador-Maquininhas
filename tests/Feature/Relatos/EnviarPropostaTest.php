@@ -65,6 +65,22 @@ class EnviarPropostaTest extends TestCase
         $resposta->assertDontSee($naoAceita->nome);
     }
 
+    /**
+     * Regressão: aspas escapadas dentro de :valor="old(\"...\")" quebravam o
+     * parser de atributos do componente Blade e vazavam PHP cru na página
+     * (ex.: "parcelaMinima())" min=..."). old('taxas.'.$i.'.parcelas', ...)
+     * evita a aspa escapada.
+     */
+    public function test_pagina_nao_vaza_codigo_php_cru(): void
+    {
+        $this->criarMarca();
+
+        $this->get('/enviar-proposta')
+            ->assertOk()
+            ->assertDontSee('parcelaMinima())', false)
+            ->assertDontSee('->parcelaMinima', false);
+    }
+
     public function test_envio_feliz_grava_proposta_pendente(): void
     {
         $marca = $this->criarMarca();
