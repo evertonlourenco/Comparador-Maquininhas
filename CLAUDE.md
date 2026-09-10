@@ -41,6 +41,15 @@ npm run build      # fontes entram no bundle, servidas do proprio dominio
 node scripts/verifica-contraste.mjs   # le a paleta do app.css e confere WCAG AA
 ```
 
+**`npm run build` roda `php artisan view:cache` antes do `vite build`, e isso nao e
+enfeite.** O `app.css` tem `@source '../../storage/framework/views/*.php'`: o Tailwind
+descobre as classes varrendo o **cache de views compiladas**, nao as `.blade.php`
+diretamente. Sem o `view:cache`, o CSS gerado depende de quais paginas foram
+renderizadas antes na maquina — medido na etapa 11: 73 views em cache produziam
+42,09 KB de CSS, e as 187 views completas produzem 63,38 KB. Um terco dos estilos
+sumia, e as paginas cujas views nao estavam em cache subiriam sem formatacao. O
+build commitado ate a etapa 10 estava incompleto por esse motivo (61,7 KB).
+
 O teste de paridade entre o motor em PHP e o motor em JavaScript chama `node`.
 Sem Node no PATH ele se marca como skipped em vez de passar em silêncio.
 

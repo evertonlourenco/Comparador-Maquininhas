@@ -14,7 +14,6 @@
 /.zed
 /auth.json
 /node_modules
-/public/build
 /public/fonts-manifest.dev.json
 /public/hot
 /public/storage
@@ -28,3 +27,9 @@ Thumbs.db
 
 # Gerado por `php artisan comparador:gerar-json` (regra 9).
 /public/dados
+
+# /public/build NAO entra aqui: e versionado de proposito (etapa 11).
+# O servidor da Hostinger nao tem Node, e o plugin de fontes do Vite baixa
+# as familias da Bunny durante o build — compilar em producao poria o CDN
+# de terceiro no caminho critico do deploy. Rode `npm run build` e commite
+# o resultado junto da mudanca de front-end.

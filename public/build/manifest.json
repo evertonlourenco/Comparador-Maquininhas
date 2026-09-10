@@ -1,0 +1,91 @@
+{
+  "_fonts-Coisi7hZ.css": {
+    "file": "assets/fonts-Coisi7hZ.css",
+    "src": "_fonts-Coisi7hZ.css"
+  },
+  "_ibm-plex-mono-400-normal-CvHOgSBP.woff": {
+    "file": "assets/ibm-plex-mono-400-normal-CvHOgSBP.woff",
+    "src": "_ibm-plex-mono-400-normal-CvHOgSBP.woff"
+  },
+  "_ibm-plex-mono-400-normal-DMJ8VG8y.woff2": {
+    "file": "assets/ibm-plex-mono-400-normal-DMJ8VG8y.woff2",
+    "src": "_ibm-plex-mono-400-normal-DMJ8VG8y.woff2"
+  },
+  "_ibm-plex-mono-500-normal-CB9ihrfo.woff": {
+    "file": "assets/ibm-plex-mono-500-normal-CB9ihrfo.woff",
+    "src": "_ibm-plex-mono-500-normal-CB9ihrfo.woff"
+  },
+  "_ibm-plex-mono-500-normal-DSY6xOcd.woff2": {
+    "file": "assets/ibm-plex-mono-500-normal-DSY6xOcd.woff2",
+    "src": "_ibm-plex-mono-500-normal-DSY6xOcd.woff2"
+  },
+  "_ibm-plex-sans-400-normal-CDDApCn2.woff2": {
+    "file": "assets/ibm-plex-sans-400-normal-CDDApCn2.woff2",
+    "src": "_ibm-plex-sans-400-normal-CDDApCn2.woff2"
+  },
+  "_ibm-plex-sans-400-normal-CYLoc0-x.woff": {
+    "file": "assets/ibm-plex-sans-400-normal-CYLoc0-x.woff",
+    "src": "_ibm-plex-sans-400-normal-CYLoc0-x.woff"
+  },
+  "_ibm-plex-sans-500-normal-6ng42L7E.woff2": {
+    "file": "assets/ibm-plex-sans-500-normal-6ng42L7E.woff2",
+    "src": "_ibm-plex-sans-500-normal-6ng42L7E.woff2"
+  },
+  "_ibm-plex-sans-500-normal-BgVn5rGT.woff": {
+    "file": "assets/ibm-plex-sans-500-normal-BgVn5rGT.woff",
+    "src": "_ibm-plex-sans-500-normal-BgVn5rGT.woff"
+  },
+  "_ibm-plex-sans-600-normal-Cu4Hd6ag.woff": {
+    "file": "assets/ibm-plex-sans-600-normal-Cu4Hd6ag.woff",
+    "src": "_ibm-plex-sans-600-normal-Cu4Hd6ag.woff"
+  },
+  "_ibm-plex-sans-600-normal-CuJfVYMP.woff2": {
+    "file": "assets/ibm-plex-sans-600-normal-CuJfVYMP.woff2",
+    "src": "_ibm-plex-sans-600-normal-CuJfVYMP.woff2"
+  },
+  "_newsreader-400-normal-BFBkh4jY.woff2": {
+    "file": "assets/newsreader-400-normal-BFBkh4jY.woff2",
+    "src": "_newsreader-400-normal-BFBkh4jY.woff2"
+  },
+  "_newsreader-400-normal-gRTjlS2D.woff": {
+    "file": "assets/newsreader-400-normal-gRTjlS2D.woff",
+    "src": "_newsreader-400-normal-gRTjlS2D.woff"
+  },
+  "_newsreader-500-normal-B66TYsaK.woff2": {
+    "file": "assets/newsreader-500-normal-B66TYsaK.woff2",
+    "src": "_newsreader-500-normal-B66TYsaK.woff2"
+  },
+  "_newsreader-500-normal-DFwuUcdu.woff": {
+    "file": "assets/newsreader-500-normal-DFwuUcdu.woff",
+    "src": "_newsreader-500-normal-DFwuUcdu.woff"
+  },
+  "_newsreader-600-normal-30OJ_TG_.woff2": {
+    "file": "assets/newsreader-600-normal-30OJ_TG_.woff2",
+    "src": "_newsreader-600-normal-30OJ_TG_.woff2"
+  },
+  "_newsreader-600-normal-DUnT2r2g.woff": {
+    "file": "assets/newsreader-600-normal-DUnT2r2g.woff",
+    "src": "_newsreader-600-normal-DUnT2r2g.woff"
+  },
+  "resources/css/app.css": {
+    "file": "assets/app-lPaKBnAt.css",
+    "name": "app",
+    "names": [
+      "app.css"
+    ],
+    "src": "resources/css/app.css",
+    "isEntry": true
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-D9qh3na2.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true
+  },
+  "resources/js/comparador.js": {
+    "file": "assets/comparador-B3JuKZON.js",
+    "name": "comparador",
+    "src": "resources/js/comparador.js",
+    "isEntry": true
+  }
+}
