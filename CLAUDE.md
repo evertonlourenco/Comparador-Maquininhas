@@ -1020,6 +1020,119 @@ afirmação de preço). `sitemap.xml` ganhou `/cupons` e `/cupom/{slug}` — est
 último só para marca com `whereHas('cupons', fn ($q) => $q->vigentes())`, a
 mesma regra que já tira a marca da listagem.
 
+## Metodologia, LGPD e captação de relatos (etapa 10)
+
+`/metodologia`, `/privacidade`, `/termos`, `/enviar-proposta` e o botão
+"reportar taxa errada" reaproveitável — as quatro peças de confiança que
+faltavam antes do lançamento (etapas 11-13), na mesma lógica das regras 6
+("nada sem fonte"), 10 ("nada publicado sem revisão humana") e "campo vazio é
+honesto", aplicada agora à própria operação do site.
+
+| Arquivo | Papel |
+|---|---|
+| `resources/views/metodologia.blade.php` | Coleta, frequência, selo de frescor, por que Cielo/Rede/GetNet/Stone saem como faixa, comissão |
+| `resources/views/privacidade.blade.php`, `termos.blade.php` | LGPD: base legal por formulário, dados coletados, direitos do titular |
+| `App\Http\Controllers\PropostaController` | `/enviar-proposta`: grava `PropostaRecebida` pendente de revisão |
+| `App\Http\Controllers\RelatoTaxaIncorretoController` | O botão "reportar taxa errada", em toda `<x-tabela-taxas>` |
+| `App\Support\Antispam\FormularioProtegido` | Honeypot + tempo mínimo — sem CAPTCHA de terceiro |
+| `App\Support\Uploads\AnexoDeProposta` | Anexo (foto ou PDF) da proposta, disco privado |
+| `App\Filament\Resources\PropostasRecebidas`, `RelatosTaxaIncorreta` | As duas filas de revisão no painel ("Relatos de lojistas") |
+
+### Duas tabelas de staging, nunca publicação automática (regra 10, forma mais forte)
+
+`propostas_recebidas` e `relatos_taxa_incorreta` guardam o que o lojista
+relatou, com `status: pendente | revisado`. Nenhuma das duas escreve em
+`faixas_reportadas` sozinha — um humano lê no painel, decide, e cadastra a
+faixa a mão, se for o caso. É staging operacional, no espírito de
+`eventos_cupom` (etapa 09): não é entidade de domínio, não tem `url_fonte`
+nem `data_verificacao`, porque não é afirmação nossa sobre a marca.
+
+**`marcas.aceita_relatos`** decide quem entra no select de `/enviar-proposta`
+— coluna editável no painel, não lista travada no código, no mesmo espírito
+de `grupos_bandeiras`/`prazos_recebimento` (dimensão é linha). Semeada `true`
+só para Cielo, Rede, GetNet e Stone na migration, mas uma marca nova que
+comece a receber relato de lojista é um toggle no `MarcaForm`, não uma
+migration.
+
+### Sem CAPTCHA de terceiro (pedido explícito)
+
+`FormularioProtegido::pareceAutomatizado()` combina duas checagens, e as
+duas resultam no mesmo sucesso silencioso sem gravar nada — o bot não
+aprende qual regra o pegou:
+
+- **Honeypot**: um campo (`confirmar_contato`) fora da tela via `sr-only` +
+  `tabindex="-1"` + `autocomplete="off"`, nunca `display:none` — um bot que
+  ignora CSS ainda o vê e preenche.
+- **Tempo mínimo**: um `carregado_em` (timestamp Unix) gravado pelo Blade no
+  render; menos de 3 segundos até o submit é rápido demais para um humano
+  preencher o formulário.
+
+Some-se a isso `RateLimiter::for('propostas', ...)` (5/hora por IP) e
+`for('relatos-taxa', ...)` (10/hora), registrados em
+`AppServiceProvider::boot()`.
+
+### `ImagemSeguraWebp::salvar()` passou a receber caminho, não o upload do Livewire
+
+A assinatura mudou de `TemporaryUploadedFile $file` para `string
+$caminhoAbsoluto` — tudo que o método usava era `$file->getRealPath()`. Isso
+deixou o método reaproveitável fora do Filament: `App\Support\Uploads\
+AnexoDeProposta`, que lida com upload HTTP comum (`Illuminate\Http\
+UploadedFile`, não `TemporaryUploadedFile`), chama o mesmo método em vez de
+duplicar a conversão para WebP. `AnexoDeProposta` aceita também
+`application/pdf`, guardado como está, e salva no disco **`local`**
+(privado) — a proposta que o lojista recebeu é documento de negócio dele,
+sem motivo para ganhar URL pública adivinhável.
+
+### Banner de cookies: o mecanismo está pronto, o provedor ainda não
+
+`<x-banner-cookies>` grava a escolha em `localStorage`
+(`consentimento_cookies: aceito | recusado`) e só chama
+`carregarAnalytics()` depois do "Aceitar" — ou de cara, numa visita nova,
+quando o aceite já tinha sido dado antes (isso não fere "só depois do
+aceite": o consentimento já existe). `carregarAnalytics()` lê a meta
+`ga4-id`, que só existe no HTML quando `config('services.ga4.id')` (env
+`GA4_MEASUREMENT_ID`) está preenchida — hoje não está, então nada carrega. O
+link "Gerenciar cookies" no rodapé (`Navegacao::rodape()`) limpa a escolha e
+reabre o banner.
+
+### `Navegacao::rodape()` virou o padrão de `linksRodape`
+
+Pendência da etapa 06 ("navegação e links de rodapé são vazios por
+padrão"): `site.blade.php` agora resolve `$linksRodape ??=
+\App\Support\Navegacao::rodape()` quando a página não passa o próprio — as
+oito páginas de antes (comparador, marcas, cupons, guia visual) ganharam os
+links institucionais sem precisar editar cada uma.
+
+### Bug de vazamento de PHP cru em atributo de componente Blade
+
+`:valor="old(\"taxas.$i.parcelas\", ...)"` — a aspa **escapada** dentro do
+atributo `:valor="..."` quebrou o parser de atributos do compilador de tags
+do Blade, e tudo depois da primeira `\"` vazou como texto literal na página
+(`parcelaMinima())" min="2" ...`). Encontrado só na verificação visual no
+navegador — nenhum teste `assertSee` pega vazamento de código, só
+`assertDontSee` explícito. Corrigido trocando por concatenação
+(`old('taxas.'.$i.'.parcelas', ...)`), sem aspa escapada nenhuma. Mesma
+família do bug documentado na etapa 09 sobre `@if` dentro de tag de
+abertura de componente: o compilador de tags do Blade não é um parser de
+PHP completo, e span de aspas dentro de um atributo é outro ponto cego dele.
+
+### Pendente da etapa 10
+
+- **Nome final da ferramenta, logo, domínio de produção, identificação do
+  controlador (razão social/CNPJ) e e-mail de contato de `/privacidade`**
+  ainda não foram decididos — ficam para uma etapa própria no fim do
+  projeto, junto do lançamento. `config('services.legal.*')` (env
+  `LEGAL_RAZAO_SOCIAL`, `LEGAL_CNPJ`, `LEGAL_EMAIL_CONTATO`) está vazio até
+  lá, e as páginas mostram um aviso honesto de "a definir" em vez de
+  inventar um dado.
+- **`GA4_MEASUREMENT_ID` vazio** até a etapa de lançamento — o gate do
+  banner de cookies já funciona, só falta o ID.
+- **O resultado do comparador (Alpine sobre o JSON estático, regra 9) ainda
+  não tem o botão "reportar taxa errada"** — só as páginas de marca, por
+  ora. Dar o mesmo botão lá pede um fetch dentro do componente Alpine; fica
+  para quando essa tela ganhar espaço (mesmo texto de pendência já usado
+  para "logo de marca no resultado" na etapa 07).
+
 
 
 - [x] **01** — Ambiente local, Filament, Git e CLAUDE.md
@@ -1031,7 +1144,7 @@ mesma regra que já tira a marca da listagem.
 - [x] **07** — O comparador
 - [x] **08** — Páginas de marca e listagem
 - [x] **09** — Página de cupons
-- [ ] 10 — Metodologia e captação de relatos
+- [x] **10** — Metodologia, LGPD e captação de relatos
 - [ ] 11 — Deploy, SSH, backup e commits
 - [ ] 12 — Cloudflare, medição e performance
 - [ ] 13 — Lançamento
