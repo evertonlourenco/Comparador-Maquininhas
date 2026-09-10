@@ -11,7 +11,7 @@
 <footer class="mt-12 border-t border-regua-forte bg-superficie">
     <div class="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 sm:px-6">
         <div class="space-y-2">
-            <p class="font-titulo text-subtitulo">Comparador de Maquininhas</p>
+            <p class="font-titulo text-subtitulo">{{ config('app.name') }}</p>
             @if ($atualizadoEm)
                 <p class="text-miudo text-tinta-suave">
                     Dados atualizados em <time datetime="{{ \Illuminate\Support\Carbon::parse($atualizadoEm)->toDateString() }}" class="numero">{{ Dinheiro::data($atualizadoEm) }}</time>.
@@ -49,7 +49,7 @@
             <p>
                 Marcas que não publicam tabela aparecem com faixa de valores relatados por lojistas, sempre identificada como tal — nunca como número exato.
             </p>
-            <p class="pt-2">© <span class="numero">{{ now()->year }}</span> Comparador de Maquininhas.</p>
+            <p class="pt-2">© <span class="numero">{{ now()->year }}</span> {{ config('app.name') }}.</p>
         </div>
     </div>
 </footer>

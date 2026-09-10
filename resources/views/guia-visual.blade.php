@@ -46,7 +46,7 @@
 
 <x-layouts.site
     titulo="Guia visual"
-    descricao="Identidade visual e componentes do Comparador de Maquininhas."
+    :descricao="'Identidade visual e componentes do '.config('app.name').'.'"
     :indexavel="false"
     :navegacao="[
         ['rotulo' => 'Comparador', 'href' => '/'],

@@ -43,7 +43,8 @@
         <meta name="ga4-id" content="{{ $ga4Id }}">
     @endif
 
-    <title>{{ $titulo ? $titulo.' — Comparador de Maquininhas' : 'Comparador de Maquininhas' }}</title>
+    @php($nomeDoSite = config('app.name'))
+    <title>{{ $titulo ? $titulo.' — '.$nomeDoSite : $nomeDoSite }}</title>
     @if ($descricao)
         <meta name="description" content="{{ $descricao }}">
     @endif
