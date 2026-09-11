@@ -72,6 +72,13 @@ Sem mudança de escopo. É o que vem agora.
 - Medição de performance com o site ainda fechado: LCP, CLS, peso do bundle
 - Proxy reverso e cabeçalhos: HSTS, cache-control por tipo de arquivo
 
+**Google Search Console verificado (registro TXT), sitemap NÃO enviado.**
+Enviar `sitemap.xml` agora daria 503 em toda URL listada — o Google não
+distingue "fechado de propósito" de "site fora do ar" e isso pesa contra a
+indexação depois. **Lembrete para a etapa 19:** enviar o sitemap ao Search
+Console e importar de novo no Bing Webmaster Tools assim que
+`SITE_EM_BREVE` virar `false`.
+
 **Ressalva registrada:** as fontes são 410 KB dos 552 KB do bundle. A etapa 14
 troca as famílias, então a otimização de carregamento de fonte vai precisar ser
 remedida. O mecanismo (auto-hospedado no bundle, regra 9) sobrevive; só os
@@ -253,7 +260,9 @@ numa pasta.
 
 - Conferência final das oito páginas com conteúdo real e identidade nova
 - `SITE_EM_BREVE=false` e `deploy.sh` — o único passo que reabre o site
-- Sitemap, indexação e Search Console liberados
+- Sitemap, indexação e Search Console liberados — a etapa 12 deixou a
+  verificação pronta (registro TXT) mas não enviou `sitemap.xml`; enviar
+  agora ao Search Console e reimportar no Bing Webmaster Tools
 - Vídeo do canal apontando para o portal
 
 ### 20 — Decisão sobre programa de parceiros
