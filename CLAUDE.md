@@ -1368,6 +1368,61 @@ O log termina em `--- fim, ok ---` quando deu certo e em `FALHOU: <motivo>`
 quando nao. **Dump que encolhe de repente e sinal de problema mesmo quando o
 script diz ok** — por isso o `ls -lht`, que poe os tamanhos lado a lado.
 
+### O 403 que so existe fora do `local` (e mordeu no primeiro login)
+
+`Filament\Http\Middleware\Authenticate` recusa com **403** todo usuario cujo
+model nao implemente `FilamentUser` — mas **so quando `APP_ENV` nao e `local`**:
+
+```php
+abort_if(
+    $user instanceof FilamentUser
+        ? (! $user->canAccessPanel($panel))
+        : (config('app.env') !== 'local'),
+    403,
+);
+```
+
+As etapas 03 a 10 rodaram inteiras em `local`, entao o painel sempre funcionou
+e o defeito ficou invisivel por oito etapas. Ele apareceu no **primeiro login
+em producao**, com o sintoma mais confuso possivel: a senha esta certa, a
+autenticacao passa, e a resposta e 403.
+
+`User` agora implementa `FilamentUser`. A porta e "existir na tabela `users`",
+que e o que ja valia de fato — nao ha rota publica de cadastro, usuario so
+nasce por `php artisan make:filament-user`, e o 2FA obrigatorio e a segunda
+tranca. **Se a etapa 15 (programa de parceiros) trouxer cadastro publico, todo
+cadastrado passa a entrar no `/admin`**, e `canAccessPanel()` vai precisar de
+um criterio de verdade — coluna, papel ou lista.
+
+**Por que 130 testes nao pegaram, e o que mudou.** Os testes de admin usam
+`Livewire::test($pagina)`, que instancia o componente direto e **nao passa pela
+pilha de middlewares HTTP** — o `Authenticate` nunca rodava neles.
+`tests/Feature/Admin/AcessoAoPainelTest.php` cobre o caminho que eles pulam:
+requisicao HTTP de verdade, autenticada, contra `/admin`. Verificado removendo
+a correcao — 3 dos 5 falham com "Expected response status code [302] but
+received 403", o mesmo sintoma da producao. O primeiro teste do arquivo guarda
+o proprio arquivo: falha se alguem puser `APP_ENV=local` no `phpunit.xml`, o
+que transformaria os outros quatro em decoracao.
+
+A licao que vale alem deste bug: **um teste que nunca falhou nao provou nada**.
+Ao cobrir um caminho que so quebra em producao, apague a correcao e confira que
+o teste fica vermelho antes de commitar.
+
+### Dois defeitos do proprio `deploy.sh`, achados usando-o
+
+- **Ele baixa uma versao nova de si mesmo enquanto roda.** O bash le script por
+  deslocamento de byte, entao trocar o arquivo em disco durante a execucao pode
+  fazer ele retomar a leitura no meio de uma linha e executar lixo — com o site
+  fora do ar e o `trap` possivelmente nunca alcancado. O sintoma leve apareceu
+  primeiro: um `export TZ` recem-adicionado nao valeu na execucao que o trouxe.
+  O corpo inteiro passou para dentro de um bloco `{ }`, que obriga o bash a ler
+  ate o `}` final antes de executar. Conferido que o `trap` continua disparando
+  de dentro do bloco.
+- **Ele carimbava em UTC.** O backup ja exportava `TZ=America/Sao_Paulo` e o
+  deploy nao, entao o log dizia 11:27 para um deploy das 08:27 — e isso levou a
+  investigar um erro na hora errada. Os dois scripts agora carimbam no fuso da
+  regra 11.
+
 ### O ensaio da restauracao (feito, nao prometido)
 
 Backup que nunca foi restaurado nao e backup — e um arquivo com nome de
@@ -1425,6 +1480,11 @@ comparou por MD5. Os arquivos de ensaio foram removidos depois.
 - **A senha do banco de producao foi digitada em texto puro num chat durante a
   etapa 11.** Trocar no hPanel e rodar um deploy resolve, e o custo e um campo
   e um script.
+- **`->passwordReset()` esta ligado, mas o app nao envia e-mail.** A tela de
+  login mostra "Esqueceu sua senha?", o Filament processa o pedido e escreve a
+  mensagem em `storage/logs/laravel.log` (`MAIL_MAILER=log`) — o link parece
+  funcionar e nao leva a lugar nenhum. Decidir entre configurar SMTP ou
+  remover `->passwordReset()` do `AdminPanelProvider`.
 - **O 2FA do painel ainda nao foi configurado.** O usuario existe
   (`make:filament-user`), mas `users.app_authentication_secret` e
   `app_authentication_recovery_codes` estao NULL — ninguem entrou em `/admin`
