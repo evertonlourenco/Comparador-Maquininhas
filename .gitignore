@@ -1,8 +1,13 @@
 *.log
 .DS_Store
+# Qualquer variante de .env fica de fora — a lista a mao (.env.backup,
+# .env.production) nao previa nomes novos, e um `.env.antes-do-smtp` criado
+# antes de mexer em producao acabou barrando o proprio deploy pela guarda de
+# arvore limpa do deploy.sh (etapa 11). A guarda esta certa; a lista e que
+# era curta demais.
 .env
-.env.backup
-.env.production
+.env.*
+!.env.example
 .phpactor.json
 .phpunit.result.cache
 /.codex
