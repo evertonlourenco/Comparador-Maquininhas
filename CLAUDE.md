@@ -389,8 +389,12 @@ no primeiro login; não há como pular.
 - Tags nos marcos: `v1.0-lancamento`
 - Commit sempre que houver um bloco de trabalho coerente e verificado — sem esperar
   pedido. Direto na `main`, seguindo a linha da etapa-01.
-- Uma etapa por sessão. O plano completo está no documento "Construção do Comparador
-  de Maquininhas".
+- Uma etapa por sessão. O plano completo está em **`PLANO.md`**, na raiz do
+  repositório — o que falta e em que ordem. Este arquivo registra o estado e as
+  regras do que já existe; quando os dois divergirem, o `CLAUDE.md` vence sobre
+  o que está feito e o `PLANO.md` sobre o que vem depois. (Até 11/09/2026 o
+  plano vivia num documento externo, "Construção do Comparador de Maquininhas",
+  fora do versionamento.)
 
 ## Motor de cálculo (etapa 05)
 
@@ -1237,6 +1241,24 @@ para `public_html.wordpress-2024`, nao apagado. O `.well-known` que estava
 dentro dele foi copiado para `public/` antes da troca — e por onde o Let's
 Encrypt valida o certificado.
 
+### O site publico esta fechado (`SITE_EM_BREVE`)
+
+O portal esta em producao e **fechado ao publico** desde 11/09/2026: toda rota
+de `routes/web.php` responde **503** com `Retry-After` e uma pagina "em breve"
+marcada `noindex`. O `/admin` continua de pe — e por ele que as taxas serao
+aprovadas enquanto o site espera a identidade visual da etapa 14.
+
+`App\Http\Middleware\SiteEmBreve`, ligado por `SITE_EM_BREVE` no `.env`
+(`config/site.php`). **Nao e `artisan down`**, que derrubaria o painel junto.
+
+503 e nao 200 de proposito: um "em breve" servido com 200 e pagina real aos
+olhos do buscador — ele indexa, e o dominio aparece com esse texto por semanas.
+O 503 se desfaz sozinho quando a flag sair; nao ha `robots.txt` para lembrar de
+reverter.
+
+**Reabrir o site e trocar `SITE_EM_BREVE` para `false` e rodar o `deploy.sh`.**
+E o unico passo da etapa 19.
+
 ### Producao e MariaDB, nao MySQL
 
 O `mysqldump` se identifica como **MariaDB 11.8.9**, e o dump comeca com
@@ -1591,9 +1613,21 @@ comparou por MD5. Os arquivos de ensaio foram removidos depois.
 - [x] **10** — Metodologia, LGPD e captação de relatos
 - [x] **11** — Deploy, SSH, backup e commits
 - [ ] 12 — Cloudflare, medição e performance
-- [ ] 13 — Lançamento
-- [ ] 14 — Monitor de mudanças
-- [ ] 15 — Decisão sobre programa de parceiros
+- [ ] 13 — Monitor de mudanças de taxa
+- [ ] 14 — Identidade visual e reforma da interface
+- [ ] 15 — Imagens: logos de marca, equipamentos e bandeiras
+- [ ] 16 — Painel de saúde e observabilidade do administrador
+- [ ] 17 — Curadoria e validação das taxas
+- [ ] 18 — Manual do administrador
+- [ ] 19 — Lançamento
+- [ ] 20 — Decisão sobre programa de parceiros
+
+**A ordem da 12 em diante foi refeita em 11/09/2026** (o motivo está em
+`PLANO.md`). Nada até a 11 mudou. O resumo: a identidade visual própria ainda
+não existe e leva dias para ficar pronta, então as etapas que não encostam em
+estética passaram na frente, a reforma visual entra antes do lançamento — nunca
+depois —, e a curadoria das taxas foi para depois dela, por decisão do Everton:
+avaliar taxa e avaliar tela ao mesmo tempo confunde as duas coisas.
 
 ## Pendente ao fim da etapa 05
 
