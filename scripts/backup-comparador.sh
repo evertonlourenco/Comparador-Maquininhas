@@ -39,8 +39,20 @@ umask 077
 # voltam em UTC independente do fuso da sessao.
 export TZ=America/Sao_Paulo
 
+# A raiz da aplicacao e deduzida da posicao deste arquivo (ele vive em
+# <raiz>/scripts/), e nao fixada num caminho. O projeto ja mudou de lugar uma
+# vez — de ~/comparador para ~/domains/maquinacerta.com.br/comparador, para
+# seguir o padrao das outras contas do servidor — e um caminho fixo aqui teria
+# quebrado o backup em silencio.
+APP="${APP_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+
+# As credenciais ficam no home, nao dentro do projeto: sao da conta, nao do
+# codigo, e nao tem por que aparecer numa listagem do diretorio da aplicacao.
 CONFIG="${BACKUP_CNF:-$HOME/.comparador-backup.cnf}"
-APP="${APP_DIR:-$HOME/comparador}"
+
+# Os backups ficam FORA de ~/domains de proposito. Se o dominio for removido ou
+# reatribuido no hPanel, a arvore domains/<dominio> vai junto — e o backup
+# precisa sobreviver justamente ao dia em que algo assim acontece.
 DESTINO="${BACKUP_DIR:-$HOME/backups/comparador}"
 DIAS="${BACKUP_DIAS:-14}"
 
