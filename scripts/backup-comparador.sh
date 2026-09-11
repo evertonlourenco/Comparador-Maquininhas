@@ -29,6 +29,16 @@ set -euo pipefail
 # compartilhado, nenhum dos dois tem por que ser legivel por outro usuario.
 umask 077
 
+# O servidor da Hostinger roda em UTC; o projeto vive no fuso de Sao Paulo
+# (regra 11). Sem isto, o cron das 3h da manha brasileira gravaria um arquivo
+# carimbado 06:00 e o log contaria uma hora que nao e a de ninguem.
+#
+# Isto muda apenas o `date` deste script — nomes de arquivo e log. Nao afeta o
+# dump: o mysqldump usa --tz-utc por padrao, gravando
+# `SET TIME_ZONE='+00:00'` no cabecalho, entao as colunas TIMESTAMP saem e
+# voltam em UTC independente do fuso da sessao.
+export TZ=America/Sao_Paulo
+
 CONFIG="${BACKUP_CNF:-$HOME/.comparador-backup.cnf}"
 APP="${APP_DIR:-$HOME/comparador}"
 DESTINO="${BACKUP_DIR:-$HOME/backups/comparador}"
