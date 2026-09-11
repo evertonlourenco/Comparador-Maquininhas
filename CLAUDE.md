@@ -1368,6 +1368,43 @@ O log termina em `--- fim, ok ---` quando deu certo e em `FALHOU: <motivo>`
 quando nao. **Dump que encolhe de repente e sinal de problema mesmo quando o
 script diz ok** — por isso o `ls -lht`, que poe os tamanhos lado a lado.
 
+### O ensaio da restauracao (feito, nao prometido)
+
+Backup que nunca foi restaurado nao e backup — e um arquivo com nome de
+backup. O ensaio foi feito em 11/09/2026, num banco descartavel
+(`u835756808_ensaio`, criado e apagado no hPanel), sem tocar em producao. O
+usuario de producao nao serve para isso: so tem privilegio no proprio banco e
+responde `ERROR 1044` a qualquer `CREATE DATABASE`.
+
+O que foi conferido, do mais fraco ao mais forte:
+
+| Verificacao | Resultado |
+|---|---|
+| Restauracao completa | 24 tabelas, em menos de 1s, sem erro |
+| Contagem de linhas, 24 tabelas | 23 identicas; so `sessions` diverge |
+| **`CHECKSUM TABLE` do conteudo** | 23 identicas, incluindo as 964 taxas |
+| Indices (nome, coluna, unicidade) | 98 entradas identicas |
+| Chaves estrangeiras | 26 identicas |
+| `CHECK constraints` | 6 identicas |
+| Colunas (tipo, nulidade, padrao) | 245 identicas |
+| Chave unica da regra 1 | `taxas_divulgadas_chave_unica` intacta |
+| Acentuacao | "Em 1 dia útil", "Antecipação parcial" — `utf8mb4_unicode_ci` |
+| Decimais (regra 11) | `1.9900`, `2.9800`, `19.9900` — 4 casas, sem perda |
+| Arquivos: binario de 5 KB + texto acentuado | MD5 identico nos dois discos |
+
+**A divergencia de `sessions` e o comportamento correto**, e vale registrar
+porque vai reaparecer em todo ensaio futuro: `SESSION_DRIVER=database`, o dump
+saiu as 11:31:16, e a sessao a mais em producao tem `last_activity` as
+11:35:49 — criada pelas requisicoes de verificacao, **depois** da fotografia.
+Um backup e um instante; nao conter o que veio depois dele e o que se espera.
+
+O ensaio dos arquivos comecou fraco e foi refeito: `storage/app` so tem os
+`.gitignore` enquanto nenhum logo foi enviado, entao a primeira passada provou
+o mecanismo, nao o mecanismo com conteudo. A segunda criou um binario de 5000
+bytes de `/dev/urandom` no disco `public` e um texto com acento, cedilha e
+`R$ 1.234,56` no disco `private`, rodou o backup, restaurou num temporario e
+comparou por MD5. Os arquivos de ensaio foram removidos depois.
+
 ### Pendente da etapa 11
 
 - **Os backups moram no mesmo servidor que protegem.** Resolvem "apaguei sem
@@ -1388,6 +1425,13 @@ script diz ok** — por isso o `ls -lht`, que poe os tamanhos lado a lado.
 - **A senha do banco de producao foi digitada em texto puro num chat durante a
   etapa 11.** Trocar no hPanel e rodar um deploy resolve, e o custo e um campo
   e um script.
+- **O 2FA do painel ainda nao foi configurado.** O usuario existe
+  (`make:filament-user`), mas `users.app_authentication_secret` e
+  `app_authentication_recovery_codes` estao NULL — ninguem entrou em `/admin`
+  ainda. No primeiro login o Filament obriga a configurar, e os codigos de
+  recuperacao aparecem **uma vez**. Guardar fora do computador: nao ha
+  "esqueci minha senha" (o app nao envia e-mail) e o backup so ajuda se a
+  APP_KEY do `.env` for a mesma.
 
 - [x] **01** — Ambiente local, Filament, Git e CLAUDE.md
 - [x] **02** — Schema do banco
@@ -1399,7 +1443,7 @@ script diz ok** — por isso o `ls -lht`, que poe os tamanhos lado a lado.
 - [x] **08** — Páginas de marca e listagem
 - [x] **09** — Página de cupons
 - [x] **10** — Metodologia, LGPD e captação de relatos
-- [ ] 11 — Deploy, SSH, backup e commits
+- [x] **11** — Deploy, SSH, backup e commits
 - [ ] 12 — Cloudflare, medição e performance
 - [ ] 13 — Lançamento
 - [ ] 14 — Monitor de mudanças
