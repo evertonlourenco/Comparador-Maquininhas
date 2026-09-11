@@ -99,13 +99,19 @@ registrar "env:      $(basename "$ENVB") (600)"
 # --------------------------------------------------------------- rotacao ---
 # -mtime +N e "modificado ha mais de N dias". Com 14, o mais antigo mantido tem
 # no maximo 14 dias — duas semanas de historico.
+#
+# Sem substituicao de processo (`< <(...)`) aqui, de proposito: ela depende de
+# /dev/fd, que nao existe no ambiente da Hostinger. A primeira versao deste
+# script usava, e falhou em producao com "/dev/fd/63: No such file or
+# directory" — gravando o backup e morrendo antes de rotacionar. Pipe simples
+# funciona, e `find -delete` dispensa o laco.
 REMOVIDOS=0
 for PADRAO in 'banco-*.sql.gz' 'arquivos-*.tar.gz' 'env-*'; do
-    while IFS= read -r VELHO; do
-        [ -n "$VELHO" ] || continue
-        rm -f "$VELHO"
-        REMOVIDOS=$((REMOVIDOS + 1))
-    done < <(find "$DESTINO" -maxdepth 1 -type f -name "$PADRAO" -mtime +"$DIAS")
+    N="$(find "$DESTINO" -maxdepth 1 -type f -name "$PADRAO" -mtime +"$DIAS" | wc -l | tr -d ' ')"
+    if [ "$N" -gt 0 ]; then
+        find "$DESTINO" -maxdepth 1 -type f -name "$PADRAO" -mtime +"$DIAS" -delete
+        REMOVIDOS=$((REMOVIDOS + N))
+    fi
 done
 
 MANTIDOS="$(find "$DESTINO" -maxdepth 1 -type f -name 'banco-*.sql.gz' | wc -l | tr -d ' ')"
