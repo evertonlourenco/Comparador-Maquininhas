@@ -28,6 +28,18 @@ set -euo pipefail
 # na etapa 11, ao investigar um erro relatado pelo Everton.
 export TZ=America/Sao_Paulo
 
+# Daqui ate o fim, tudo dentro de um unico bloco { }. Nao e enfeite: este
+# script faz `git merge` de uma versao nova DELE MESMO no meio da execucao, e
+# o bash le um script incrementalmente, por deslocamento de byte. Sem o bloco,
+# trocar o arquivo em disco enquanto ele roda pode fazer o bash retomar a
+# leitura no meio de uma linha e executar lixo — com o site fora do ar. Com o
+# bloco, o bash precisa ler ate o `}` final antes de executar qualquer coisa,
+# entao a troca do arquivo nao alcanca mais o que ainda vai rodar.
+#
+# O sintoma leve ja apareceu na etapa 11: um `export TZ` recem-adicionado nao
+# valeu na execucao que o trouxe, porque o topo lido era o do arquivo antigo.
+{
+
 PHP="${PHP_BIN:-/opt/alt/php84/usr/bin/php}"
 COMPOSER="${COMPOSER_BIN:-/usr/local/bin/composer}"
 
@@ -154,3 +166,5 @@ trap - EXIT INT TERM
 
 passo "deploy concluido"
 echo "    versao no ar: $(git rev-parse --short HEAD) — $(git log -1 --pretty=%s)"
+
+}
