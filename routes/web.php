@@ -7,7 +7,19 @@ use App\Http\Controllers\MarcaController;
 use App\Http\Controllers\PropostaController;
 use App\Http\Controllers\RelatoTaxaIncorretoController;
 use App\Http\Controllers\SitemapController;
+use App\Http\Middleware\SiteEmBreve;
 use Illuminate\Support\Facades\Route;
+
+/*
+| SiteEmBreve fecha TODAS as rotas publicas de uma vez (503) enquanto
+| SITE_EM_BREVE estiver ligado no .env — ver config/site.php. O painel do
+| Filament registra as proprias rotas no AdminPanelProvider e fica de fora
+| deste grupo de proposito: e por ele que as taxas sao aprovadas enquanto o
+| site publico espera a identidade visual.
+|
+| Nao se usa `artisan down` aqui porque aquele derruba o painel junto.
+*/
+Route::middleware(SiteEmBreve::class)->group(function (): void {
 
 // Etapa 07: o comparador e a home. Nao ha pagina de entrada antes dele — quem
 // chega pelo video quer a conta, e uma tela intermediaria so custaria um
@@ -41,3 +53,5 @@ Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
 // Etapa 06: a folha de amostra da identidade visual. Fora do indice dos
 // buscadores (noindex no layout) — e pagina de trabalho, nao de publico.
 Route::view('/guia-visual', 'guia-visual')->name('guia-visual');
+
+});
