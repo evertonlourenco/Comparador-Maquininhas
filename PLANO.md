@@ -8,13 +8,19 @@ existe; este arquivo registra **o que falta e em que ordem**. Quando os dois
 divergirem, o `CLAUDE.md` vence sobre o que está feito e este vence sobre o que
 vem depois.
 
-> **Onde vive o plano.** Ate 11/09/2026 o plano de 15 etapas morava num
-> documento externo, "Construcao do Comparador de Maquininhas", fora do
-> versionamento e fora desta maquina. Ele nao foi localizado; este arquivo o
-> substitui. Nao confundir com `~/Downloads/plano-portal-maquininhas.md`
-> (14/06/2026), um antecessor de 6 fases que descrevia outro projeto — XAMPP,
-> Slim, coletor em Node/Playwright/Gemini — e esta superado, com uma excecao
-> util registrada na etapa 14.
+> **Onde vive o plano.** Em duas formas, e as duas sao mantidas juntas:
+>
+> - **Artifact "Construcao do Comparador de Maquininhas"** — https://claude.ai/code/artifact/bb649f45-0ffd-4261-9690-079dca5927ed
+>   A versao formatada, com os prompts prontos de cada etapa. **Nao e arquivo
+>   no disco**: e um Artifact publicado no Claude.ai, e foi por isso que uma
+>   busca no sistema de arquivos nao o encontrou em 11/09/2026.
+> - **Este arquivo** — a mesma ordem, versionada junto do codigo, para entrar
+>   no diff e nao depender de memoria de sessao.
+>
+> Ao mudar a ordem das etapas, atualize os dois. Nao confundir com
+> `~/Downloads/plano-portal-maquininhas.md` (14/06/2026), um antecessor de 6
+> fases que descrevia outro projeto — XAMPP, Slim, coletor em Node/Playwright/
+> Gemini — e esta superado, com uma excecao util registrada na etapa 14.
 >
 > **Reordenado em 11/09/2026.** Até a etapa 11 nada mudou. Da 12 em diante a
 > ordem foi refeita a pedido do Everton, e três etapas novas entraram (imagens,

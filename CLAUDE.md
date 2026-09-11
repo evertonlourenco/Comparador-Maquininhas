@@ -392,9 +392,14 @@ no primeiro login; não há como pular.
 - Uma etapa por sessão. O plano completo está em **`PLANO.md`**, na raiz do
   repositório — o que falta e em que ordem. Este arquivo registra o estado e as
   regras do que já existe; quando os dois divergirem, o `CLAUDE.md` vence sobre
-  o que está feito e o `PLANO.md` sobre o que vem depois. (Até 11/09/2026 o
-  plano vivia num documento externo, "Construção do Comparador de Maquininhas",
-  fora do versionamento.)
+  o que está feito e o `PLANO.md` sobre o que vem depois.
+- A versão formatada do plano, com os prompts prontos de cada etapa, é o
+  **Artifact "Construção do Comparador de Maquininhas"**:
+  https://claude.ai/code/artifact/bb649f45-0ffd-4261-9690-079dca5927ed
+  **Ele não é arquivo no disco** — é um Artifact publicado no Claude.ai, e uma
+  busca no sistema de arquivos não o acha (aconteceu na etapa 11). Para lê-lo ou
+  atualizá-lo, use a ferramenta de Artifact com essa URL. Mudou a ordem das
+  etapas: atualize o Artifact **e** o `PLANO.md`.
 
 ## Motor de cálculo (etapa 05)
 
