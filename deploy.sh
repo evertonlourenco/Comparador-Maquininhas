@@ -6,7 +6,7 @@
 # em sucesso e nao muda nada. Rodar depois de um `git push` traz o codigo novo,
 # as dependencias, as migrations e os caches.
 #
-#   ssh comparador '~/comparador/deploy.sh'
+#   ssh comparador '~/domains/maquinacerta.com.br/comparador/deploy.sh'
 #
 # O QUE ESTE SCRIPT NAO FAZ, DE PROPOSITO:
 #

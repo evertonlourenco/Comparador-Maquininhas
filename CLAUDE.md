@@ -1164,15 +1164,38 @@ PHP completo, e span de aspas dentro de um atributo é outro ponto cego dele.
 O portal foi ao ar em `https://maquinacerta.com.br` — Hostinger Cloud Startup,
 conta `u835756808`, atalho SSH `comparador` no `~/.ssh/config` do Mac.
 
-| Onde | O que |
-|---|---|
-| `~/comparador` | A aplicacao inteira, **fora da raiz web** |
-| `~/domains/maquinacerta.com.br/public_html` | Symlink para `~/comparador/public` |
-| `~/comparador/.env` | Producao, `600`, nunca versionado |
-| `~/.comparador-backup.cnf` | Credenciais do MySQL para o backup, `600` |
-| `~/backups/comparador/` | Os backups, diretorio `700` |
-| `deploy.sh` | Ciclo de atualizacao (raiz do repo) |
-| `scripts/backup-comparador.sh` | Backup diario, chamado pelo cron do hPanel |
+```
+~/domains/maquinacerta.com.br/
+├── DO_NOT_UPLOAD_HERE
+├── comparador/                    a aplicacao — IRMA de public_html, nao filha
+│   ├── .env                       600, nunca versionado
+│   ├── deploy.sh
+│   ├── public/                    a unica pasta servida pela web
+│   └── scripts/backup-comparador.sh
+├── public_html  ->  comparador/public
+└── public_html.wordpress-2024     o site antigo, renomeado e nao apagado
+
+~/.comparador-backup.cnf           credenciais do MySQL, 600
+~/backups/comparador/              os backups, diretorio 700
+```
+
+**A aplicacao fica dentro da pasta do dominio, e isso e convencao da conta, nao
+exigencia tecnica.** A conta tem 16 dominios; `monetizando.com.br/tubemaster`
+ja usava esse arranjo — o app como irmao de `public_html` dentro da pasta do
+dominio. Manter o comparador em `~/comparador` teria a mesma propriedade de
+seguranca (fora da raiz web nos dois casos), mas sairia do padrao e custaria
+caro na hora de achar o projeto um ano depois. Por isso mudou de lugar na
+etapa 11, depois de ja estar no ar.
+
+Nem tudo mudou junto, e o motivo esta escrito em `scripts/backup-comparador.sh`:
+`~/.comparador-backup.cnf` fica no home porque e credencial da conta, nao do
+codigo; e `~/backups/` fica **fora** de `~/domains` porque, se o dominio for
+removido ou reatribuido no hPanel, a arvore `domains/<dominio>` vai junto — e o
+backup precisa sobreviver exatamente ao dia em que isso acontece.
+
+Os dois scripts **deduzem a raiz da propria posicao** (`dirname
+"$BASH_SOURCE"`), nunca de um caminho fixo. Foi o que permitiu mover o projeto
+sem editar uma linha deles — e e o que vai permitir mover de novo.
 
 ### Use `/opt/alt/php84/usr/bin/php`, nunca o `php` do PATH
 
@@ -1195,19 +1218,24 @@ tokenizer xml xmlwriter zip zlib exif`. **GD com suporte a WebP**, que e o que
 `ImagemSeguraWebp` exige. Nao ha `sodium` nem `opcache` no CLI, e nenhum dos
 dois e usado.
 
-### A aplicacao mora fora da raiz web, e isso e o desenho
+### So `public/` tem URL
 
-`public_html` e um **symlink** para `~/comparador/public`. Os outros projetos
-da conta moram dentro de `domains/<dominio>/public_html` (estilo WordPress,
-PHP solto na raiz web); este nao, e por isso `.env`, `vendor/`, `app/` e
-`storage/` nao tem URL. Conferido de fora depois do deploy: `/.env` da 403,
-`/vendor/autoload.php`, `/composer.json`, `/app/Models/Marca.php` e
-`/deploy.sh` dao 404.
+`public_html` e um **symlink** para `comparador/public`. Nem `.env`, nem
+`vendor/`, nem `app/`, nem `storage/` estao debaixo de diretorio servido, entao
+nao existe URL que os alcance. Conferido de fora depois de cada mudanca de
+caminho: `/.env` da 403; `/vendor/autoload.php`, `/composer.json`,
+`/app/Models/Marca.php`, `/deploy.sh` e `/scripts/backup-comparador.sh` dao
+404.
+
+Vale como contraste dentro da propria conta: o cron do gestorprisma aponta para
+`public_html/cron/backup_db.php` — um script de backup **dentro** da raiz web,
+disparavel por qualquer um pelo navegador. Nao e deste projeto, mas e o erro
+que este arranjo evita.
 
 O `public_html` anterior (um backup de WordPress de 2024) foi **renomeado**
 para `public_html.wordpress-2024`, nao apagado. O `.well-known` que estava
-dentro dele foi copiado para `~/comparador/public/` antes da troca — e por
-onde o Let's Encrypt valida o certificado.
+dentro dele foi copiado para `public/` antes da troca — e por onde o Let's
+Encrypt valida o certificado.
 
 ### Producao e MariaDB, nao MySQL
 
@@ -1219,7 +1247,7 @@ tipo JSON, `CHECK` e comportamento de `ENUM` diferem entre os dois motores.
 
 ### `deploy.sh`: o que ele faz e o que ele recusa fazer
 
-`ssh comparador '~/comparador/deploy.sh'`. Idempotente: rodar duas vezes
+`ssh comparador '~/domains/maquinacerta.com.br/comparador/deploy.sh'`. Idempotente: rodar duas vezes
 seguidas sem nada novo termina em sucesso e nao muda nada.
 
 Quatro decisoes que o ciclo minimo (pull, install, migrate, cache) nao cobre:
@@ -1305,8 +1333,12 @@ O binario nao existe neste servidor. O cron e criado no hPanel: **Avancado ->
 Cron Jobs**, tipo **Comando**, expressao `0 6 * * *`, linha:
 
 ```
-/bin/bash /home/u835756808/comparador/scripts/backup-comparador.sh
+/bin/bash /home/u835756808/domains/maquinacerta.com.br/comparador/scripts/backup-comparador.sh
 ```
+
+`/bin/bash` e nao `/usr/bin/php` porque o script e bash, nao PHP — e neste
+servidor `/bin` e symlink para `usr/bin`, entao `/bin/bash` e `/usr/bin/bash`
+sao o mesmo binario.
 
 ### Restaurar
 
@@ -1316,13 +1348,14 @@ gunzip -c ~/backups/comparador/banco-<carimbo>.sql.gz \
   | mysql --defaults-extra-file=~/.comparador-backup.cnf u835756808_comparador
 
 # arquivos enviados (caminhos relativos: cai no lugar a partir da raiz do projeto)
-tar -xzf ~/backups/comparador/arquivos-<carimbo>.tar.gz -C ~/comparador
+tar -xzf ~/backups/comparador/arquivos-<carimbo>.tar.gz -C ~/domains/maquinacerta.com.br/comparador
 
 # .env, so se a APP_KEY se perdeu
-cp ~/backups/comparador/env-<carimbo> ~/comparador/.env && chmod 600 ~/comparador/.env
+cp ~/backups/comparador/env-<carimbo> ~/domains/maquinacerta.com.br/comparador/.env
+chmod 600 ~/domains/maquinacerta.com.br/comparador/.env
 
 # depois de qualquer restauracao, os caches apontam para o estado velho
-~/comparador/deploy.sh
+~/domains/maquinacerta.com.br/comparador/deploy.sh
 ```
 
 Conferir se o backup rodou:
@@ -1349,7 +1382,7 @@ script diz ok** — por isso o `ls -lht`, que poe os tamanhos lado a lado.
   defeito — a aprovacao em lote no painel e o que destrava.
 - **Aprovar taxa no painel nao regenera o JSON.** O arquivo so e reescrito por
   `comparador:gerar-json`, que hoje roda no deploy. Depois de aprovar em lote,
-  e preciso rodar `ssh comparador '~/comparador/deploy.sh'` (ou so o comando
+  e preciso rodar `ssh comparador '~/domains/maquinacerta.com.br/comparador/deploy.sh'` (ou so o comando
   artisan) para o site refletir. Automatizar isso — um botao no painel ou um
   cron — e trabalho da etapa 12 ou 13.
 - **A senha do banco de producao foi digitada em texto puro num chat durante a

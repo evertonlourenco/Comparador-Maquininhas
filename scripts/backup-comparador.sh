@@ -20,7 +20,7 @@
 # com permissao 600, e este script recusa rodar se a permissao estiver frouxa.
 #
 # Chamada (o cron do hPanel usa exatamente esta linha):
-#   /bin/bash /home/u835756808/comparador/scripts/backup-comparador.sh
+#   /bin/bash /home/u835756808/domains/maquinacerta.com.br/comparador/scripts/backup-comparador.sh
 #
 set -euo pipefail
 
