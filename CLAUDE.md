@@ -1423,6 +1423,53 @@ o teste fica vermelho antes de commitar.
   investigar um erro na hora errada. Os dois scripts agora carimbam no fuso da
   regra 11.
 
+### SMTP, e as traducoes que faltavam atras dele
+
+O app manda **um** e-mail: a recuperacao de senha do painel
+(`AdminPanelProvider::passwordReset()`). Em local isso fica em `MAIL_MAILER=log`
+e basta. Em producao passou a ser SMTP da Hostinger — o dominio ja tinha MX,
+SPF e DKIM publicados, entao faltava so a caixa e a senha.
+
+```
+MAIL_MAILER=smtp
+MAIL_SCHEME=smtps          # Laravel 13 usa MAIL_SCHEME, nao MAIL_ENCRYPTION
+MAIL_HOST=smtp.hostinger.com
+MAIL_PORT=465              # a 25 e bloqueada de saida; 465 e 587 abertas
+MAIL_USERNAME=contato@maquinacerta.com.br
+MAIL_FROM_ADDRESS=contato@maquinacerta.com.br
+```
+
+`MAIL_USERNAME` e `MAIL_FROM_ADDRESS` sao o mesmo endereco porque **a Hostinger
+recusa remetente diferente da caixa autenticada**. E a senha entra no `.env`
+entre **aspas simples**, pelo mesmo motivo da senha do banco: `$` em valor de
+dotenv com aspas duplas vira interpolacao de variavel.
+
+**Trocar o `.env` nao basta: o `config:cache` precisa ser refeito.** Enquanto o
+cache nao for reconstruido, `config('mail.default')` continua devolvendo `log` e
+o e-mail vai silenciosamente para `storage/logs`, sem erro nenhum.
+
+**O teste real achou o que a configuracao escondia.** O SMTP aceitou a mensagem
+na primeira tentativa, mas percorrer o fluxo no navegador mostrou a notificacao
+com **titulo em ingles sobre corpo em portugues** — "We have emailed your
+password reset link." O Filament embarca `pt_BR`; o Laravel nao. E o corpo do
+e-mail de redefinicao saia inteiro em ingles, num site brasileiro.
+
+As traducoes que faltavam, agora versionadas:
+
+| Arquivo | O que cobre |
+|---|---|
+| `lang/pt_BR/passwords.php` | Os cinco status do password broker (`sent`, `reset`, `throttled`, `token`, `user`) |
+| `lang/pt_BR.json` | As frases do e-mail e do layout — o Laravel as pede por chave-frase (`Lang::get('Reset your password')`), nao por chave-de-arquivo |
+
+`tests/Feature/Idioma/TraducoesDoLaravelTest.php` cobre as duas, e um dos testes
+guarda o proprio arquivo de traducao: uma chave copiada sem traduzir passaria
+despercebida, porque `__()` devolve a chave e nada quebra. Verificado removendo
+o `lang/`: 10 dos 12 falham.
+
+Detalhe do layout que vale lembrar: sem `lang/pt_BR.json`, um e-mail em
+portugues termina com **"Regards,"** — o tipo de coisa que ninguem revisa depois
+que o assunto ja esta certo.
+
 ### O ensaio da restauracao (feito, nao prometido)
 
 Backup que nunca foi restaurado nao e backup — e um arquivo com nome de
@@ -1480,11 +1527,6 @@ comparou por MD5. Os arquivos de ensaio foram removidos depois.
 - **A senha do banco de producao foi digitada em texto puro num chat durante a
   etapa 11.** Trocar no hPanel e rodar um deploy resolve, e o custo e um campo
   e um script.
-- **`->passwordReset()` esta ligado, mas o app nao envia e-mail.** A tela de
-  login mostra "Esqueceu sua senha?", o Filament processa o pedido e escreve a
-  mensagem em `storage/logs/laravel.log` (`MAIL_MAILER=log`) — o link parece
-  funcionar e nao leva a lugar nenhum. Decidir entre configurar SMTP ou
-  remover `->passwordReset()` do `AdminPanelProvider`.
 - **O 2FA do painel ainda nao foi configurado.** O usuario existe
   (`make:filament-user`), mas `users.app_authentication_secret` e
   `app_authentication_recovery_codes` estao NULL — ninguem entrou em `/admin`
