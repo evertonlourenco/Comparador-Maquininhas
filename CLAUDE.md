@@ -10,10 +10,10 @@ Monetização: links de afiliado com cupom de desconto na adesão.
 |---|---|
 | Framework | Laravel 13.30 |
 | Admin | Filament 5.7 (painel em `/admin`) |
-| Banco | MySQL 8.0.40 |
+| Banco | MySQL 8.0.40 em local; **MariaDB 11.8.9 em produção** (ver etapa 11) |
 | PHP | 8.4.23 |
 | Ambiente local | Laravel Herd + DBngin (macOS ARM) |
-| Produção | Hostinger Cloud Startup + Cloudflare |
+| Produção | Hostinger Cloud Startup + Cloudflare → https://maquinacerta.com.br |
 
 Local: `/Users/Everton/Claude Code/Herd/comparador-maquininhas` → http://comparador-maquininhas.test
 Repositório: `git@github.com:evertonlourenco/Comparador-Maquininhas.git` (privado)
@@ -1158,6 +1158,203 @@ PHP completo, e span de aspas dentro de um atributo é outro ponto cego dele.
   para "logo de marca no resultado" na etapa 07).
 
 
+
+## Deploy, backup e producao (etapa 11)
+
+O portal foi ao ar em `https://maquinacerta.com.br` — Hostinger Cloud Startup,
+conta `u835756808`, atalho SSH `comparador` no `~/.ssh/config` do Mac.
+
+| Onde | O que |
+|---|---|
+| `~/comparador` | A aplicacao inteira, **fora da raiz web** |
+| `~/domains/maquinacerta.com.br/public_html` | Symlink para `~/comparador/public` |
+| `~/comparador/.env` | Producao, `600`, nunca versionado |
+| `~/.comparador-backup.cnf` | Credenciais do MySQL para o backup, `600` |
+| `~/backups/comparador/` | Os backups, diretorio `700` |
+| `deploy.sh` | Ciclo de atualizacao (raiz do repo) |
+| `scripts/backup-comparador.sh` | Backup diario, chamado pelo cron do hPanel |
+
+### Use `/opt/alt/php84/usr/bin/php`, nunca o `php` do PATH
+
+O `/usr/bin/php` da Hostinger e 8.3.33 e tem **`proc_open`, `exec`, `shell_exec`,
+`symlink` e `popen` desabilitados**. As consequencias sao concretas, nao
+teoricas: `composer install` morre no `post-autoload-dump` (que chama
+`artisan package:discover` e `filament:upgrade`) por falta de `proc_open`, e
+`artisan storage:link` morre por falta de `symlink` — e sem esse link os logos
+de marca e as fotos de equipamento somem do site, porque os models os servem
+por `Storage::disk('public')->url()`.
+
+`/opt/alt/php84/usr/bin/php` e 8.4.19 (praticamente o 8.4.23 do Herd local) e
+nao tem funcao desabilitada nenhuma. O `deploy.sh` o fixa numa variavel no topo
+e nunca chama `php` solto. A versao **web** e outra configuracao, feita por
+dominio no hPanel (Avancado -> Versao do PHP), e tambem esta em 8.4.
+
+Extensoes conferidas e presentes: `bcmath ctype curl dom fileinfo filter gd
+hash iconv intl json mbstring openssl pcre pdo pdo_mysql session simplexml
+tokenizer xml xmlwriter zip zlib exif`. **GD com suporte a WebP**, que e o que
+`ImagemSeguraWebp` exige. Nao ha `sodium` nem `opcache` no CLI, e nenhum dos
+dois e usado.
+
+### A aplicacao mora fora da raiz web, e isso e o desenho
+
+`public_html` e um **symlink** para `~/comparador/public`. Os outros projetos
+da conta moram dentro de `domains/<dominio>/public_html` (estilo WordPress,
+PHP solto na raiz web); este nao, e por isso `.env`, `vendor/`, `app/` e
+`storage/` nao tem URL. Conferido de fora depois do deploy: `/.env` da 403,
+`/vendor/autoload.php`, `/composer.json`, `/app/Models/Marca.php` e
+`/deploy.sh` dao 404.
+
+O `public_html` anterior (um backup de WordPress de 2024) foi **renomeado**
+para `public_html.wordpress-2024`, nao apagado. O `.well-known` que estava
+dentro dele foi copiado para `~/comparador/public/` antes da troca — e por
+onde o Let's Encrypt valida o certificado.
+
+### Producao e MariaDB, nao MySQL
+
+O `mysqldump` se identifica como **MariaDB 11.8.9**, e o dump comeca com
+`/*M!999999\- enable the sandbox mode */`, marcador que so o MariaDB escreve.
+O local e MySQL 8.0.40 (DBngin). As `CHECK constraint` da regra 1 funcionam
+nos dois, mas a divergencia esta escrita aqui para ninguem assumir paridade:
+tipo JSON, `CHECK` e comportamento de `ENUM` diferem entre os dois motores.
+
+### `deploy.sh`: o que ele faz e o que ele recusa fazer
+
+`ssh comparador '~/comparador/deploy.sh'`. Idempotente: rodar duas vezes
+seguidas sem nada novo termina em sucesso e nao muda nada.
+
+Quatro decisoes que o ciclo minimo (pull, install, migrate, cache) nao cobre:
+
+- **Todas as guardas rodam antes de o site sair do ar** — `.env` presente,
+  arvore sem alteracao local, ramo `main`, PHP e Composer no lugar. Abortar
+  com o site no ar e melhor que abortar com ele fora.
+- **O modo de manutencao entra antes do `composer install`.** O
+  `public/index.php` checa `storage/framework/maintenance.php` **antes** de
+  carregar o autoload, entao o aviso continua de pe enquanto o `vendor/` e
+  reescrito. Um `trap` em EXIT/INT/TERM garante que o site volta mesmo se o
+  script morrer no meio.
+- **Confere o manifesto do Vite** e aborta se o bundle chegou ausente ou pela
+  metade. Bundle *desatualizado* nenhum script pega — isso e disciplina de
+  commitar o `npm run build` junto.
+- **`git merge --ff-only`**, nao `git pull`: historia divergida aborta em vez
+  de criar um merge no servidor.
+
+**Ele nao roda `db:seed`.** Os seeders da etapa 04 usam `updateOrCreate`, o que
+os torna seguros de reexecutar no sentido de nao duplicar — mas "seguro" ali
+significa **sobrescrever**. Uma taxa corrigida no painel voltaria ao valor do
+arquivo, em silencio. Carga inicial e coisa de uma vez so, feita a mao.
+
+**Ele nao roda `npm run build`**, porque o servidor nao tem Node e nao precisa
+ter — ver a nota sobre `public/build` versionado na secao Comandos.
+
+### Armadilha: os assets do Filament sao versionados
+
+`public/js/filament` (28 arquivos), `public/css/filament` (1) e
+`public/fonts/filament` (8) estao **rastreados pelo git**. O `composer install`
+roda `filament:upgrade`, que os reescreve. Hoje sai byte a byte identico e a
+arvore fica limpa — mas **no dia em que o Filament for atualizado**, o servidor
+vai reescrever esses arquivos com conteudo novo, a arvore fica suja e a
+primeira guarda do `deploy.sh` **aborta o deploy seguinte**.
+
+A saida nao e afrouxar a guarda: e commitar os assets regenerados junto do
+`composer.lock`, o que acontece naturalmente se o `composer update` for rodado
+em local (onde o `filament:upgrade` tambem roda) e o resultado for commitado.
+
+### Backup: tres artefatos, e o terceiro nao e zelo excessivo
+
+`scripts/backup-comparador.sh`, diario as 03:00 de Sao Paulo, rotacao de 14
+dias, verificando o que acabou de gravar.
+
+| Arquivo | Conteudo |
+|---|---|
+| `banco-*.sql.gz` | `mysqldump` comprimido |
+| `arquivos-*.tar.gz` | `storage/app` — os dois discos: `public` (logos e fotos em WebP) e `local` (anexos de proposta, privados) |
+| `env-*` | O `.env`, com a `APP_KEY` |
+
+**Por que o `.env` entra no backup.** `users.app_authentication_secret` e os
+codigos de recuperacao tem cast `encrypted`, e quem os decifra e a `APP_KEY`.
+O 2FA e obrigatorio no painel (`isRequired: true`) e **o app nao envia e-mail**
+— nao ha Mailable, nao ha rota de recuperacao de senha. Restaurar o banco sem
+a `APP_KEY` original devolve um painel com segundo fator obrigatorio e nenhum
+segundo fator legivel, sem "esqueci minha senha" para contornar. Os codigos de
+recuperacao mostrados no primeiro login sao a outra metade dessa rede.
+
+**As credenciais nao moram no script** — ficam em `~/.comparador-backup.cnf`,
+e o script **recusa rodar** se a permissao nao for exatamente `600`.
+
+**Cada execucao verifica o que gravou**, porque backup que falha em silencio e
+o modo de falha classico: `gzip -t` nos dois arquivos, e o dump precisa
+terminar com `Dump completed` e ter ao menos um `CREATE TABLE`. Um `.sql.gz`
+truncado abre sem reclamar e restaura pela metade.
+
+**Dois bugs encontrados so rodando em producao:**
+
+- **Substituicao de processo nao funciona na Hostinger.** A rotacao usava
+  `while read ... < <(find ...)` e falhava com `/dev/fd/63: No such file or
+  directory` — depois de gravar o dump e antes de rotacionar. No cron o efeito
+  seria pior que na mao: backup gravado todo dia, erro todo dia, e nenhum
+  arquivo velho removido nunca. Trocado por pipe simples com `find -delete`.
+- **O servidor roda em UTC.** Um cron `0 3 * * *` dispara a meia-noite
+  brasileira. O cron correto e **`0 6 * * *`**, e o script exporta
+  `TZ=America/Sao_Paulo` para que nome de arquivo e log carimbem a hora que a
+  regra 11 manda. Isso nao afeta o dump: o `mysqldump` usa `--tz-utc` por
+  padrao.
+
+### Nao ha `crontab` na linha de comando
+
+O binario nao existe neste servidor. O cron e criado no hPanel: **Avancado ->
+Cron Jobs**, tipo **Comando**, expressao `0 6 * * *`, linha:
+
+```
+/bin/bash /home/u835756808/comparador/scripts/backup-comparador.sh
+```
+
+### Restaurar
+
+```bash
+# banco (sobrescreve tabela a tabela: o dump traz DROP TABLE IF EXISTS)
+gunzip -c ~/backups/comparador/banco-<carimbo>.sql.gz \
+  | mysql --defaults-extra-file=~/.comparador-backup.cnf u835756808_comparador
+
+# arquivos enviados (caminhos relativos: cai no lugar a partir da raiz do projeto)
+tar -xzf ~/backups/comparador/arquivos-<carimbo>.tar.gz -C ~/comparador
+
+# .env, so se a APP_KEY se perdeu
+cp ~/backups/comparador/env-<carimbo> ~/comparador/.env && chmod 600 ~/comparador/.env
+
+# depois de qualquer restauracao, os caches apontam para o estado velho
+~/comparador/deploy.sh
+```
+
+Conferir se o backup rodou:
+
+```bash
+ssh comparador 'tail -8 ~/backups/comparador/backup.log; ls -lht ~/backups/comparador/ | head -7'
+```
+
+O log termina em `--- fim, ok ---` quando deu certo e em `FALHOU: <motivo>`
+quando nao. **Dump que encolhe de repente e sinal de problema mesmo quando o
+script diz ok** — por isso o `ls -lht`, que poe os tamanhos lado a lado.
+
+### Pendente da etapa 11
+
+- **Os backups moram no mesmo servidor que protegem.** Resolvem "apaguei sem
+  querer" e "a migration comeu a tabela"; nao resolvem servidor perdido, conta
+  suspensa ou disco morto. Uma copia fora e trabalho de uma etapa propria; o
+  minimo viavel hoje e
+  `rsync -avz --delete comparador:backups/comparador/ ~/Backups/maquinacerta/`,
+  rodado a mao de vez em quando.
+- **As 964 taxas estao em rascunho, entao o comparador esta no ar vazio.**
+  `comparador:gerar-json` produz um JSON com as 9 marcas em estado
+  "sem dado publicado" e nenhum numero. E a regra 10 funcionando, nao um
+  defeito — a aprovacao em lote no painel e o que destrava.
+- **Aprovar taxa no painel nao regenera o JSON.** O arquivo so e reescrito por
+  `comparador:gerar-json`, que hoje roda no deploy. Depois de aprovar em lote,
+  e preciso rodar `ssh comparador '~/comparador/deploy.sh'` (ou so o comando
+  artisan) para o site refletir. Automatizar isso — um botao no painel ou um
+  cron — e trabalho da etapa 12 ou 13.
+- **A senha do banco de producao foi digitada em texto puro num chat durante a
+  etapa 11.** Trocar no hPanel e rodar um deploy resolve, e o custo e um campo
+  e um script.
 
 - [x] **01** — Ambiente local, Filament, Git e CLAUDE.md
 - [x] **02** — Schema do banco
