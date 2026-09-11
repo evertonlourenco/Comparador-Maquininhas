@@ -8,6 +8,14 @@ existe; este arquivo registra **o que falta e em que ordem**. Quando os dois
 divergirem, o `CLAUDE.md` vence sobre o que está feito e este vence sobre o que
 vem depois.
 
+> **Onde vive o plano.** Ate 11/09/2026 o plano de 15 etapas morava num
+> documento externo, "Construcao do Comparador de Maquininhas", fora do
+> versionamento e fora desta maquina. Ele nao foi localizado; este arquivo o
+> substitui. Nao confundir com `~/Downloads/plano-portal-maquininhas.md`
+> (14/06/2026), um antecessor de 6 fases que descrevia outro projeto — XAMPP,
+> Slim, coletor em Node/Playwright/Gemini — e esta superado, com uma excecao
+> util registrada na etapa 14.
+>
 > **Reordenado em 11/09/2026.** Até a etapa 11 nada mudou. Da 12 em diante a
 > ordem foi refeita a pedido do Everton, e três etapas novas entraram (imagens,
 > painel de saúde e manual do administrador). O motivo da reordenação está em
@@ -93,6 +101,31 @@ O que a etapa 11 mediu sobre o custo disso:
 Cor, fonte e forma são troca de token. Layout não — se a direção "Boletim"
 (papel, fio de 1px, hierarquia por régua e tipografia) for descartada, são 9
 páginas e 15 componentes a revisar.
+
+**Ponto de partida encontrado em 11/09/2026.** Existe um documento anterior
+do projeto, `~/Downloads/plano-portal-maquininhas.md` (14/06/2026), superado em
+quase tudo — ele descrevia XAMPP, Slim e um coletor em Node/Playwright/Gemini,
+e o schema dele agrupava parcelas em faixas (`credito_parcelado_2x_6x`), que a
+regra 2 proibe. Mas as **diretrizes de design** dele contradizem a etapa 06 em
+quatro de cinco pontos, e isso provavelmente explica a insatisfacao:
+
+| O documento de junho pedia | A etapa 06 entregou |
+|---|---|
+| Cantos arredondados ~12px em cards, ~8px em botoes | Formas discretas, raio pequeno |
+| Sombras suaves (`0 2px 8px rgba(0,0,0,0.06)`) | **Zero sombras** — a direcao "Boletim" as proibe |
+| Transicoes em hover (0.2s), micro-animacoes de entrada | Praticamente nenhuma |
+| **Mobile-first** — "a maioria dos MEIs vai acessar pelo celular" | Desenhado do desktop para baixo |
+| Verde/vermelho para indicar melhor/pior taxa | Cor semantica por **estado do dado** (aferido/reportado/vencido) |
+
+O ultimo item merece cuidado: a cor por estado do dado **nao e capricho
+estetico**, e como as regras 4, 6 e 8 aparecem na tela — o leitor distingue taxa
+publicada pela marca de mediana de relatos pela cor. Se a identidade nova
+introduzir verde/vermelho por ranking, os dois sistemas de cor vao competir, e
+o que informa perde para o que decora. Vale decidir isso explicitamente, nao por
+acidente.
+
+O mobile-first tambem nao e detalhe de gosto: se o publico chega pelo celular
+apos um video, e a metrica que a etapa 12 vai medir.
 
 Cobrado nesta etapa:
 
