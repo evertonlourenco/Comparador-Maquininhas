@@ -24,6 +24,11 @@
 #
 set -euo pipefail
 
+# Tudo que este script cria nasce 600 (arquivo) / 700 (diretorio). O dump
+# carrega o banco inteiro e o env-* carrega a APP_KEY: num servidor
+# compartilhado, nenhum dos dois tem por que ser legivel por outro usuario.
+umask 077
+
 CONFIG="${BACKUP_CNF:-$HOME/.comparador-backup.cnf}"
 APP="${APP_DIR:-$HOME/comparador}"
 DESTINO="${BACKUP_DIR:-$HOME/backups/comparador}"
