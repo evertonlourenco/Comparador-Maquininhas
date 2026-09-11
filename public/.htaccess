@@ -23,3 +23,29 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+# Etapa 12: cache de arquivo estatico.
+#
+# /build/ e reescrito inteiro a cada `vite build` (o `emptyOutDir` do Vite
+# apaga o que nao veio deste build) — um .htaccess colocado dentro dessa
+# pasta desapareceria no proximo `npm run build`, sem aviso. Por isso a regra
+# fica aqui, no .htaccess de public/ (que o Vite nao toca), amarrada ao
+# caminho via variavel de ambiente do mod_rewrite, nao a um arquivo dentro da
+# propria pasta.
+<IfModule mod_rewrite.c>
+    RewriteCond %{REQUEST_URI} ^/build/
+    RewriteRule .* - [E=CACHE_IMUTAVEL:1]
+</IfModule>
+
+<IfModule mod_headers.c>
+    # Tudo em /build/ nasce com hash no nome (ex.: app-C3x9F2kq.css) —
+    # conteudo novo sempre tem nome novo, entao "para sempre" e seguro.
+    Header set Cache-Control "public, max-age=31536000, immutable" env=CACHE_IMUTAVEL
+
+    # O resto (assets do Filament, uploads em /storage): o nome do arquivo
+    # nao garante que o conteudo de hoje e o de amanha, entao o prazo e mais
+    # curto e sem "immutable".
+    <FilesMatch "\.(css|js|jpg|jpeg|png|gif|svg|webp|ico|woff|woff2|ttf)$">
+        Header set Cache-Control "public, max-age=2592000" env=!CACHE_IMUTAVEL
+    </FilesMatch>
+</IfModule>
