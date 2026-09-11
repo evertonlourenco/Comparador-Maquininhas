@@ -1470,6 +1470,50 @@ Detalhe do layout que vale lembrar: sem `lang/pt_BR.json`, um e-mail em
 portugues termina com **"Regards,"** — o tipo de coisa que ninguem revisa depois
 que o assunto ja esta certo.
 
+### A armadilha do `ShouldQueue` do Filament
+
+Depois de o SMTP estar funcionando e as traducoes no lugar, o e-mail de
+redefinicao **continuava nao chegando**. O que denunciou foi a diferenca entre
+dois testes que pareciam equivalentes:
+
+- O teste por `Mail::raw()` para `contato@maquinacerta.com.br` chegou. Mas esse
+  endereco e do proprio dominio: a mensagem **nunca sai do servidor**. Ele
+  provou a autenticacao SMTP, nao a entrega.
+- O fluxo real, para um Gmail, nao chegou — e nao havia erro em lugar nenhum.
+
+A causa: `Filament\Auth\Notifications\ResetPassword` estende a do Laravel e
+acrescenta **`implements ShouldQueue`**. Com `QUEUE_CONNECTION=database` e
+nenhum worker rodando, a notificacao entrava na tabela `jobs` e ficava la. Sem
+excecao, sem log, e com a tela dizendo "Enviamos o link de redefinicao".
+
+Producao ficou em **`QUEUE_CONNECTION=sync`**: o `ShouldQueue` vira letra morta
+e a notificacao sai dentro da requisicao. O app nao despacha job proprio
+(nenhum `dispatch(` nem `ShouldQueue` em `app/`), entao manter uma fila de
+verdade seria pagar manutencao por uma capacidade que ninguem usa — e o worker
+que para em silencio e exatamente o modo de falha que acabou de custar uma
+hora. Custo aceito: ~1s a mais numa redefinicao de senha, acao rara e de
+administrador.
+
+**Revisitar na etapa 14** (monitor de mudancas): se aparecer trabalho pesado de
+verdade, voltar para `database` mais um worker no cron do hPanel.
+
+Duas licoes que valem alem deste bug:
+
+- **E-mail para o proprio dominio nao testa entrega.** Para provar que o
+  correio sai, o destino precisa ser externo.
+- **Fila sem worker nao falha — ela espera.** Nao ha erro para procurar. A
+  unica pergunta que responde e `SELECT COUNT(*) FROM jobs`:
+
+```bash
+ssh comparador 'cd ~/domains/maquinacerta.com.br/comparador && \
+  /opt/alt/php84/usr/bin/php artisan tinker \
+  --execute="echo DB::table(\"jobs\")->count(), PHP_EOL;"'
+```
+
+Se isso devolver numero diferente de zero com `QUEUE_CONNECTION=sync`, alguem
+mudou a configuracao. Vale virar alerta do Painel Inicial numa etapa futura,
+ao lado dos tres que ele ja soma.
+
 ### O ensaio da restauracao (feito, nao prometido)
 
 Backup que nunca foi restaurado nao e backup — e um arquivo com nome de
