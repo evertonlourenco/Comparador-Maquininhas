@@ -22,6 +22,12 @@
 #
 set -euo pipefail
 
+# O servidor da Hostinger roda em UTC, e o projeto vive no fuso de Sao Paulo
+# (regra 11). Sem isto, um deploy as 08:27 da manha se registra como 11:27 e
+# quem for ler o log depois vai procurar o problema na hora errada — aconteceu
+# na etapa 11, ao investigar um erro relatado pelo Everton.
+export TZ=America/Sao_Paulo
+
 PHP="${PHP_BIN:-/opt/alt/php84/usr/bin/php}"
 COMPOSER="${COMPOSER_BIN:-/usr/local/bin/composer}"
 
