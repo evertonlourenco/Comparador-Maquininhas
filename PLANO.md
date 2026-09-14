@@ -57,33 +57,11 @@ por ele que o trabalho de dados acontece enquanto o site espera.
 - [x] **09** — Página de cupons e rastreamento de cliques
 - [x] **10** — Metodologia, LGPD e captação de relatos
 - [x] **11** — Deploy, SSH, backup e commits
+- [x] **12** — Cloudflare, medição, SEO, segurança e performance
 
 ---
 
 ## Etapas restantes
-
-### 12 — Cloudflare, medição e performance
-
-Sem mudança de escopo. É o que vem agora.
-
-- Cloudflare à frente do domínio: DNS, cache de borda, regras por rota
-- `GA4_MEASUREMENT_ID` preenchido — o gate do banner de cookies já existe e
-  está inerte desde a etapa 10, só falta o ID
-- Medição de performance com o site ainda fechado: LCP, CLS, peso do bundle
-- Proxy reverso e cabeçalhos: HSTS, cache-control por tipo de arquivo
-
-**Google Search Console verificado (registro TXT), sitemap NÃO enviado.**
-Enviar `sitemap.xml` agora daria 503 em toda URL listada — o Google não
-distingue "fechado de propósito" de "site fora do ar" e isso pesa contra a
-indexação depois. **Lembrete para a etapa 19:** enviar o sitemap ao Search
-Console e importar de novo no Bing Webmaster Tools assim que
-`SITE_EM_BREVE` virar `false`.
-
-**Ressalva registrada:** as fontes são 410 KB dos 552 KB do bundle. A etapa 14
-troca as famílias, então a otimização de carregamento de fonte vai precisar ser
-remedida. O mecanismo (auto-hospedado no bundle, regra 9) sobrevive; só os
-arquivos mudam. Não é motivo para adiar a 12 — é motivo para não gastar tempo
-afinando `preload` de fonte agora.
 
 ### 13 — Monitor de mudanças de taxa
 

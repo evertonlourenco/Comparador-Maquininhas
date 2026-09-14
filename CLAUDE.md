@@ -1606,6 +1606,236 @@ comparou por MD5. Os arquivos de ensaio foram removidos depois.
   "esqueci minha senha" (o app nao envia e-mail) e o backup so ajuda se a
   APP_KEY do `.env` for a mesma.
 
+## Cloudflare, medição, SEO, segurança e performance (etapa 12)
+
+Nove painéis, um de cada vez, com o site em produção mas ainda fechado
+(`SITE_EM_BREVE=true`). O que segue é o checklist de onde cada coisa mora —
+para não depender de memória de sessão daqui a seis meses.
+
+### 1. Cloudflare
+
+Domínio migrado para os nameservers do Cloudflare (plano Free). No painel:
+
+- **DNS**: `A` da raiz e `www` com proxy (nuvem laranja). `ftp`, `autoconfig`,
+  `autodiscover` e os três `hostingermail-*` ficaram **Somente DNS** — são
+  registros de e-mail/FTP, não do site, e proxied quebrariam (o Cloudflare
+  responderia com o IP dele para qualquer protocolo que não seja HTTP/HTTPS).
+- **SSL/TLS**: modo **Completo (Estrito)** — o certificado Let's Encrypt da
+  origem cobre `maquinacerta.com.br` e `www`, conferido direto no IP antes de
+  trocar.
+- **Sempre usar HTTPS**: ligado. **HSTS**: ligado, `max-age` de 6 meses, sem
+  `includeSubDomains` (os subdomínios de e-mail não têm garantia de HTTPS) e
+  sem pré-carregamento (praticamente irreversível).
+- **Brotli**: automático nessa conta, sem toggle no painel — confirmado por
+  fora (`content-encoding: br` numa resposta 200).
+- `bootstrap/app.php` confia nos IPs do Cloudflare como proxy
+  (`$middleware->trustProxies(...)`) — sem isso, `Request::ip()` veria o IP
+  do Cloudflare para todo mundo, e o rate limit do login do Filament
+  (`vendor/filament/filament/src/Auth/Pages/Login.php`, 5 tentativas) ficaria
+  quebrado.
+- **Regra de taxa** (Segurança → Regras de segurança → Rate Limiting):
+  `/admin/login`, 5 requisições / 10 segundos (o plano Free só oferece essa
+  janela) → Bloquear por 10 segundos. Segunda camada, de propósito: o
+  Filament já bloqueia sozinho no app.
+- **Regras de transformação de cabeçalho de resposta** (Regras → Criar
+  regra), duas:
+  1. `starts_with(http.request.uri.path, "/build/")` → define
+     `Cache-Control: public, max-age=31536000, immutable`.
+  2. `not starts_with(http.request.uri.path, "/admin")` → define
+     `Content-Security-Policy` com o valor completo (ver seção 6) — **a
+     Hostinger sobrescreve qualquer CSP que o PHP mande** numa camada depois
+     do app (achado testando em produção, não suposto), então a política que
+     de fato chega ao visitante vive aqui, não só no middleware.
+- **Cache de HTML: decisão consciente de não fazer.** Toda página hoje sai
+  com sessão + CSRF token no corpo (o layout embute o token para o
+  rastreamento de cupom da etapa 09 funcionar em qualquer página). Cachear
+  esse HTML na borda serviria a mesma sessão para visitantes diferentes —
+  não é só formulário quebrando, é vazamento de sessão entre pessoas, e
+  justamente no pico de tráfego pós-vídeo que o site foi desenhado para
+  aguentar. Só ativos estáticos são cacheados (extensão comum + regra acima
+  para `/build/`). Revisitar se algum dia o CSRF sair do layout global.
+
+### 2. Google Search Console
+
+Propriedade tipo **Domínio**, verificada por registro **TXT** no DNS
+(`google-site-verification=...`, confirmado via `dig`). **Sitemap NÃO
+enviado** — toda URL nele daria 503 com o site fechado. Lembrete registrado
+no `PLANO.md`, etapa 19: enviar o `sitemap.xml` só no lançamento.
+
+### 3. Bing Webmaster Tools
+
+Importado direto do Google Search Console (mesma verificação, sem TXT
+próprio). Sitemap também não enviado, mesmo motivo.
+
+### 4. Google Analytics 4
+
+`GA4_MEASUREMENT_ID` preenchido no `.env` de produção
+(`config('services.ga4.id')`), confirmado via `tinker` depois do
+`config:cache`. O gate do banner de cookies (etapa 10) já existia; só faltava
+o ID.
+
+`window.gtag` virou **global** em `resources/js/app.js` (era função local
+dentro de `carregarAnalytics()`) porque o comparador é um bundle Vite
+separado (etapa 07) e precisa chamar a mesma função. Só existe depois do
+consentimento — todo disparo usa `window.gtag?.(...)`, nunca fila.
+
+Seis eventos:
+
+| Evento | Onde dispara | Arquivo |
+|---|---|---|
+| `segmento_selecionado` | clique no botão de segmento | `resources/js/comparador.js` |
+| `uso_comparador` | 1200ms depois da última mudança no cenário (debounce próprio, separado do cálculo) | `resources/js/comparador.js` |
+| `faixa_faturamento` | junto do anterior, faturamento em faixas fixas (`ate_2_mil` … `acima_de_50_mil`) | `resources/js/comparador.js` |
+| `clique_cupom` | link do cupom dentro do resultado do comparador (`/cupom/{slug}`) | `resources/views/components/resultado-comparado.blade.php` |
+| `clique_afiliado` | botão "usar cupom" (o clique de saída de verdade) | `resources/js/app.js` (`rastrearEventoCupom`) |
+| `copia_codigo` | botão de copiar código | `resources/js/app.js` (`rastrearEventoCupom`) |
+
+Os dois últimos reaproveitam o mesmo ponto que já alimenta `eventos_cupom`
+desde a etapa 09 — mesmo clique, dois destinos.
+
+**Pendente:** confirmação com tráfego real só depois do lançamento — testado
+localmente com ID de teste, nunca em produção (o site fechado impede).
+
+### 5. Microsoft Clarity
+
+`CLARITY_PROJECT_ID` preenchido no `.env` de produção
+(`config('services.clarity.id')`), mesmo gate de consentimento do GA4, mesmo
+padrão de meta tag (`clarity-id`) em `site.blade.php`. Carrega
+independente do GA4 — um site pode ter só um dos dois configurado.
+
+`/enviar-proposta` (`resources/views/propostas/criar.blade.php`) ganhou
+`data-clarity-mask="True"` no `<form>` inteiro. O relato já é anônimo por
+desenho (sem nome, sem e-mail — achado ao mapear o formulário antes de
+mexer), mas faturamento e mensalidade continuam sendo dado de negócio que
+não precisa aparecer numa gravação de tela.
+
+**Pendente:** mesma ressalva do GA4 — mapa de calor e gravação só se provam
+com visita real, depois do lançamento.
+
+### 6. Cabeçalhos de segurança
+
+`App\Http\Middleware\CabecalhosDeSeguranca`, registrado globalmente em
+`bootstrap/app.php`. `X-Content-Type-Options`, `Referrer-Policy` e
+`Permissions-Policy` em toda resposta, inclusive `/admin`. A
+`Content-Security-Policy` só entra fora do `/admin` — o Filament embute o
+próprio Alpine e mexe com estilo inline em vários componentes, e testar
+política estrita ali sem a cobertura que `ComponentesDoPortalTest` dá ao
+site público arriscava quebrar o painel usado todo dia.
+
+**A política que o visitante recebe de fato vive em dois lugares por um
+motivo concreto**: a Hostinger sobrescreve o `Content-Security-Policy` que o
+PHP manda (numa camada depois do app, fora de qualquer `.htaccess` do
+projeto — achado testando em produção). O middleware continua sendo a fonte
+da verdade para o `/admin` (onde não sobrescreve nada, e a CSP simplesmente
+não entra) e para o caso hipotético de a resposta do PHP chegar ao navegador
+sem passar pela Hostinger; a regra de transformação do Cloudflare (seção 1)
+é o que efetivamente chega ao visitante no site público hoje. **As duas têm
+que ser mantidas iguais manualmente** se a política mudar — não há
+sincronização automática entre `CabecalhosDeSeguranca::politica()` e a regra
+do Cloudflare.
+
+Duas exceções na política, achadas testando no navegador (não adivinhando):
+
+- **`'unsafe-eval'` em `script-src`** — o Alpine.js (comparador, etapa 07)
+  resolve `x-data`/`x-on`/`x-text` com `new Function()` na build padrão. Só
+  a build dedicada `@alpinejs/csp` evita isso, e trocar pediria reescrever
+  várias expressões JS direto no Blade sem garantia de paridade. Dívida
+  registrada, não decisão final.
+- **`'unsafe-inline'` em `style-src`** — `x-show`/`x-transition` do Alpine
+  escrevem direto em `element.style` via JS, que CSP também trata como
+  estilo inline. Risco bem menor que a mesma permissão em script.
+
+Os dois scripts inline que sobram (flash de tema, em três arquivos; leitor
+de hex do `/guia-visual`) são liberados por **nonce por requisição** (
+`View::share('cspNonce', ...)`) **e** por **hash SHA-256 fixo** — o hash é o
+que sobrevive à sobrescrita da Hostinger/regra do Cloudflare, já que uma
+regra estática na borda não tem como carregar um nonce que muda a cada
+requisição. Os dois hashes vivem como constantes em
+`CabecalhosDeSeguranca` (`HASH_SCRIPT_TEMA`, `HASH_SCRIPT_GUIA_VISUAL`) — se
+o conteúdo desses dois scripts mudar um dia, os hashes têm que ser
+recalculados **nos dois lugares** (middleware e regra do Cloudflare).
+
+**Testado em [securityheaders.com](https://securityheaders.com): nota A+.**
+
+### 7. Performance
+
+- `php artisan optimize` já rodava no `deploy.sh` (com `optimize:clear`
+  antes e `filament:optimize` depois) — nada a mudar.
+- **OPcache confirmado ativo no SAPI web** (`opcache.enable=1`, ~1050
+  scripts em cache) — testado com uma rota temporária (`/__diag-opcache`),
+  removida logo depois de confirmar. O CLI nunca mostra isso, mesmo ligado.
+- Imagens: `loading="lazy"` e `decoding="async"` já estavam nas 4 tags
+  `<img>` que existem hoje. Dimensão explícita (`width`/`height`) não foi
+  adicionada de propósito — o espaço já é reservado por contêineres de
+  tamanho fixo (`size-14`, `size-16`, `aspect-4/3`), mesmo efeito prático
+  contra CLS, e não há nenhuma imagem real no catálogo ainda (etapa 15).
+- `public/.htaccess` + `public/build/.htaccess` (gerado por
+  `scripts/gera-htaccess-do-build.mjs`, novo passo do `npm run build` — ver
+  por quê na próxima nota) dão cache de longo prazo aos ativos estáticos.
+  **`/build/` é reescrito inteiro a cada `vite build`** (o `emptyOutDir` do
+  Vite apaga tudo que não veio do build atual): um `.htaccess` colocado lá à
+  mão desapareceria no próximo `npm run build` sem aviso. O script recria o
+  arquivo depois do build, todo build.
+- Medido localmente (Lighthouse, mobile simulado — o domínio real dá 503):
+  comparador 96/100 (LCP 2,6s, CLS 0), listagem de marcas 93/100 (LCP 3,0s,
+  CLS 0). LCP um pouco acima do ideal nos dois, causa já conhecida: fontes
+  são a maior fatia do peso (~410KB de ~550KB, medido na etapa 11).
+- **Pendente:** medição real (PageSpeed Insights, CrUX) só depois do
+  lançamento. Não vale otimizar fonte agora — a etapa 14 troca as famílias
+  tipográficas, e qualquer ajuste de hoje seria refeito.
+
+### 8. UptimeRobot
+
+Dois monitores, e-mail como contato de alerta:
+
+- **Home** (`https://maquinacerta.com.br`): tipo **Keyword**, procura
+  `Máquina Certa`, alerta se **não existir**. Escolha deliberada em vez de
+  monitor HTTP comum: a palavra aparece tanto na página "em breve" (hoje)
+  quanto na home de verdade (depois do lançamento), então **o mesmo monitor
+  funciona antes e depois de abrir o site, sem precisar trocar nada** — e
+  ainda pega o caso de a página responder 200 em branco, que um monitor de
+  status não pegaria.
+- **Admin** (`https://maquinacerta.com.br/admin/login`): tipo **HTTP(s)**
+  comum — essa rota sempre responde 200, site aberto ou fechado.
+
+### 9. rclone — cópia externa do backup
+
+Fecha a pendência registrada na etapa 11: backup no mesmo servidor que ele
+protege resolve "apaguei sem querer", não resolve servidor perdido, conta
+suspensa ou disco morto.
+
+- **rclone instalado em `~/bin/rclone`** no servidor (binário estático da
+  [downloads.rclone.org](https://downloads.rclone.org), sem precisar de
+  root). `~/bin` não entra no PATH de sessão não interativa — todo comando
+  usa o caminho completo, mesma convenção do PHP (`/opt/alt/php84/...`).
+- **Projeto Google Cloud** "Comparador de Maquininhas" (o mesmo já usado
+  para outras APIs), com a **Google Drive API** ativada.
+- **Cliente OAuth próprio** (tipo "Aplicativo para computador"), não o
+  client_id compartilhado do rclone — achado direto na primeira conexão:
+  `rclone` avisou que o client_id compartilhado **está sendo desativado
+  durante 2026** (o ano corrente). Tela de consentimento OAuth publicada
+  (fora do modo de teste), para o token não expirar sozinho em 7 dias.
+- **Remoto `gdrive`**, em `~/.config/rclone/rclone.conf` (permissão 600,
+  mesma lógica do `~/.comparador-backup.cnf`): `scope = drive.file` — o
+  rclone só enxerga a pasta que ele mesmo criou (`backups-maquina-certa`),
+  nunca o resto do Drive da conta. `root_folder_id` fixado nessa pasta, para
+  todo comando sem caminho (`gdrive:`) cair direto nela.
+- `scripts/backup-comparador.sh` ganhou uma seção **offsite**, logo depois
+  de gravar o `.env` do dia: copia os três arquivos (`banco-*`, `arquivos-*`,
+  `env-*`) para `gdrive:` e aplica a mesma rotação de 14 dias por lá.
+  **Falha na cópia externa falha o backup do dia inteiro** (`exit 1`) — o
+  dump, os arquivos e o `.env` de hoje já estão intactos no disco local
+  quando isso roda, então nada se perde numa falha de rede pontual, só fica
+  sem cópia externa naquela rodada, e isso precisa aparecer no log.
+- **Testado de ponta a ponta**: rodado o script inteiro uma vez em produção,
+  os três arquivos conferidos no Drive via `rclone ls gdrive:`, tamanho
+  batendo com o backup local.
+- **Restaurar do Drive**: os comandos de restauração da etapa 11 continuam
+  valendo para o backup local; se o disco local também tiver sumido, baixe
+  primeiro com `rclone copy gdrive:banco-<carimbo>.sql.gz .` (e os outros
+  dois arquivos do mesmo carimbo) antes de seguir os passos de restauração
+  já documentados.
+
 - [x] **01** — Ambiente local, Filament, Git e CLAUDE.md
 - [x] **02** — Schema do banco
 - [x] **03** — Painel admin no Filament
@@ -1617,7 +1847,7 @@ comparou por MD5. Os arquivos de ensaio foram removidos depois.
 - [x] **09** — Página de cupons
 - [x] **10** — Metodologia, LGPD e captação de relatos
 - [x] **11** — Deploy, SSH, backup e commits
-- [ ] 12 — Cloudflare, medição e performance
+- [x] **12** — Cloudflare, medição, SEO, segurança e performance
 - [ ] 13 — Monitor de mudanças de taxa
 - [ ] 14 — Identidade visual e reforma da interface
 - [ ] 15 — Imagens: logos de marca, equipamentos e bandeiras
