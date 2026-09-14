@@ -58,21 +58,11 @@ por ele que o trabalho de dados acontece enquanto o site espera.
 - [x] **10** — Metodologia, LGPD e captação de relatos
 - [x] **11** — Deploy, SSH, backup e commits
 - [x] **12** — Cloudflare, medição, SEO, segurança e performance
+- [x] **13** — Monitor de mudanças (repositório Node separado; ver CLAUDE.md)
 
 ---
 
 ## Etapas restantes
-
-### 13 — Monitor de mudanças de taxa
-
-Era a 14. Subiu porque é backend puro e não encosta em nada visual.
-
-- Tabela de staging própria para taxa capturada (a etapa 11 registrou que "não
-  há histórico de taxa": aprovar é editar no lugar)
-- Coleta periódica das páginas de tarifa que já têm `url_fonte`
-- Comparação com o valor vigente e fila de revisão no painel — **nada publicado
-  sem aprovação humana** (regra 10)
-- Alerta quando uma `url_fonte` deixa de responder ou muda de estrutura
 
 ### 14 — Identidade visual e reforma da interface
 

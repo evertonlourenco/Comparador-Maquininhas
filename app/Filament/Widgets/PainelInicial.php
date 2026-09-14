@@ -4,38 +4,26 @@ namespace App\Filament\Widgets;
 
 use App\Enums\StatusRevisao;
 use App\Filament\Resources\Cupons\CupomResource;
+use App\Filament\Resources\DeteccoesDeMudanca\DeteccaoDeMudancaResource;
 use App\Filament\Resources\Marcas\MarcaResource;
 use App\Filament\Resources\PropostasRecebidas\PropostaRecebidaResource;
 use App\Filament\Resources\RelatosTaxaIncorreta\RelatoTaxaIncorretaResource;
 use App\Filament\Resources\TaxaDivulgadas\TaxaDivulgadaResource;
-use App\Models\Cupom;
-use App\Models\FaixaReportada;
+use App\Models\DeteccaoDeMudanca;
 use App\Models\Marca;
 use App\Models\PropostaRecebida;
 use App\Models\RelatoTaxaIncorreta;
-use App\Models\TaxaDivulgada;
+use App\Support\Monitor\ResumoSemanal;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Support\Carbon;
 
 class PainelInicial extends StatsOverviewWidget
 {
-    /** Alerta do painel: mais cedo que o selo de frescor (45 dias, regra 8) para dar tempo de agir. */
-    private const DIAS_ALERTA_VERIFICACAO = 30;
-
-    private const DIAS_ALERTA_CUPOM = 7;
-
     protected function getStats(): array
     {
-        $limiteVerificacao = Carbon::today()->subDays(self::DIAS_ALERTA_VERIFICACAO);
+        $taxasNaoVerificadas = ResumoSemanal::taxasSemVerificacaoHaMaisDe30Dias();
 
-        $taxasNaoVerificadas = TaxaDivulgada::query()->where('data_verificacao', '<', $limiteVerificacao)->count()
-            + FaixaReportada::query()->where('data_verificacao', '<', $limiteVerificacao)->count();
-
-        $cuponsVencendo = Cupom::query()
-            ->vigentes()
-            ->whereDate('valido_ate', '<=', Carbon::today()->addDays(self::DIAS_ALERTA_CUPOM))
-            ->count();
+        $cuponsVencendo = ResumoSemanal::cuponsVencendoEm7Dias()->count();
 
         $marcasSemTaxa = Marca::query()
             ->whereDoesntHave('taxasDivulgadas')
@@ -46,6 +34,10 @@ class PainelInicial extends StatsOverviewWidget
         // regra 10 na forma mais forte, nada delas publica sozinho.
         $propostasPendentes = PropostaRecebida::query()->where('status', StatusRevisao::Pendente)->count();
         $relatosTaxaPendentes = RelatoTaxaIncorreta::query()->where('status', StatusRevisao::Pendente)->count();
+
+        // Etapa 13: o monitor de mudancas (repositorio Node separado) so
+        // propoe aqui — nunca publica sozinho (regra 10).
+        $deteccoesPendentes = DeteccaoDeMudanca::query()->pendentes()->count();
 
         return [
             Stat::make('Taxas não verificadas há +30 dias', $taxasNaoVerificadas)
@@ -73,6 +65,11 @@ class PainelInicial extends StatsOverviewWidget
                 ->color($relatosTaxaPendentes > 0 ? 'warning' : 'success')
                 ->url(RelatoTaxaIncorretaResource::getUrl())
                 ->icon('heroicon-o-flag'),
+            Stat::make('Detecções do monitor pendentes', $deteccoesPendentes)
+                ->description('Mudanças e falhas de coleta ainda não revisadas')
+                ->color($deteccoesPendentes > 0 ? 'warning' : 'success')
+                ->url(DeteccaoDeMudancaResource::getUrl())
+                ->icon('heroicon-o-signal'),
         ];
     }
 }

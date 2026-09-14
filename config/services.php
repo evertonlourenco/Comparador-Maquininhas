@@ -59,4 +59,12 @@ return [
         'email_contato' => env('LEGAL_EMAIL_CONTATO'),
     ],
 
+    // Etapa 13: token fixo que autentica o repositório Node do monitor de
+    // mudanças em /api/monitor/* (App\Http\Middleware\AutenticaMonitor).
+    // Gerar com `php artisan tinker --execute="echo Str::random(48);"` e
+    // guardar como secret MONITOR_API_TOKEN no repositório do monitor.
+    'monitor' => [
+        'token' => env('MONITOR_API_TOKEN'),
+    ],
+
 ];

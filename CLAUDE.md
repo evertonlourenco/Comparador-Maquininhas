@@ -307,8 +307,11 @@ valor da parcela, e num dos modelos com dois valores sem dizer qual vigora.
 - **Taxa por bandeira individual não é representável.** A granularidade é o grupo. Se
   uma marca publicar Amex separada de Elo, cria-se um grupo novo (é linha, não enum —
   não precisa de migration).
-- **Sem histórico de taxa.** Aprovar é editar no lugar. A etapa 14 (monitor de mudanças)
-  vai precisar de uma tabela de staging própria.
+- **Sem histórico de taxa.** Aprovar é editar no lugar. Isso continua valendo para o
+  domínio (`taxas_divulgadas`/`faixas_reportadas`/`equipamento_plano`/`cupons`): não
+  existe versão anterior de uma taxa depois de editada. O que a etapa 13 resolveu foi
+  um problema vizinho, não este — `deteccoes_de_mudanca` é staging do que uma fonte
+  externa mudou, não histórico do que o admin já aprovou.
 
 ## Painel admin (Filament)
 
@@ -1521,8 +1524,11 @@ que para em silencio e exatamente o modo de falha que acabou de custar uma
 hora. Custo aceito: ~1s a mais numa redefinicao de senha, acao rara e de
 administrador.
 
-**Revisitar na etapa 14** (monitor de mudancas): se aparecer trabalho pesado de
-verdade, voltar para `database` mais um worker no cron do hPanel.
+**Revisitado na etapa 13** (monitor de mudanças): o monitor não dispatcha job
+nenhum no Laravel — ele é um projeto Node à parte, chamando só dois endpoints
+síncronos (`POST /api/monitor/deteccoes`, `GET /api/monitor/resumo-semanal`).
+Continua sem trabalho pesado de verdade no `app/`; `QUEUE_CONNECTION=sync` segue
+válido.
 
 Duas licoes que valem alem deste bug:
 
@@ -1836,6 +1842,90 @@ suspensa ou disco morto.
   dois arquivos do mesmo carimbo) antes de seguir os passos de restauração
   já documentados.
 
+## Monitor de mudanças (etapa 13)
+
+Repositório **separado**, Node.js: [`comparador-maquininhas-monitor`](https://github.com/evertonlourenco/comparador-maquininhas-monitor).
+Não alimenta o site nem escreve em tabela de domínio nenhuma — só detecta
+quando uma fonte externa muda e avisa no Telegram. Nada vai ao ar sem
+aprovação humana no admin (regra 10, forma mais forte).
+
+| Arquivo (neste repositório) | Papel |
+|---|---|
+| `database/migrations/..._create_deteccoes_de_mudanca_table.php` | Staging: uma linha por mudança detectada ou falha de coleta |
+| `App\Models\DeteccaoDeMudanca` | `tipo`: mudança \| falha. `status`: pendente \| revisado (reaproveita `StatusRevisao` da etapa 10) |
+| `App\Enums\CategoriaFonteMonitorada`, `App\Enums\TipoDeteccaoDeMudanca` | — |
+| `App\Http\Middleware\AutenticaMonitor` | Token fixo (`MONITOR_API_TOKEN`) por `hash_equals`, comparado em `routes/api.php` |
+| `App\Http\Controllers\Api\MonitorController` | `POST /api/monitor/deteccoes`, `GET /api/monitor/resumo-semanal` |
+| `App\Support\Monitor\ResumoSemanal` | Os dois números do resumo semanal — extraído de `PainelInicial`, que agora só chama esta classe |
+| `App\Filament\Resources\DeteccoesDeMudanca\*` | Fila de revisão no painel, grupo de navegação "Monitor de mudanças". Sem create — só chega por POST |
+
+### Por que não existe uma tabela "fontes monitoradas" neste banco
+
+A lista de URLs monitoradas e o estado de hash entre execuções (o que
+substitui, para um runner efêmero do GitHub Actions, a memória que um
+serviço teria) moram **versionados no repositório do monitor** —
+`fontes.json` e `estado/*.json`, commitados pela própria Action a cada
+execução. A API deste app expõe só dois endpoints, os dois de
+escrita/consulta pontual, nunca uma lista de configuração para o monitor
+ler. Isso mantém a superfície pública pequena e auditável (dois endpoints,
+os dois logados normalmente pelo Laravel) e dá de graça um efeito colateral
+bom: `git log -- estado/` no repositório do monitor é o histórico de quando
+cada página realmente mudou.
+
+### Por que o monitor decide sozinho o que é "mudança", e o Laravel só registra
+
+`POST /api/monitor/deteccoes` não recebe hash antigo para comparar com hash
+novo — recebe o resultado já decidido. A comparação (hash do texto
+normalizado contra o hash commitado em `estado/`) acontece inteira no
+repositório do monitor, antes de qualquer chamada a este app. O Laravel não
+precisa saber o que é uma "fonte", só precisa de `marca_slug` (resolvido
+para `marca_id` por `where('slug', ...)`, nunca um ID interno recebido de
+fora) para montar o `link_admin` de volta na resposta — o link direto para
+`MarcaResource::getUrl('edit', ...)` que vai no alerta do Telegram.
+
+### `ResumoSemanal` existia espalhado, virou uma classe
+
+`App\Filament\Widgets\PainelInicial` já calculava "taxas sem verificação há
++30 dias" e "cupons vencendo em 7 dias" para os dois primeiros cartões do
+painel inicial (etapa 03). O resumo semanal do monitor precisa exatamente
+dos mesmos dois números — extrair para `App\Support\Monitor\ResumoSemanal`
+evitou a mesma conta (e o mesmo "30 dias", que é alerta antecipado do
+painel, diferente do selo de frescor de 45 dias da regra 8) escrita duas
+vezes em dois arquivos que podiam divergir sem ninguém notar.
+
+### As quatro marcas atrás de Cloudflare/Akamai
+
+Ton, PagBank, Stone e InfinitePay provavelmente bloqueiam o IP de
+datacenter do GitHub Actions. O monitor detecta sinais comuns de bloqueio
+(HTTP 403/429/503, texto de desafio) e registra isso como **falha
+explícita** — nunca como "sem mudança", que esconderia o problema. Cada
+fonte tem uma flag `roda_no_mac` em `fontes.json`: onde o bloqueio se
+confirmar na prática, a fonte migra para rodar do Mac do Everton (IP
+residencial) via cron, com `mac/rodar-fontes-bloqueadas.sh` já pronto no
+repositório do monitor — só falta confirmar quais fontes precisam disso.
+
+### O que ficou pendente, sem inventar URL nenhuma (regra 6 vale aqui também)
+
+- **Ton, categoria `tabela_taxas`**: a `url_fonte` cadastrada em
+  `taxas_divulgadas` (etapa 04) é a home (`ton.com.br`), genérica demais
+  para monitorar por hash — muda de conteúdo a cada campanha. Falta achar a
+  página real de tarifas do Ton.
+- **Cielo, Rede, GetNet e Stone, categoria `contrato_credenciamento`**:
+  pendência da etapa 0 do plano (due diligence) — falta localizar a URL do
+  PDF do contrato de credenciamento de cada uma.
+- **Categoria `equipamento_cupom`: nenhuma fonte cadastrada ainda**, para
+  nenhuma marca. O schema não guarda URL de preço de equipamento nem de
+  termos de cupom — só `url_fonte` em `taxas_divulgadas`/`faixas_reportadas`
+  (regra 4) — então não havia de onde puxar um valor real sem inventar.
+- **`MONITOR_API_TOKEN` só está preenchido em local.** Falta gerar o valor
+  de produção e salvá-lo nos dois lados: `.env` do servidor (config já lê
+  `services.monitor.token`) e secret `MONITOR_API_TOKEN` no repositório do
+  monitor.
+- **Secrets do repositório do monitor** (`TELEGRAM_BOT_TOKEN`,
+  `TELEGRAM_CHAT_ID`, `GEMINI_API_KEY`, além do `MONITOR_API_TOKEN` acima)
+  ainda não foram criados — nenhum deles é algo que o Claude possa gerar
+  sozinho.
+
 - [x] **01** — Ambiente local, Filament, Git e CLAUDE.md
 - [x] **02** — Schema do banco
 - [x] **03** — Painel admin no Filament
@@ -1848,7 +1938,7 @@ suspensa ou disco morto.
 - [x] **10** — Metodologia, LGPD e captação de relatos
 - [x] **11** — Deploy, SSH, backup e commits
 - [x] **12** — Cloudflare, medição, SEO, segurança e performance
-- [ ] 13 — Monitor de mudanças de taxa
+- [x] **13** — Monitor de mudanças
 - [ ] 14 — Identidade visual e reforma da interface
 - [ ] 15 — Imagens: logos de marca, equipamentos e bandeiras
 - [ ] 16 — Painel de saúde e observabilidade do administrador
