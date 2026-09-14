@@ -1965,6 +1965,12 @@ repositório do monitor — só falta confirmar quais fontes precisam disso.
   200 em produção), `MONITOR_API_URL`, `TELEGRAM_BOT_TOKEN`,
   `TELEGRAM_CHAT_ID` e `GEMINI_API_KEY` (testada de verdade contra a API do
   Gemini — ver nota abaixo sobre o modelo).
+  **`TELEGRAM_CHAT_ID` errado na primeira tentativa**: o Everton colou o
+  `update_id` do JSON de `getUpdates` (`218905998`), não o `chat.id`
+  (`970486531`) — os dois aparecem perto um do outro na resposta da API do
+  Telegram, fácil de confundir. Corrigido no secret do GitHub, e testado
+  com `sendMessage` direto (curl, fora do workflow) contra o bot
+  `@maquinacerta_bot`: mensagem confirmada recebida pelo Everton.
 - **`gemini-2.0-flash`, usado como padrão no código, foi descontinuado.**
   Descoberto testando a chave real do Everton: a API responde 404 pedindo
   a troca para `gemini-3.6-flash`. Trocado o padrão em `src/config.mjs`, e
