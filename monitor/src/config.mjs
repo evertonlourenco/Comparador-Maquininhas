@@ -29,7 +29,10 @@ export function carregarConfig({ exigirGemini = true } = {}) {
     },
     gemini: {
       apiKey: exigirGemini ? obrigatoria('GEMINI_API_KEY') : process.env.GEMINI_API_KEY,
-      modelo: process.env.GEMINI_MODEL || 'gemini-2.0-flash',
+      // 'gemini-2.0-flash' foi descontinuado (confirmado em 14/09/2026 — a
+      // API passou a responder 404 pedindo a troca). Testado nesta data:
+      // 'gemini-3.6-flash' responde normalmente com a chave de produção.
+      modelo: process.env.GEMINI_MODEL || 'gemini-3.6-flash',
     },
   };
 }
