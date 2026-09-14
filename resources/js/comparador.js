@@ -103,6 +103,10 @@ function comparador(caminhoDoJson) {
     avancado: false,
     copiado: false,
     temporizador: null,
+    // Etapa 12: debounce proprio para o evento de uso do GA4, separado do
+    // debounce do calculo (120ms — pensado para o motor, nao para analytics).
+    // Sem isso, arrastar um slider dispararia um evento por frame.
+    temporizadorAnalytics: null,
 
     // Texto dos campos de dinheiro, em pt-BR (regra 11). O numero so existe
     // depois de doUsuario(); a tela nunca mostra "10000.00".
@@ -122,7 +126,10 @@ function comparador(caminhoDoJson) {
       this.$watch('faturamentoTexto', () => this.lerFaturamento());
       this.$watch('ticketTexto', () => this.lerTicket());
 
-      this.$watch('assinatura', () => this.agendar());
+      this.$watch('assinatura', () => {
+        this.agendar();
+        this.agendarAnalytics();
+      });
 
       fetch(caminhoDoJson, { headers: { Accept: 'application/json' } })
         .then((resposta) => {
@@ -193,6 +200,8 @@ function comparador(caminhoDoJson) {
       this.parcelas = preset.parcelas;
       this.ticket = preset.ticket;
       this.ticketTexto = formatarNumero(this.ticket, 2);
+
+      window.gtag?.('event', 'segmento_selecionado', { segmento: chave });
     },
 
     /**
@@ -308,6 +317,47 @@ function comparador(caminhoDoJson) {
       window.clearTimeout(this.temporizador);
       this.temporizador = window.setTimeout(() => this.calcular(), 120);
       this.gravarUrl();
+    },
+
+    /**
+     * Etapa 12: "uso do comparador" e "faixa de faturamento" para o GA4.
+     * 1200ms de silencio depois da ultima mudanca — bem mais longo que o
+     * debounce do calculo — porque aqui o que importa e "a pessoa chegou a
+     * um resultado e parou", nao cada arrasto de slider.
+     */
+    agendarAnalytics() {
+      window.clearTimeout(this.temporizadorAnalytics);
+      this.temporizadorAnalytics = window.setTimeout(() => this.registrarUso(), 1200);
+    },
+
+    registrarUso() {
+      if (this.resultado === null) {
+        return;
+      }
+
+      window.gtag?.('event', 'uso_comparador', { segmento: this.segmento });
+      window.gtag?.('event', 'faixa_faturamento', { faixa: this.faixaDeFaturamento });
+    },
+
+    /** Faixas fixas, para o relatorio contar ocorrencia por faixa, nao por valor exato. */
+    get faixaDeFaturamento() {
+      const f = this.faturamento;
+
+      if (f < 2000) return 'ate_2_mil';
+      if (f < 5000) return '2_a_5_mil';
+      if (f < 10000) return '5_a_10_mil';
+      if (f < 20000) return '10_a_20_mil';
+      if (f < 50000) return '20_a_50_mil';
+
+      return 'acima_de_50_mil';
+    },
+
+    /** O clique no cupom dentro do resultado — vai para /cupom/{slug}, pagina nossa. */
+    registrarCliqueCupom(item) {
+      window.gtag?.('event', 'clique_cupom', {
+        marca: item.marca.slug,
+        pagina_origem: 'comparador',
+      });
     },
 
     calcular() {

@@ -114,6 +114,7 @@
                                                     class="numero font-medium text-aferido underline underline-offset-2 hover:no-underline"
                                                     :href="'/cupom/' + item.marca.slug"
                                                     x-text="item.comparacao.custo_inicial.cupom"
+                                                    @click="registrarCliqueCupom(item)"
                                                 ></a>
                                             </span>
                                         </template>

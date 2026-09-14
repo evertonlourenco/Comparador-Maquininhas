@@ -51,12 +51,30 @@ document.querySelectorAll('[data-alternar-tema]').forEach((botao) => {
  * data-origem — x-bloco-cupom so os inclui quando recebe marcaSlug e origem).
  * "Fire and forget": uma falha de rede nao pode travar a copia nem a
  * navegacao do lojista, entao o erro so cai no console.
+ *
+ * Etapa 12: o mesmo clique tambem vira evento de GA4 — "usar_cupom" e a
+ * saida de afiliado de verdade (regra 5: o cupom desconta a adesao, nunca a
+ * taxa; o clique que interessa para o parceiro e este), "copiar_codigo" e
+ * a copia do codigo. window.gtag so existe depois do consentimento
+ * (carregarAnalytics), entao o `?.` e a guarda inteira — sem fila, sem
+ * evento contado antes do aceite.
  */
+const NOME_DO_EVENTO_GA4 = {
+    usar_cupom: 'clique_afiliado',
+    copiar_codigo: 'copia_codigo',
+};
+
 function rastrearEventoCupom(tipoEvento, alvo) {
     const marca = alvo.dataset.marca;
     const codigo = alvo.dataset.cupom;
     const origem = alvo.dataset.origem;
     if (!marca || !codigo || !origem) return;
+
+    window.gtag?.('event', NOME_DO_EVENTO_GA4[tipoEvento] ?? tipoEvento, {
+        marca,
+        cupom: codigo,
+        pagina_origem: origem,
+    });
 
     const token = document.querySelector('meta[name="csrf-token"]')?.content;
     if (!token) return;
@@ -159,11 +177,16 @@ function carregarAnalytics() {
     document.head.appendChild(script);
 
     window.dataLayer = window.dataLayer || [];
-    function gtag() {
+    // Global, e nao uma funcao local: o comparador (etapa 07) e um bundle Vite
+    // separado deste arquivo — so um window.gtag e alcancavel dos dois lados.
+    // Enquanto o consentimento nao existir, window.gtag simplesmente nao
+    // existe, e todo chamador usa `window.gtag?.(...)` — sem fila, sem evento
+    // aceito antes da hora.
+    window.gtag = function () {
         window.dataLayer.push(arguments);
-    }
-    gtag('js', new Date());
-    gtag('config', ga4Id, { anonymize_ip: true });
+    };
+    window.gtag('js', new Date());
+    window.gtag('config', ga4Id, { anonymize_ip: true });
 }
 
 function lerConsentimentoCookies() {
