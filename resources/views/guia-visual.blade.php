@@ -455,7 +455,7 @@
 
     {{-- Le o hexadecimal do tema em vigor, para os quadrados nao mentirem no
          escuro. So o guia visual precisa disso. --}}
-    <script>
+    <script @if (isset($cspNonce)) nonce="{{ $cspNonce }}" @endif>
         (function () {
             var alvos = document.querySelectorAll('[data-hex]');
 

@@ -68,7 +68,7 @@
     {{-- Antes da folha de estilo, para o tema nao piscar. Se o script falhar
          ou o JavaScript estiver desligado, nao ha atributo e o
          prefers-color-scheme do app.css assume. --}}
-    <script>
+    <script @if (isset($cspNonce)) nonce="{{ $cspNonce }}" @endif>
         (function () {
             try {
                 var salvo = localStorage.getItem('tema');

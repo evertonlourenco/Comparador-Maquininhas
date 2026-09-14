@@ -19,7 +19,7 @@
     <meta name="robots" content="noindex, nofollow">
     <title>{{ config('app.name') }} — em breve</title>
 
-    <script>
+    <script @if (isset($cspNonce)) nonce="{{ $cspNonce }}" @endif>
         (function () {
             try {
                 var salvo = localStorage.getItem('tema');
