@@ -20,6 +20,24 @@ Repositório: `git@github.com:evertonlourenco/Comparador-Maquininhas.git` (priva
 
 Nota: o caminho do projeto contém um espaço ("Claude Code"). Sempre entre aspas em comandos de shell.
 
+### Acesso ao GitHub deste Mac
+
+**Não há `gh` CLI instalado.** O push/pull funciona por SSH, com uma chave já
+autorizada na conta do Everton: `~/.ssh/github_everton`, mapeada para
+`Host github.com` em `~/.ssh/config` (mesmo arquivo que tem o atalho
+`comparador` da etapa 11). Qualquer `git clone`/`push` para
+`git@github.com:evertonlourenco/...` já funciona sem senha nenhuma.
+
+**Criar um repositório novo, porém, não dá pra fazer só com a chave SSH** —
+isso é uma chamada à API/web do GitHub, que pede token ou login, e nenhum
+dos dois existe nesta máquina. Repositório novo (como o do monitor de
+mudanças, etapa 13) precisa ser criado pelo Everton no site do GitHub (New
+repository → privado → sem README/gitignore, pra não conflitar com o que já
+foi commitado local) — depois disso, `git remote add origin <url>` e
+`git push -u origin main` funcionam normalmente com a chave já configurada.
+Registrar isso aqui existe exatamente para não redescobrir isso do zero
+numa sessão futura.
+
 ## Comandos
 
 ```bash
