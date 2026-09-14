@@ -3,7 +3,7 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "php artisan view:cache && vite build",
+        "build": "php artisan view:cache && vite build && node scripts/gera-htaccess-do-build.mjs",
         "dev": "vite"
     },
     "devDependencies": {

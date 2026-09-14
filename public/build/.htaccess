@@ -1,0 +1,8 @@
+# Etapa 12: tudo aqui dentro e gerado pelo Vite com hash no nome do arquivo
+# (ex.: app-C3x9F2kq.css). Conteudo novo sempre nasce com nome novo, entao
+# cache "para sempre" e seguro — nunca vai servir um arquivo trocado com o
+# nome antigo. Gerado por scripts/gera-htaccess-do-build.mjs a cada build;
+# nao editar a mao, o proximo `npm run build` sobrescreve.
+<IfModule mod_headers.c>
+    Header set Cache-Control "public, max-age=31536000, immutable"
+</IfModule>

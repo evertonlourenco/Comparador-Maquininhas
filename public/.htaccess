@@ -24,28 +24,19 @@
     RewriteRule ^ index.php [L]
 </IfModule>
 
-# Etapa 12: cache de arquivo estatico.
+# Etapa 12: cache dos assets do Filament e de uploads em /storage — o nome do
+# arquivo nao garante que o conteudo de hoje e o de amanha, entao sem
+# "immutable" e com prazo mais curto. O cache "para sempre" dos arquivos
+# versionados por hash do Vite mora em public/build/.htaccess, gerado a cada
+# `npm run build` por scripts/gera-htaccess-do-build.mjs — nao aqui.
 #
-# /build/ e reescrito inteiro a cada `vite build` (o `emptyOutDir` do Vite
-# apaga o que nao veio deste build) — um .htaccess colocado dentro dessa
-# pasta desapareceria no proximo `npm run build`, sem aviso. Por isso a regra
-# fica aqui, no .htaccess de public/ (que o Vite nao toca), amarrada ao
-# caminho via variavel de ambiente do mod_rewrite, nao a um arquivo dentro da
-# propria pasta.
-<IfModule mod_rewrite.c>
-    RewriteCond %{REQUEST_URI} ^/build/
-    RewriteRule .* - [E=CACHE_IMUTAVEL:1]
-</IfModule>
-
+# (Uma primeira versao tentou amarrar os dois casos aqui, distinguindo por
+# variavel de ambiente do mod_rewrite. O LiteSpeed da Hostinger nao repassa
+# essa variavel para o mod_headers como o Apache faria — conferido em
+# producao, o cache-control saia sempre com este prazo curto. O .htaccess
+# proprio de /build/ nao depende disso.)
 <IfModule mod_headers.c>
-    # Tudo em /build/ nasce com hash no nome (ex.: app-C3x9F2kq.css) —
-    # conteudo novo sempre tem nome novo, entao "para sempre" e seguro.
-    Header set Cache-Control "public, max-age=31536000, immutable" env=CACHE_IMUTAVEL
-
-    # O resto (assets do Filament, uploads em /storage): o nome do arquivo
-    # nao garante que o conteudo de hoje e o de amanha, entao o prazo e mais
-    # curto e sem "immutable".
     <FilesMatch "\.(css|js|jpg|jpeg|png|gif|svg|webp|ico|woff|woff2|ttf)$">
-        Header set Cache-Control "public, max-age=2592000" env=!CACHE_IMUTAVEL
+        Header set Cache-Control "public, max-age=2592000"
     </FilesMatch>
 </IfModule>
