@@ -84,24 +84,31 @@ confiança de cada uma está no campo `observacao`; a da Cielo é a mais baixa
 (o PDF encontrado tem só 3 páginas, contra 28 da Rede e 70 da GetNet) — vale
 abrir uma vez para confirmar que é o corpo do contrato.
 
-**Pendências que continuam em aberto, sem inventar URL nenhuma** (regra 6
-do produto vale aqui também — campo vazio é honesto, URL errada é
-monitorar a coisa errada):
+**`equipamento_cupom`** tem 4 fontes ativas — os próprios links de afiliado
+do Everton (com cupom já aplicado), testados com o coletor em 14/09/2026:
+Ton, PagBank, Mercado Pago e InfinitePay. Todos trazem preço/desconto real
+via fetch simples.
+
+**Achado no processo, sem ser sobre o monitor:** o Everton também passou
+links de afiliado de Yelly, SidePay, TrincaPay e FacilityPay — mas essas
+quatro marcas **ainda não existem** na tabela `marcas` do app (só eram
+citadas como exemplo da regra 7 no `CLAUDE.md`). As URLs ficaram guardadas
+em `fontes.json`, com `ativo: false`, pra não se perderem; cadastrar essas
+marcas de verdade é trabalho de catálogo, fora do escopo deste monitor.
+
+**Pendência que continua em aberto, sem inventar URL nenhuma** (regra 6 do
+produto vale aqui também — campo vazio é honesto, URL errada é monitorar a
+coisa errada):
 
 - **Ton (`tabela_taxas`)**: pesquisado em 14/09/2026, sem solução. Não
   existe página pública com a tabela completa — o próprio Ton diz que a
   taxa é consultada dentro do app ("Minhas taxas e prazos"), depende do
   faturamento do mês e fica atrás de login. Resolver isso exigiria login
   automatizado na conta do Everton, fora do escopo deste monitor.
-- **`equipamento_cupom`**: nenhuma fonte cadastrada ainda, para nenhuma das
-  9 marcas. O schema do comparador não guarda URL de preço de equipamento
-  nem de termos de cupom (só `url_fonte` em `taxas_divulgadas` e
-  `faixas_reportadas`) — não havia de onde puxar um valor real. Adicione um
-  objeto por marca em `fontes.json`, categoria `equipamento_cupom`, com a
-  URL da página de preços/cupom que você quer acompanhar.
 
-Para ativar qualquer fonte nova: edite `fontes.json`, preencha `url` e
-marque `ativo: true`, e faça commit.
+Para ativar qualquer fonte nova (ou uma das quatro pendentes acima): edite
+`fontes.json`, preencha/confirme `url` e marque `ativo: true`, e faça
+commit.
 
 ### Atenção: quatro marcas atrás de Cloudflare/Akamai
 

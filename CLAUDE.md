@@ -1947,17 +1947,32 @@ repositório do monitor — só falta confirmar quais fontes precisam disso.
   prazos", dependente do faturamento do mês e atrás de login. Continua
   inativa em `fontes.json`. Resolver isso exigiria login automatizado na
   conta do Everton dentro do app, fora do escopo desta etapa.
-- **Categoria `equipamento_cupom`: nenhuma fonte cadastrada ainda**, para
-  nenhuma marca. O schema não guarda URL de preço de equipamento nem de
-  termos de cupom — só `url_fonte` em `taxas_divulgadas`/`faixas_reportadas`
-  (regra 4) — então não havia de onde puxar um valor real sem inventar.
-- **`MONITOR_API_TOKEN` só está preenchido em local.** Falta gerar o valor
-  de produção e salvá-lo nos dois lados: `.env` do servidor (config já lê
-  `services.monitor.token`) e Settings → Secrets and variables → Actions
-  **deste mesmo repositório** no GitHub.
-- **Os outros três secrets dos workflows** (`TELEGRAM_BOT_TOKEN`,
-  `TELEGRAM_CHAT_ID`, `GEMINI_API_KEY`), no mesmo lugar, ainda não foram
-  criados — nenhum deles é algo que o Claude possa gerar sozinho.
+- **Categoria `equipamento_cupom`: resolvido em 14/09/2026 para 4 marcas.**
+  O Everton passou os próprios links de afiliado (com cupom já aplicado) de
+  Ton, PagBank, Mercado Pago e InfinitePay — cada um testado com o coletor
+  antes de entrar em `fontes.json`, e todos trazem preço/desconto real via
+  fetch simples, sem precisar de navegador.
+  **Achado no processo, sem relação com o monitor:** os links também
+  incluíam Yelly, SidePay, TrincaPay e FacilityPay — quatro parceiras de
+  afiliado que **ainda não existem na tabela `marcas`** (só eram citadas
+  como exemplo da regra 7). As URLs ficaram guardadas em `fontes.json`,
+  inativas, para não se perderem — mas cadastrar essas quatro marcas de
+  verdade (adquirente, taxa, etc.) é trabalho de catálogo, não desta etapa.
+  Vale decidir em que etapa isso entra.
+- **Todos os cinco secrets já foram gerados e conferidos em 14/09/2026:**
+  `MONITOR_API_TOKEN` (no `.env` de produção e no secret do GitHub — os
+  dois lados testados batendo, `POST /api/monitor/deteccoes` respondendo
+  200 em produção), `MONITOR_API_URL`, `TELEGRAM_BOT_TOKEN`,
+  `TELEGRAM_CHAT_ID` e `GEMINI_API_KEY` (testada de verdade contra a API do
+  Gemini — ver nota abaixo sobre o modelo).
+- **`gemini-2.0-flash`, usado como padrão no código, foi descontinuado.**
+  Descoberto testando a chave real do Everton: a API responde 404 pedindo
+  a troca para `gemini-3.6-flash`. Trocado o padrão em `src/config.mjs`, e
+  `maxOutputTokens` subiu de 300 para 1024 — o modelo novo gasta parte do
+  orçamento "pensando" antes de responder (campo `thoughtsTokenCount` no
+  retorno da API), e 300 cortava o resumo pela metade. `src/gemini.mjs`
+  também ganhou uma segunda tentativa em HTTP 503/429, que apareceu de
+  verdade no teste (sobrecarga passageira do modelo gratuito do Google).
 
 - [x] **01** — Ambiente local, Filament, Git e CLAUDE.md
 - [x] **02** — Schema do banco
