@@ -42,6 +42,12 @@ return [
         'id' => env('GA4_MEASUREMENT_ID'),
     ],
 
+    // Etapa 12: mesmo gate do GA4 — so carrega depois do aceite no banner de
+    // cookies, e so existe a meta tag quando o ID esta preenchido.
+    'clarity' => [
+        'id' => env('CLARITY_PROJECT_ID'),
+    ],
+
     // Etapa 10: identidade do controlador para /privacidade e /termos.
     // Ainda não definida — nome final da ferramenta, CNPJ e e-mail de
     // contato ficam para a etapa de lançamento (ver "Pendente da etapa 10"

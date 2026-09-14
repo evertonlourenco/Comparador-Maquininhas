@@ -25,6 +25,7 @@
 @php
     $linksRodape ??= \App\Support\Navegacao::rodape();
     $ga4Id = config('services.ga4.id');
+    $clarityId = config('services.clarity.id');
 @endphp
 
 <!DOCTYPE html>
@@ -41,6 +42,11 @@
          o consentimento foi aceito. Sem ID, o gate fica pronto e inerte. --}}
     @if ($ga4Id)
         <meta name="ga4-id" content="{{ $ga4Id }}">
+    @endif
+    {{-- Etapa 12: mesmo gate do GA4 acima — so existe com CLARITY_PROJECT_ID
+         preenchido, e o script so carrega depois do aceite no banner. --}}
+    @if ($clarityId)
+        <meta name="clarity-id" content="{{ $clarityId }}">
     @endif
 
     @php($nomeDoSite = config('app.name'))

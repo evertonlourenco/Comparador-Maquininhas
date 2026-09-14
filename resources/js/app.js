@@ -168,25 +168,48 @@ document.querySelectorAll('[data-selecao-marcas]').forEach((raiz) => {
  */
 function carregarAnalytics() {
     const ga4Id = document.querySelector('meta[name="ga4-id"]')?.content;
-    if (!ga4Id || document.querySelector('[data-gtag-script]')) return;
 
-    const script = document.createElement('script');
-    script.async = true;
-    script.dataset.gtagScript = '';
-    script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(ga4Id)}`;
-    document.head.appendChild(script);
+    if (ga4Id && !document.querySelector('[data-gtag-script]')) {
+        const script = document.createElement('script');
+        script.async = true;
+        script.dataset.gtagScript = '';
+        script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(ga4Id)}`;
+        document.head.appendChild(script);
 
-    window.dataLayer = window.dataLayer || [];
-    // Global, e nao uma funcao local: o comparador (etapa 07) e um bundle Vite
-    // separado deste arquivo — so um window.gtag e alcancavel dos dois lados.
-    // Enquanto o consentimento nao existir, window.gtag simplesmente nao
-    // existe, e todo chamador usa `window.gtag?.(...)` — sem fila, sem evento
-    // aceito antes da hora.
-    window.gtag = function () {
-        window.dataLayer.push(arguments);
-    };
-    window.gtag('js', new Date());
-    window.gtag('config', ga4Id, { anonymize_ip: true });
+        window.dataLayer = window.dataLayer || [];
+        // Global, e nao uma funcao local: o comparador (etapa 07) e um bundle
+        // Vite separado deste arquivo — so um window.gtag e alcancavel dos
+        // dois lados. Enquanto o consentimento nao existir, window.gtag
+        // simplesmente nao existe, e todo chamador usa `window.gtag?.(...)`
+        // — sem fila, sem evento aceito antes da hora.
+        window.gtag = function () {
+            window.dataLayer.push(arguments);
+        };
+        window.gtag('js', new Date());
+        window.gtag('config', ga4Id, { anonymize_ip: true });
+    }
+
+    // Etapa 12: mapa de calor e gravacao de sessao. Snippet padrao da
+    // Microsoft — carrega independente do GA4 (um site pode ter so um dos
+    // dois configurado). A mascara dos campos sensiveis fica no HTML
+    // (data-clarity-mask, ver /enviar-proposta), nao aqui.
+    const clarityId = document.querySelector('meta[name="clarity-id"]')?.content;
+
+    if (clarityId && !document.querySelector('[data-clarity-script]')) {
+        (function (c, l, a, r, i, t, y) {
+            c[a] =
+                c[a] ||
+                function () {
+                    (c[a].q = c[a].q || []).push(arguments);
+                };
+            t = l.createElement(r);
+            t.async = 1;
+            t.dataset.clarityScript = '';
+            t.src = 'https://www.clarity.ms/tag/' + i;
+            y = l.getElementsByTagName(r)[0];
+            y.parentNode.insertBefore(t, y);
+        })(window, document, 'clarity', 'script', clarityId);
+    }
 }
 
 function lerConsentimentoCookies() {

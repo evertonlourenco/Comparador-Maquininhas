@@ -32,7 +32,17 @@
             </div>
         @endif
 
-        <form method="post" action="{{ route('propostas.store') }}" enctype="multipart/form-data" class="mt-8 space-y-8">
+        {{-- Etapa 12: mascara o formulario inteiro na gravacao de sessao do
+             Clarity. O relato ja e anonimo por desenho (sem nome, sem
+             e-mail), mas faturamento e mensalidade continuam sendo dado de
+             negocio que nao precisa aparecer numa gravacao de tela. --}}
+        <form
+            method="post"
+            action="{{ route('propostas.store') }}"
+            enctype="multipart/form-data"
+            class="mt-8 space-y-8"
+            data-clarity-mask="True"
+        >
             @csrf
 
             <x-campo
