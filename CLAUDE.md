@@ -1862,10 +1862,17 @@ suspensa ou disco morto.
 
 ## Monitor de mudanças (etapa 13)
 
-Repositório **separado**, Node.js: [`comparador-maquininhas-monitor`](https://github.com/evertonlourenco/comparador-maquininhas-monitor).
-Não alimenta o site nem escreve em tabela de domínio nenhuma — só detecta
-quando uma fonte externa muda e avisa no Telegram. Nada vai ao ar sem
-aprovação humana no admin (regra 10, forma mais forte).
+Pasta `monitor/`, **neste mesmo repositório** — projeto Node.js separado de
+propósito (`package.json` próprio, não mistura dependência com o PHP), mas
+sem repositório do GitHub à parte: um repositório a mais custaria mais um
+lugar para lembrar de checar, mais uma tela de secrets, sem ganho real para
+um projeto de uma pessoa só. Os workflows do GitHub Actions ficam em
+`.github/workflows/monitor-*.yml` (o GitHub só reconhece esse diretório na
+raiz), todos com `working-directory: monitor`. Não alimenta o site nem
+escreve em tabela de domínio nenhuma — só detecta quando uma fonte externa
+muda e avisa no Telegram. Nada vai ao ar sem aprovação humana no admin
+(regra 10, forma mais forte). Ver `monitor/README.md` para detalhe de
+execução.
 
 | Arquivo (neste repositório) | Papel |
 |---|---|
@@ -1937,12 +1944,11 @@ repositório do monitor — só falta confirmar quais fontes precisam disso.
   (regra 4) — então não havia de onde puxar um valor real sem inventar.
 - **`MONITOR_API_TOKEN` só está preenchido em local.** Falta gerar o valor
   de produção e salvá-lo nos dois lados: `.env` do servidor (config já lê
-  `services.monitor.token`) e secret `MONITOR_API_TOKEN` no repositório do
-  monitor.
-- **Secrets do repositório do monitor** (`TELEGRAM_BOT_TOKEN`,
-  `TELEGRAM_CHAT_ID`, `GEMINI_API_KEY`, além do `MONITOR_API_TOKEN` acima)
-  ainda não foram criados — nenhum deles é algo que o Claude possa gerar
-  sozinho.
+  `services.monitor.token`) e Settings → Secrets and variables → Actions
+  **deste mesmo repositório** no GitHub.
+- **Os outros três secrets dos workflows** (`TELEGRAM_BOT_TOKEN`,
+  `TELEGRAM_CHAT_ID`, `GEMINI_API_KEY`), no mesmo lugar, ainda não foram
+  criados — nenhum deles é algo que o Claude possa gerar sozinho.
 
 - [x] **01** — Ambiente local, Filament, Git e CLAUDE.md
 - [x] **02** — Schema do banco

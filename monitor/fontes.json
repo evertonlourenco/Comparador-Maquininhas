@@ -1,0 +1,110 @@
+[
+  {
+    "id": "pagbank-tabela-taxas",
+    "marca_slug": "pagbank",
+    "marca_nome": "PagBank",
+    "categoria": "tabela_taxas",
+    "url": "https://pagbank.com.br/para-seu-negocio/maquininhas/taxas-e-tarifas",
+    "tipo_conteudo": "html",
+    "requer_navegador": false,
+    "roda_no_mac": false,
+    "ativo": true,
+    "observacao": "Cadastrada como url_fonte real das taxas divulgadas (etapa 04). PagBank esta na lista de marcas atras de Cloudflare/Akamai — se o GitHub Actions tomar bloqueio aqui, mude roda_no_mac para true."
+  },
+  {
+    "id": "infinitepay-tabela-taxas",
+    "marca_slug": "infinitepay",
+    "marca_nome": "InfinitePay",
+    "categoria": "tabela_taxas",
+    "url": "https://www.infinitepay.io/taxas",
+    "tipo_conteudo": "html",
+    "requer_navegador": false,
+    "roda_no_mac": false,
+    "ativo": true,
+    "observacao": "InfinitePay esta na lista de marcas atras de Cloudflare/Akamai — se bloquear, mude roda_no_mac para true."
+  },
+  {
+    "id": "sumup-tabela-taxas-receba-um-dia",
+    "marca_slug": "sumup",
+    "marca_nome": "SumUp",
+    "categoria": "tabela_taxas",
+    "url": "https://www.sumup.com/pt-br/maquininhas/taxas/receba-um-dia/",
+    "tipo_conteudo": "html",
+    "requer_navegador": false,
+    "roda_no_mac": false,
+    "ativo": true,
+    "observacao": null
+  },
+  {
+    "id": "sumup-tabela-taxas-receba-na-hora",
+    "marca_slug": "sumup",
+    "marca_nome": "SumUp",
+    "categoria": "tabela_taxas",
+    "url": "https://www.sumup.com/pt-br/maquininhas/taxas/receba-na-hora/",
+    "tipo_conteudo": "html",
+    "requer_navegador": false,
+    "roda_no_mac": false,
+    "ativo": true,
+    "observacao": null
+  },
+  {
+    "id": "ton-tabela-taxas",
+    "marca_slug": "ton",
+    "marca_nome": "Ton",
+    "categoria": "tabela_taxas",
+    "url": null,
+    "tipo_conteudo": "html",
+    "requer_navegador": false,
+    "roda_no_mac": false,
+    "ativo": false,
+    "observacao": "Pendente: a url_fonte cadastrada nas taxas do Ton (etapa 04) e a home (ton.com.br), generica demais para monitorar por hash — muda com banner/campanha o tempo todo. Falta achar a pagina real de tarifas do Ton e preencher a url aqui antes de ativar."
+  },
+  {
+    "id": "cielo-contrato-credenciamento",
+    "marca_slug": "cielo",
+    "marca_nome": "Cielo",
+    "categoria": "contrato_credenciamento",
+    "url": null,
+    "tipo_conteudo": "pdf",
+    "requer_navegador": false,
+    "roda_no_mac": false,
+    "ativo": false,
+    "observacao": "Pendente da etapa 0 (due diligence): localizar a URL do PDF do contrato de credenciamento e preencher aqui."
+  },
+  {
+    "id": "rede-contrato-credenciamento",
+    "marca_slug": "rede",
+    "marca_nome": "Rede",
+    "categoria": "contrato_credenciamento",
+    "url": null,
+    "tipo_conteudo": "pdf",
+    "requer_navegador": false,
+    "roda_no_mac": false,
+    "ativo": false,
+    "observacao": "Pendente da etapa 0: localizar a URL do PDF do contrato de credenciamento."
+  },
+  {
+    "id": "getnet-contrato-credenciamento",
+    "marca_slug": "getnet",
+    "marca_nome": "GetNet",
+    "categoria": "contrato_credenciamento",
+    "url": null,
+    "tipo_conteudo": "pdf",
+    "requer_navegador": false,
+    "roda_no_mac": false,
+    "ativo": false,
+    "observacao": "Pendente da etapa 0: localizar a URL do PDF do contrato de credenciamento."
+  },
+  {
+    "id": "stone-contrato-credenciamento",
+    "marca_slug": "stone",
+    "marca_nome": "Stone",
+    "categoria": "contrato_credenciamento",
+    "url": null,
+    "tipo_conteudo": "pdf",
+    "requer_navegador": false,
+    "roda_no_mac": false,
+    "ativo": false,
+    "observacao": "Pendente da etapa 0: localizar a URL do PDF do contrato de credenciamento. Stone tambem esta na lista de marcas atras de Cloudflare/Akamai."
+  }
+]

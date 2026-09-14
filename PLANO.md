@@ -58,7 +58,7 @@ por ele que o trabalho de dados acontece enquanto o site espera.
 - [x] **10** — Metodologia, LGPD e captação de relatos
 - [x] **11** — Deploy, SSH, backup e commits
 - [x] **12** — Cloudflare, medição, SEO, segurança e performance
-- [x] **13** — Monitor de mudanças (repositório Node separado; ver CLAUDE.md)
+- [x] **13** — Monitor de mudanças (pasta `monitor/`, projeto Node à parte; ver CLAUDE.md)
 
 ---
 

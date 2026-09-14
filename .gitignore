@@ -19,6 +19,8 @@
 /.zed
 /auth.json
 /node_modules
+# Etapa 13: package.json proprio do monitor de mudancas, em monitor/.
+/monitor/node_modules
 /public/fonts-manifest.dev.json
 /public/hot
 /public/storage

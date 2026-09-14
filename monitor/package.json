@@ -1,0 +1,21 @@
+{
+  "name": "comparador-maquininhas-monitor",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Monitor de mudancas do Maquina Certa — nao alimenta o site, so avisa quando uma fonte muda. Nada vai ao ar sem aprovacao humana no admin (regra 10).",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "monitorar": "node bin/monitorar.mjs",
+    "resumo-semanal": "node bin/resumo-semanal.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "diff": "^7.0.0",
+    "html-to-text": "^9.0.5",
+    "pdf-parse": "^1.1.1",
+    "playwright": "^1.47.0"
+  }
+}
