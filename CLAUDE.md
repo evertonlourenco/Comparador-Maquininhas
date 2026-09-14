@@ -1931,13 +1931,22 @@ repositório do monitor — só falta confirmar quais fontes precisam disso.
 
 ### O que ficou pendente, sem inventar URL nenhuma (regra 6 vale aqui também)
 
-- **Ton, categoria `tabela_taxas`**: a `url_fonte` cadastrada em
-  `taxas_divulgadas` (etapa 04) é a home (`ton.com.br`), genérica demais
-  para monitorar por hash — muda de conteúdo a cada campanha. Falta achar a
-  página real de tarifas do Ton.
-- **Cielo, Rede, GetNet e Stone, categoria `contrato_credenciamento`**:
-  pendência da etapa 0 do plano (due diligence) — falta localizar a URL do
-  PDF do contrato de credenciamento de cada uma.
+- **Cielo, Rede, GetNet e Stone, categoria `contrato_credenciamento`:
+  resolvido em 14/09/2026.** As quatro URLs foram pesquisadas e testadas
+  com o próprio coletor do monitor (não só uma busca — o PDF foi de fato
+  baixado e teve texto extraído). Ativas em `fontes.json`, com a fonte e o
+  grau de confiança anotados no campo `observacao` de cada uma. A da Cielo
+  é a de confiança mais baixa das quatro — o PDF encontrado tem só 3
+  páginas, contra 28 (Rede) e 70 (GetNet); vale o Everton abrir uma vez e
+  confirmar que é o corpo do contrato, não um trecho. A Stone não usa mais
+  o termo "contrato de credenciamento" — a fonte cadastrada é o
+  equivalente atual, "Termos Gerais de Contratação".
+- **Ton, categoria `tabela_taxas`: pesquisado em 14/09/2026, sem solução
+  encontrada.** Não existe página pública com a tabela completa — o
+  próprio Ton diz que a taxa é consultada dentro do app, em "Minhas taxas e
+  prazos", dependente do faturamento do mês e atrás de login. Continua
+  inativa em `fontes.json`. Resolver isso exigiria login automatizado na
+  conta do Everton dentro do app, fora do escopo desta etapa.
 - **Categoria `equipamento_cupom`: nenhuma fonte cadastrada ainda**, para
   nenhuma marca. O schema não guarda URL de preço de equipamento nem de
   termos de cupom — só `url_fonte` em `taxas_divulgadas`/`faixas_reportadas`

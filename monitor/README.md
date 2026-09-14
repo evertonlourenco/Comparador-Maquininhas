@@ -71,21 +71,28 @@ como lembrete de pendência, mas o monitor a ignora.
 
 ## O que já está preenchido, e o que falta
 
-**`tabela_taxas`** já tem 4 fontes ativas, vindas das `url_fonte` reais já
+**`tabela_taxas`** tem 4 fontes ativas, vindas das `url_fonte` reais já
 cadastradas em `taxas_divulgadas` (etapa 04): PagBank, InfinitePay e as duas
 páginas da SumUp (receba na hora / receba em D+1).
 
-**Pendências deixadas de propósito, sem inventar URL nenhuma** (regra 6 do
-produto vale aqui também — campo vazio é honesto, URL errada é monitorar a
-coisa errada):
+**`contrato_credenciamento`** tem as 4 fontes ativas — pesquisadas e
+testadas com o próprio coletor deste projeto em 14/09/2026 (o PDF foi
+baixado de verdade e teve texto extraído, não só uma busca): Cielo, Rede,
+GetNet e Stone (que não usa mais o termo "contrato de credenciamento" —
+a fonte cadastrada é o "Termos Gerais de Contratação" atual). O grau de
+confiança de cada uma está no campo `observacao`; a da Cielo é a mais baixa
+(o PDF encontrado tem só 3 páginas, contra 28 da Rede e 70 da GetNet) — vale
+abrir uma vez para confirmar que é o corpo do contrato.
 
-- **Ton (`tabela_taxas`)**: a `url_fonte` cadastrada é a home
-  (`ton.com.br`), genérica demais para monitorar por hash — muda com
-  banner e campanha o tempo todo. Falta achar a página real de tarifas do
-  Ton.
-- **Cielo, Rede, GetNet, Stone (`contrato_credenciamento`)**: pendência
-  registrada desde a etapa 0 do plano (due diligence) — falta localizar a
-  URL do PDF do contrato de credenciamento de cada uma.
+**Pendências que continuam em aberto, sem inventar URL nenhuma** (regra 6
+do produto vale aqui também — campo vazio é honesto, URL errada é
+monitorar a coisa errada):
+
+- **Ton (`tabela_taxas`)**: pesquisado em 14/09/2026, sem solução. Não
+  existe página pública com a tabela completa — o próprio Ton diz que a
+  taxa é consultada dentro do app ("Minhas taxas e prazos"), depende do
+  faturamento do mês e fica atrás de login. Resolver isso exigiria login
+  automatizado na conta do Everton, fora do escopo deste monitor.
 - **`equipamento_cupom`**: nenhuma fonte cadastrada ainda, para nenhuma das
   9 marcas. O schema do comparador não guarda URL de preço de equipamento
   nem de termos de cupom (só `url_fonte` em `taxas_divulgadas` e
@@ -93,8 +100,8 @@ coisa errada):
   objeto por marca em `fontes.json`, categoria `equipamento_cupom`, com a
   URL da página de preços/cupom que você quer acompanhar.
 
-Para ativar qualquer uma: edite `fontes.json`, preencha `url` e marque
-`ativo: true`, e faça commit.
+Para ativar qualquer fonte nova: edite `fontes.json`, preencha `url` e
+marque `ativo: true`, e faça commit.
 
 ### Atenção: quatro marcas atrás de Cloudflare/Akamai
 

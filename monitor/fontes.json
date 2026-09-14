@@ -57,54 +57,54 @@
     "requer_navegador": false,
     "roda_no_mac": false,
     "ativo": false,
-    "observacao": "Pendente: a url_fonte cadastrada nas taxas do Ton (etapa 04) e a home (ton.com.br), generica demais para monitorar por hash — muda com banner/campanha o tempo todo. Falta achar a pagina real de tarifas do Ton e preencher a url aqui antes de ativar."
+    "observacao": "Pesquisado em 14/09/2026: NAO existe pagina publica com a tabela completa. O proprio Ton diz que a tarifa e consultada dentro do app, em 'Minhas taxas e prazos' — depende de faturamento do mes e fica atras de login. O blog (blog.ton.com.br/taxas-da-maquininha-ton) so cita numeros soltos de exemplo ('a partir de 0,57%'), nao a tabela — monitorar isso geraria alerta sem dado real pra aprovar. Sem solucao por enquanto: exigiria login automatizado na conta do Everton, fora do escopo desta etapa."
   },
   {
     "id": "cielo-contrato-credenciamento",
     "marca_slug": "cielo",
     "marca_nome": "Cielo",
     "categoria": "contrato_credenciamento",
-    "url": null,
+    "url": "https://www.cielo.com.br/docs/contrato-de-credenciamento/contrato-de-credenciamento.pdf",
     "tipo_conteudo": "pdf",
     "requer_navegador": false,
     "roda_no_mac": false,
-    "ativo": false,
-    "observacao": "Pendente da etapa 0 (due diligence): localizar a URL do PDF do contrato de credenciamento e preencher aqui."
+    "ativo": true,
+    "observacao": "Achada em 14/09/2026 na pagina https://www.cielo.com.br/contrato-de-credenciamento/ (link 'Baixar Contrato de Credenciamento', URL sem data — parece ser sobrescrita a cada nova versao, o que e bom pra monitorar). Testada com o coletor: abre e extrai texto (3 paginas, ~100 mil caracteres — curto pertinho do de GetNet/Rede). Confianca media: a mesma pagina lista uma dezena de ANEXOS separados (aluguel de maquina, parcelamento, Tap, recebiveis, etc.) que NAO estao cobertos por esta URL — Everton, vale abrir o PDF uma vez pra confirmar que e mesmo o corpo principal do contrato antes de confiar 100% no alerta."
   },
   {
     "id": "rede-contrato-credenciamento",
     "marca_slug": "rede",
     "marca_nome": "Rede",
     "categoria": "contrato_credenciamento",
-    "url": null,
+    "url": "https://meu.userede.com.br/assets/docs/20220927_Contrato_Credenciamento_REDE(12).pdf",
     "tipo_conteudo": "pdf",
     "requer_navegador": false,
     "roda_no_mac": false,
-    "ativo": false,
-    "observacao": "Pendente da etapa 0: localizar a URL do PDF do contrato de credenciamento."
+    "ativo": true,
+    "observacao": "Achada em 14/09/2026 no dominio oficial da Rede (userede.com.br). Testada com o coletor: abre, 28 paginas, comeca com 'CONTRATO DE CREDENCIAMENTO E ADESAO DE ESTABELECIMENTOS AO SISTEMA REDE' — confianca alta. O nome do arquivo tem data de 2022, mas o link atual continua servindo esse arquivo; se um dia sumir (404), existe uma segunda copia no dominio do Itau que serve de alternativa: https://www.itau.com.br/media/dam/m/6c873f10b6f0fd23/original/Contrato_Credenciamento_REDE.pdf (tambem testada e funcionando, 83 mil caracteres)."
   },
   {
     "id": "getnet-contrato-credenciamento",
     "marca_slug": "getnet",
     "marca_nome": "GetNet",
     "categoria": "contrato_credenciamento",
-    "url": null,
+    "url": "https://site.getnet.com.br/wp-content/uploads/2023/12/Contrato-versao-Web.pdf",
     "tipo_conteudo": "pdf",
     "requer_navegador": false,
     "roda_no_mac": false,
-    "ativo": false,
-    "observacao": "Pendente da etapa 0: localizar a URL do PDF do contrato de credenciamento."
+    "ativo": true,
+    "observacao": "Achada em 14/09/2026 no dominio oficial da GetNet. Testada com o coletor: abre, 70 paginas, comeca com 'CONTRATO DE CREDENCIAMENTO AOS SERVICOS DE ADQUIRENCIA GETNET E OUTRAS AVENCAS' — confianca alta, e claramente o contrato completo."
   },
   {
     "id": "stone-contrato-credenciamento",
     "marca_slug": "stone",
     "marca_nome": "Stone",
     "categoria": "contrato_credenciamento",
-    "url": null,
+    "url": "https://docs.stone.com.br/wp-content/uploads/2025/02/Stone-Termos-Gerais-de-Contratacao.pdf",
     "tipo_conteudo": "pdf",
     "requer_navegador": false,
     "roda_no_mac": false,
-    "ativo": false,
-    "observacao": "Pendente da etapa 0: localizar a URL do PDF do contrato de credenciamento. Stone tambem esta na lista de marcas atras de Cloudflare/Akamai."
+    "ativo": true,
+    "observacao": "A Stone nao usa mais o termo 'contrato de credenciamento' — o equivalente atual e este 'Termos Gerais de Contratacao de Produtos e Servicos de Pagamento'. Achado em 14/09/2026 no dominio oficial docs.stone.com.br. Testado com o coletor: abre, ~280 mil caracteres, comeca se autodenominando '(Contrato)' entre a Stone e o usuario dos servicos de pagamento — confianca alta. Stone tambem esta na lista de marcas atras de Cloudflare/Akamai, mas isso e fetch simples de PDF, nao passa por navegador — o bloqueio, se acontecer, seria no HEAD/GET do arquivo mesmo."
   }
 ]
