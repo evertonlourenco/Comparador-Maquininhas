@@ -410,6 +410,13 @@ no primeiro login; não há como pular.
 - Tags nos marcos: `v1.0-lancamento`
 - Commit sempre que houver um bloco de trabalho coerente e verificado — sem esperar
   pedido. Direto na `main`, seguindo a linha da etapa-01.
+- **Depois do commit, push e deploy — também sem esperar pedido** (autorizado pelo
+  Everton em 14/09/2026). `git push origin main` e
+  `ssh comparador '~/domains/maquinacerta.com.br/comparador/deploy.sh'`, conferindo
+  que a linha `versao no ar` do log traz o hash do commit. O motivo é concreto: o
+  deploy busca do GitHub, e commit só local sobe a versão antiga sem erro nenhum —
+  foi o que aconteceu no primeiro deploy da etapa 14. Não vale para
+  `SITE_EM_BREVE`: reabrir o site continua sendo decisão explícita da etapa 19.
 - Uma etapa por sessão. O plano completo está em **`PLANO.md`**, na raiz do
   repositório — o que falta e em que ordem. Este arquivo registra o estado e as
   regras do que já existe; quando os dois divergirem, o `CLAUDE.md` vence sobre
