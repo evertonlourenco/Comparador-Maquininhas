@@ -4,19 +4,26 @@
 @source '../../storage/framework/views/*.php';
 
 /*
-| Identidade visual — direcao "Boletim" (etapa 06)
+| Identidade visual — Máquina Certa (etapa 14)
 |
-| A referencia e a folha de boletim de consumo impressa: papel, tinta, fio de
-| 1px e espaco em branco. Nao ha sombra, gradiente nem raio grande — hierarquia
-| se faz com regua e tipografia. A cor nao decora: cada acento nomeia um estado
-| que o dominio ja definiu.
+| A fonte e o manual de marca em `id_visual/brandbook-maquina-certa.md`: navy
+| do Monetizando como cor dominante, Saira nos titulos e numeros de destaque,
+| Figtree no texto, cartao branco com borda sobre fundo cinza-azulado.
 |
+| Dois canais de cor, e eles nao se misturam (decisao da etapa 14):
+|
+|   acao      -> verde da marca. Botao principal, menor custo, economia de
+|                cupom. So existe dentro do bloco ranqueavel, entao um verde
+|                e sempre, por construcao, um numero publicado.
 |   aferido   -> taxa divulgada pela marca, dentro dos 45 dias (regras 4 e 8)
 |   reportado -> faixa de relatos, promocao, taxa condicionada, dado a vencer
-|   vencido   -> cupom fora da validade, verificacao degradada (regra 5 e 8)
+|   vencido   -> cupom fora da validade, verificacao degradada, erro
+|
+| O estado do dado e dito por forma e rotulo (contorno navy, tracejado ocre,
+| alerta), nunca pelo verde. "Mais caro" nao tem cor: vermelho e de vencido.
 |
 | Trocar o tema troca o valor do token, nunca a classe no markup: por isso os
-| componentes nao carregam um unico `dark:`.
+| componentes nao carregam `dark:` de cor.
 |
 | Os contrastes sao conferidos por `scripts/verifica-contraste.mjs`, que le
 | este arquivo — mudou um hexadecimal aqui, o teste cobra.
@@ -30,50 +37,77 @@
 :root {
     color-scheme: light;
 
-    --cor-papel: #fbf9f4;
-    --cor-superficie: #f3efe6;
-    --cor-superficie-forte: #eae3d3;
+    /* Papel e o cartao; superficie e o fundo da pagina e a faixa dentro do
+       cartao. O manual chama de "Fundo" o #F6F7F9. */
+    --cor-papel: #ffffff;
+    --cor-superficie: #f6f7f9;
+    --cor-superficie-forte: #e4e7ec;
 
-    --cor-tinta: #1a1a17;
-    --cor-tinta-suave: #57554d;
+    --cor-tinta: #18264b;
+    --cor-tinta-suave: #5a6478;
 
-    --cor-regua: #ded8ca;
-    --cor-regua-forte: #bfb6a1;
-    --cor-contorno: #7c776a;
+    --cor-regua: #e4e7ec;
+    --cor-regua-forte: #c8c8c8;
+    /* O cinza #C8C8C8 do manual da 1,67:1 — serve de fio, nao de borda de
+       campo. A borda de controle precisa de 3:1 (WCAG 1.4.11). */
+    --cor-contorno: #7a8397;
 
-    --cor-aferido: #1b5b41;
-    --cor-aferido-fundo: #e4efe9;
+    --cor-marca: #18264b;
+    --cor-sobre-marca: #ffffff;
+    --cor-sobre-marca-suave: #c3cadb;
 
+    /* #009C82 com texto branco da 3,46:1 e reprova em 15px. O botao usa o
+       verde escuro do proprio manual; o vivo fica para faixa e borda. */
+    --cor-acao: #00705e;
+    --cor-acao-fundo: #e8f5f1;
+    --cor-acao-vivo: #009c82;
+    --cor-sobre-acao: #ffffff;
+
+    --cor-aferido: #18264b;
+    --cor-aferido-fundo: #edf0f7;
+
+    /* Ocre, e nao laranja: #D26432 e reservado ao Monetizando Negocios. */
     --cor-reportado: #7a4d05;
-    --cor-reportado-fundo: #f7ead3;
+    --cor-reportado-fundo: #fbf0dc;
 
-    --cor-vencido: #93251d;
-    --cor-vencido-fundo: #fae6e3;
+    --cor-vencido: #b3261e;
+    --cor-vencido-fundo: #fcebe9;
 
-    --cor-link: #134e8c;
-    --cor-foco: #134e8c;
+    --cor-link: #18264b;
+    --cor-foco: #18264b;
 }
 
 /* Sem JavaScript nao ha atributo, entao a preferencia do sistema ainda vale.
    O bloco e identico ao de [data-tema='escuro'] de proposito — o script de
-   contraste compara os dois e reclama se um deles andar sozinho. */
+   contraste compara os dois e reclama se um deles andar sozinho.
+
+   O manual nao define tema escuro; este e derivado do navy. */
 @media (prefers-color-scheme: dark) {
     :root:not([data-tema='claro']) {
         color-scheme: dark;
 
-        --cor-papel: #131410;
-        --cor-superficie: #1d1e18;
-        --cor-superficie-forte: #282a21;
+        --cor-papel: #131b30;
+        --cor-superficie: #0c1324;
+        --cor-superficie-forte: #1f2a44;
 
-        --cor-tinta: #f2efe6;
-        --cor-tinta-suave: #aeab9b;
+        --cor-tinta: #eef1f7;
+        --cor-tinta-suave: #a9b2c6;
 
-        --cor-regua: #34362c;
-        --cor-regua-forte: #4c4e41;
-        --cor-contorno: #8b8a79;
+        --cor-regua: #26314a;
+        --cor-regua-forte: #3a4661;
+        --cor-contorno: #7c88a3;
 
-        --cor-aferido: #6fc79b;
-        --cor-aferido-fundo: #14251d;
+        --cor-marca: #070c1a;
+        --cor-sobre-marca: #eef1f7;
+        --cor-sobre-marca-suave: #a9b2c6;
+
+        --cor-acao: #4fd1b8;
+        --cor-acao-fundo: #0f2b29;
+        --cor-acao-vivo: #2bb39a;
+        --cor-sobre-acao: #06201b;
+
+        --cor-aferido: #c5d0ea;
+        --cor-aferido-fundo: #1c2742;
 
         --cor-reportado: #e5af4f;
         --cor-reportado-fundo: #2a2114;
@@ -81,27 +115,36 @@
         --cor-vencido: #f0938a;
         --cor-vencido-fundo: #2c1917;
 
-        --cor-link: #93bff0;
-        --cor-foco: #93bff0;
+        --cor-link: #a9c1f0;
+        --cor-foco: #a9c1f0;
     }
 }
 
 [data-tema='escuro'] {
     color-scheme: dark;
 
-    --cor-papel: #131410;
-    --cor-superficie: #1d1e18;
-    --cor-superficie-forte: #282a21;
+    --cor-papel: #131b30;
+    --cor-superficie: #0c1324;
+    --cor-superficie-forte: #1f2a44;
 
-    --cor-tinta: #f2efe6;
-    --cor-tinta-suave: #aeab9b;
+    --cor-tinta: #eef1f7;
+    --cor-tinta-suave: #a9b2c6;
 
-    --cor-regua: #34362c;
-    --cor-regua-forte: #4c4e41;
-    --cor-contorno: #8b8a79;
+    --cor-regua: #26314a;
+    --cor-regua-forte: #3a4661;
+    --cor-contorno: #7c88a3;
 
-    --cor-aferido: #6fc79b;
-    --cor-aferido-fundo: #14251d;
+    --cor-marca: #070c1a;
+    --cor-sobre-marca: #eef1f7;
+    --cor-sobre-marca-suave: #a9b2c6;
+
+    --cor-acao: #4fd1b8;
+    --cor-acao-fundo: #0f2b29;
+    --cor-acao-vivo: #2bb39a;
+    --cor-sobre-acao: #06201b;
+
+    --cor-aferido: #c5d0ea;
+    --cor-aferido-fundo: #1c2742;
 
     --cor-reportado: #e5af4f;
     --cor-reportado-fundo: #2a2114;
@@ -109,17 +152,17 @@
     --cor-vencido: #f0938a;
     --cor-vencido-fundo: #2c1917;
 
-    --cor-link: #93bff0;
-    --cor-foco: #93bff0;
+    --cor-link: #a9c1f0;
+    --cor-foco: #a9c1f0;
 }
 
 @theme inline {
-    /* Newsreader tem tamanho optico real — e serifa de jornal, nao de convite.
-       IBM Plex Sans acentua bem o portugues e tem o Mono da mesma familia, que
-       e o que faz a coluna de 21 parcelas alinhar na virgula (regra 11). */
-    --font-titulo: 'Newsreader', 'Iowan Old Style', Palatino, Georgia, 'Times New Roman', serif;
-    --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-    --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    /* Saira: mesma familia da marca mae, condensada o bastante para titulo
+       longo e numero grande. Figtree: texto, rotulo e tabela, com algarismos
+       tabulares para a virgula alinhar na coluna de 21 parcelas (regra 11). */
+    --font-titulo: 'Saira', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --font-sans: 'Figtree', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
     --color-papel: var(--cor-papel);
     --color-superficie: var(--cor-superficie);
@@ -129,6 +172,13 @@
     --color-regua: var(--cor-regua);
     --color-regua-forte: var(--cor-regua-forte);
     --color-contorno: var(--cor-contorno);
+    --color-marca: var(--cor-marca);
+    --color-sobre-marca: var(--cor-sobre-marca);
+    --color-sobre-marca-suave: var(--cor-sobre-marca-suave);
+    --color-acao: var(--cor-acao);
+    --color-acao-fundo: var(--cor-acao-fundo);
+    --color-acao-vivo: var(--cor-acao-vivo);
+    --color-sobre-acao: var(--cor-sobre-acao);
     --color-aferido: var(--cor-aferido);
     --color-aferido-fundo: var(--cor-aferido-fundo);
     --color-reportado: var(--cor-reportado);
@@ -138,34 +188,54 @@
     --color-link: var(--cor-link);
     --color-foco: var(--cor-foco);
 
-    /* Dois raios, e so. Botao e etiqueta tem 2px; bloco tem 3px. Nada mais
-       arredonda — a folha impressa nao arredonda. */
-    --radius-selo: 2px;
-    --radius-bloco: 3px;
+    /* Tres raios, os do manual: selo 4px, botao e campo 6px, cartao 10px. */
+    --radius-selo: 4px;
+    --radius-botao: 6px;
+    --radius-bloco: 10px;
 
-    --text-manchete: clamp(1.75rem, 1.15rem + 2.6vw, 2.75rem);
-    --text-manchete--line-height: 1.1;
-    --text-manchete--letter-spacing: -0.015em;
+    /* H1 do manual: Saira 700, 40–56px, -2,5%, 1,05. */
+    --text-manchete: clamp(2.5rem, 2.05rem + 1.9vw, 3.5rem);
+    --text-manchete--line-height: 1.05;
+    --text-manchete--letter-spacing: -0.025em;
 
-    --text-titulo: clamp(1.3rem, 1.08rem + 1vw, 1.75rem);
-    --text-titulo--line-height: 1.2;
+    /* H2 do manual: Saira 600, 28–32px, -1,5%, 1,15. */
+    --text-titulo: clamp(1.75rem, 1.6rem + 0.6vw, 2rem);
+    --text-titulo--line-height: 1.15;
+    --text-titulo--letter-spacing: -0.015em;
+
+    /* Nome de marca e cabecalho de bloco: um degrau abaixo do H2, que em
+       cartao de celular empurraria o numero para a linha de baixo. */
+    --text-cartao: 1.25rem;
+    --text-cartao--line-height: 1.25;
+    --text-cartao--letter-spacing: -0.01em;
+
+    /* Numero da grade do cartao: Saira 700 22px no manual. */
+    --text-numero: 1.375rem;
+    --text-numero--line-height: 1.15;
 
     --text-subtitulo: 1.125rem;
-    --text-subtitulo--line-height: 1.4;
+    --text-subtitulo--line-height: 1.5;
 
     --text-miudo: 0.8125rem;
     --text-miudo--line-height: 1.5;
 
+    /* Rotulo do manual: Figtree 600, 11px, +14%, caixa alta. */
     --text-etiqueta: 0.6875rem;
-    --text-etiqueta--line-height: 1.2;
-    --text-etiqueta--letter-spacing: 0.08em;
+    --text-etiqueta--line-height: 1.3;
+    --text-etiqueta--letter-spacing: 0.14em;
+
+    /* Selo do manual: Figtree 600, 12px, +6%, caixa alta. */
+    --text-selo: 0.75rem;
+    --text-selo--line-height: 1.25;
+    --text-selo--letter-spacing: 0.06em;
 }
 
 @layer base {
     body {
-        background-color: var(--cor-papel);
+        background-color: var(--cor-superficie);
         color: var(--cor-tinta);
         font-family: var(--font-sans);
+        line-height: 1.6;
         -webkit-font-smoothing: antialiased;
         text-rendering: optimizeLegibility;
     }
@@ -179,8 +249,12 @@
         text-wrap: balance;
     }
 
+    h1 {
+        font-weight: 700;
+    }
+
     /* Foco visivel em tudo que recebe foco, sempre com 2px de folga: o anel
-       encosta no papel dos dois lados, nunca no preenchimento do botao. */
+       encosta no fundo dos dois lados, nunca no preenchimento do botao. */
     :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
         outline: 2px solid var(--cor-foco);
         outline-offset: 2px;
@@ -209,10 +283,44 @@
     }
 }
 
-/* Todo numero exibido usa isto. Tabular para a virgula alinhar na coluna,
-   monoespacado porque a tabela de taxas e o heroi da pagina (regra 11). */
+/* O logo e PNG, entao a versao negativa e outra imagem, e nao outra cor. A
+   troca segue as mesmas duas vias da paleta: o atributo quando ha JavaScript,
+   a preferencia do sistema quando nao ha. `dark:` sozinho so enxergaria o
+   atributo, e sem JavaScript o logo navy sumiria no fundo escuro. */
+.so-tema-escuro {
+    display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-tema='claro']) .so-tema-claro {
+        display: none;
+    }
+
+    :root:not([data-tema='claro']) .so-tema-escuro {
+        display: block;
+    }
+}
+
+[data-tema='escuro'] .so-tema-claro {
+    display: none;
+}
+
+[data-tema='escuro'] .so-tema-escuro {
+    display: block;
+}
+
+/* Todo numero no meio do texto usa isto: a mesma Figtree do corpo, com
+   algarismos tabulares para a virgula alinhar na coluna (regra 11). */
 @utility numero {
-    font-family: var(--font-mono);
+    font-family: var(--font-sans);
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.01em;
+}
+
+/* O numero que e o heroi do cartao: Saira 700 tabular, como pede o manual.
+   Pesado demais para ir no meio de uma frase — la vai `numero`. */
+@utility numero-destaque {
+    font-family: var(--font-titulo);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
 }

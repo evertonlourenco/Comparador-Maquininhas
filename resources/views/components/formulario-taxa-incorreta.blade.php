@@ -15,7 +15,7 @@
             data-form-taxa-incorreta
             action="{{ route('eventos.taxa-incorreta') }}"
             method="post"
-            class="mt-3 max-w-md space-y-3 rounded-bloco border border-regua bg-superficie p-4"
+            class="mt-3 w-full max-w-md space-y-3 rounded-bloco border border-regua bg-superficie p-4"
         >
             @csrf
             <input type="hidden" name="marca" value="{{ $marcaSlug }}">
@@ -31,7 +31,7 @@
                     minlength="5"
                     maxlength="2000"
                     rows="3"
-                    class="w-full rounded-selo border border-contorno bg-papel px-3 py-2 text-sm text-tinta"
+                    class="w-full rounded-botao border border-contorno bg-papel px-3 py-2 text-base text-tinta"
                 ></textarea>
             </div>
 
@@ -42,13 +42,13 @@
                     id="email-{{ $marcaSlug }}"
                     name="email_contato"
                     maxlength="190"
-                    class="w-full rounded-selo border border-contorno bg-papel px-3 py-2 text-sm text-tinta"
+                    class="min-h-12 w-full rounded-botao border border-contorno bg-papel px-3 py-2 text-base text-tinta"
                 >
             </div>
 
             <x-campo-honeypot />
 
-            <button type="submit" class="min-h-11 rounded-selo bg-tinta px-4 text-sm font-medium text-papel hover:opacity-90">
+            <button type="submit" class="min-h-12 rounded-botao border-[1.5px] border-tinta bg-tinta px-5 font-titulo text-[0.9375rem] font-semibold text-papel hover:opacity-90">
                 Enviar aviso
             </button>
 

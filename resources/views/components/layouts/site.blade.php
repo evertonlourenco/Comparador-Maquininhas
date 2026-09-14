@@ -80,12 +80,18 @@
         })();
     </script>
 
+    {{-- Simbolo do manual de marca, no quadrado navy. --}}
+    <link rel="icon" href="/favicon.ico" sizes="32x32">
+    <link rel="icon" type="image/png" sizes="192x192" href="/marca/favicon-192.png">
+    <link rel="apple-touch-icon" href="/marca/favicon-192.png">
+    <meta name="theme-color" content="#18264b">
+
     @fonts
     @vite(array_merge(['resources/css/app.css', 'resources/js/app.js'], $scripts))
 </head>
-<body class="flex min-h-dvh flex-col bg-papel text-tinta antialiased">
+<body class="flex min-h-dvh flex-col bg-superficie text-tinta antialiased">
     <a href="#conteudo"
-       class="sr-only focus:not-sr-only focus:absolute focus:start-2 focus:top-2 focus:z-50 focus:rounded-selo focus:bg-tinta focus:px-4 focus:py-2 focus:text-papel">
+       class="sr-only focus:not-sr-only focus:absolute focus:start-2 focus:top-2 focus:z-50 focus:rounded-botao focus:bg-tinta focus:px-4 focus:py-2 focus:text-papel">
         Pular para o conteúdo
     </a>
 

@@ -22,7 +22,7 @@
         <section aria-labelledby="s-controlador" class="space-y-3">
             <h2 id="s-controlador" class="text-titulo">Quem é o responsável por este site</h2>
             @if ($razaoSocial)
-                <p class="text-sm text-tinta">
+                <p class="text-tinta">
                     {{ $razaoSocial }}{{ $cnpj ? ', CNPJ '.$cnpj : '' }}, é quem controla os dados
                     tratados neste site, na forma da Lei Geral de Proteção de Dados (Lei 13.709/2018).
                 </p>
@@ -33,7 +33,7 @@
                     honesto até essa decisão ser tomada — preferimos isso a inventar um dado.
                 </p>
             @endif
-            <p class="text-sm text-tinta">
+            <p class="text-tinta">
                 Contato para qualquer assunto de privacidade:
                 @if ($emailContato)
                     <a href="mailto:{{ $emailContato }}" class="text-link underline underline-offset-4 hover:no-underline">{{ $emailContato }}</a>.
@@ -48,7 +48,7 @@
 
             <div class="space-y-2">
                 <h3 class="font-medium text-tinta">Formulário de proposta recebida (/enviar-proposta)</h3>
-                <p class="text-sm text-tinta">
+                <p class="text-tinta">
                     É anônimo por desenho: não pedimos nome nem e-mail. Coletamos a marca, as taxas
                     e condições da proposta, o estado, o segmento do negócio e o faturamento
                     aproximado que você informa, além de um anexo opcional (foto ou PDF da
@@ -60,7 +60,7 @@
 
             <div class="space-y-2">
                 <h3 class="font-medium text-tinta">Botão "reportar taxa errada"</h3>
-                <p class="text-sm text-tinta">
+                <p class="text-tinta">
                     Coletamos a mensagem que você escreve e, só se você quiser ser respondido, um
                     e-mail de contato — o campo é opcional. Base legal:
                     <strong class="font-medium">consentimento</strong>, dado ao enviar o formulário.
@@ -69,7 +69,7 @@
 
             <div class="space-y-2">
                 <h3 class="font-medium text-tinta">Navegação e cookies</h3>
-                <p class="text-sm text-tinta">
+                <p class="text-tinta">
                     Sua preferência de tema (claro/escuro) fica só no seu navegador
                     (<code>localStorage</code>), nunca chega a nós. Com sua autorização no banner
                     de cookies, usamos o Google Analytics para entender quantas pessoas visitam o
@@ -83,7 +83,7 @@
 
         <section aria-labelledby="s-comissao" class="space-y-3">
             <h2 id="s-comissao" class="text-titulo">Links de afiliado</h2>
-            <p class="text-sm text-tinta">
+            <p class="text-tinta">
                 Quando você clica num link para contratar uma maquininha, registramos o clique e o
                 código de cupom usado (não dados pessoais seus) para fins de comissionamento com a
                 marca parceira. A taxa mostrada é a mesma do site oficial da marca.
@@ -92,7 +92,7 @@
 
         <section aria-labelledby="s-direitos" class="space-y-3">
             <h2 id="s-direitos" class="text-titulo">Seus direitos</h2>
-            <p class="text-sm text-tinta">
+            <p class="text-tinta">
                 Pelo art. 18 da LGPD, você pode pedir confirmação de tratamento, acesso,
                 correção, anonimização, portabilidade ou eliminação dos seus dados, e revogar
                 consentimento a qualquer momento. Como o formulário de proposta é anônimo, não há
@@ -105,7 +105,7 @@
 
         <section aria-labelledby="s-cookies-gerenciar" class="space-y-3">
             <h2 id="s-cookies-gerenciar" class="text-titulo">Mudar sua escolha de cookies</h2>
-            <p class="text-sm text-tinta">
+            <p class="text-tinta">
                 O link "Gerenciar cookies", no rodapé de qualquer página, reabre o banner de
                 consentimento para você aceitar ou recusar de novo.
             </p>

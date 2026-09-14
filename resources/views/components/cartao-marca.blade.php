@@ -32,29 +32,21 @@
     };
 @endphp
 
+{{-- Cartao de comparacao do manual: raio 10px, borda 1px no padrao, 1,5px
+     verde no destaque. --}}
 <article {{ $attributes->class([
-    'rounded-bloco border bg-papel',
-    $destaque ? 'border-regua-forte border-t-2 border-t-aferido' : 'border-regua',
+    'overflow-hidden rounded-bloco bg-papel',
+    $destaque ? 'border-[1.5px] border-acao' : 'border border-regua',
 ]) }}>
     <div class="flex items-start gap-3 p-4">
         @if ($posicao !== null)
-            <span class="font-titulo numero shrink-0 pt-0.5 text-3xl leading-none text-tinta-suave" aria-hidden="true">{{ $posicao }}</span>
+            <span class="numero-destaque shrink-0 pt-0.5 text-3xl leading-none text-tinta-suave" aria-hidden="true">{{ $posicao }}</span>
             <span class="sr-only">{{ $posicao }}º lugar.</span>
         @endif
 
-        <div class="flex size-14 shrink-0 items-center justify-center border border-regua bg-superficie">
-            @if ($logo)
-                {{-- alt vazio de proposito: o nome da marca esta ao lado, e repetir
-                     duplicaria a leitura em leitor de tela. --}}
-                <img src="{{ $logo }}" alt="" class="max-h-10 max-w-10 object-contain" loading="lazy" decoding="async">
-            @else
-                <span class="font-titulo text-xl text-tinta-suave" aria-hidden="true">{{ mb_substr($nome, 0, 1) }}</span>
-            @endif
-        </div>
-
         <div class="min-w-0 flex-1">
             <div class="flex flex-wrap items-start justify-between gap-x-3 gap-y-1.5">
-                <h3 class="text-titulo min-w-0">
+                <h3 class="min-w-0 text-cartao">
                     @if ($href)
                         <a href="{{ $href }}" class="hover:text-link hover:underline underline-offset-4">{{ $nome }}</a>
                     @else
@@ -88,10 +80,22 @@
                 </p>
             @endif
         </div>
+
+        {{-- O quadrado do logo fica a direita, como no manual. Sem logo, a
+             inicial — nunca uma imagem generica (etapa 15). --}}
+        <div class="flex size-14 shrink-0 items-center justify-center rounded-botao border border-regua bg-superficie">
+            @if ($logo)
+                {{-- alt vazio de proposito: o nome da marca esta ao lado, e repetir
+                     duplicaria a leitura em leitor de tela. --}}
+                <img src="{{ $logo }}" alt="" class="max-h-10 max-w-10 object-contain" loading="lazy" decoding="async">
+            @else
+                <span class="font-titulo text-xl font-semibold text-tinta-suave" aria-hidden="true">{{ mb_substr($nome, 0, 1) }}</span>
+            @endif
+        </div>
     </div>
 
     @if (trim($slot) !== '')
-        <div class="border-t border-regua px-4 py-3">
+        <div class="border-t border-regua px-4 py-4">
             {{ $slot }}
         </div>
     @endif

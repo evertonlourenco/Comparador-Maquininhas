@@ -14,18 +14,16 @@ export default defineConfig({
                 'resources/js/comparador.js',
             ],
             refresh: true,
-            // Direcao "Boletim" (etapa 06). O plugin baixa e serve local:
-            // nenhuma requisicao a terceiro na visita, que e o que a regra 9
-            // pede da pagina publica.
+            // Manual de marca do Maquina Certa (etapa 14). O plugin baixa e
+            // serve local: nenhuma requisicao a terceiro na visita, que e o
+            // que a regra 9 pede da pagina publica — o <link> do Google Fonts
+            // que o manual sugere nao entra.
             fonts: [
-                bunny('Newsreader', {
-                    weights: [400, 500, 600],
+                bunny('Saira', {
+                    weights: [400, 600, 700],
                 }),
-                bunny('IBM Plex Sans', {
+                bunny('Figtree', {
                     weights: [400, 500, 600],
-                }),
-                bunny('IBM Plex Mono', {
-                    weights: [400, 500],
                 }),
             ],
         }),

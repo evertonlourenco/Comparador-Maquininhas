@@ -15,7 +15,8 @@
 @php
     $bordas = [
         'aferido' => 'border-regua',
-        'reportado' => 'border-reportado',
+        // A forma diz o estado: reportado e tracejado, como a faixa reportada.
+        'reportado' => 'border-dashed border-reportado',
         'apagado' => 'border-regua',
         'neutro' => 'border-regua',
     ];
@@ -24,9 +25,9 @@
 
 <section x-cloak x-show="itensNoEstado('{{ $estado }}').length > 0" class="space-y-4">
     <div class="space-y-1">
-        <h3 class="text-titulo">
+        <h3 class="text-cartao sm:text-2xl">
             {{ $titulo }}
-            <span class="numero text-tinta-suave" x-text="'(' + itensNoEstado('{{ $estado }}').length + ')'"></span>
+            <span class="numero font-normal text-tinta-suave" x-text="'(' + itensNoEstado('{{ $estado }}').length + ')'"></span>
         </h3>
         @if ($descricao)
             <p class="max-w-3xl text-miudo text-tinta-suave">{{ $descricao }}</p>
@@ -36,23 +37,33 @@
     <ol class="space-y-4">
         <template x-for="(item, indice) in itensNoEstado('{{ $estado }}')" :key="item.marca.slug + '-' + (item.plano ? item.plano.id : 0)">
             <li>
-                {{-- O fio grosso no topo e a unica marcacao de melhor e pior:
-                     a direcao "Boletim" nao tem sombra nem realce de fundo, e
-                     a cor ja nomeia estado no resto do site. --}}
+                {{-- Dois canais de cor que nao se misturam (etapa 14). O menor
+                     custo ganha a faixa e a borda verdes do cartao destacado do
+                     manual — e so o bloco ranqueavel (estado calculado) chega
+                     aqui com isso, entao verde e sempre numero publicado. O mais
+                     caro nao ganha cor: vermelho e de vencido. --}}
                 <article
-                    class="rounded-bloco border bg-papel {{ $borda }}"
+                    class="overflow-hidden rounded-bloco bg-papel"
                     @if ($ranqueado)
-                        x-bind:class="ehMelhor(item) ? 'border-t-2 border-t-aferido' : (ehPior(item) ? 'border-t-2 border-t-vencido' : '')"
+                        x-bind:class="ehMelhor(item) ? 'border-[1.5px] border-acao' : 'border {{ $borda }}'"
+                    @else
+                        x-bind:class="'border {{ $borda }}'"
                     @endif
                 >
+                    @if ($ranqueado)
+                        <template x-if="ehMelhor(item)">
+                            <p class="bg-acao px-4 py-2 text-etiqueta font-semibold uppercase text-sobre-acao">Menor custo no seu cenário</p>
+                        </template>
+                    @endif
+
                     <div class="flex flex-wrap items-start gap-x-3 gap-y-2 border-b border-regua px-4 py-3">
                         @if ($ranqueado)
-                            <span class="font-titulo numero shrink-0 text-3xl leading-none text-tinta-suave" aria-hidden="true" x-text="indice + 1"></span>
+                            <span class="numero-destaque shrink-0 pt-0.5 text-3xl leading-none text-tinta-suave" aria-hidden="true" x-text="indice + 1"></span>
                             <span class="sr-only" x-text="(indice + 1) + 'º lugar.'"></span>
                         @endif
 
                         <div class="min-w-0 flex-1">
-                            <h4 class="text-titulo" x-text="item.marca.nome"></h4>
+                            <h4 class="text-cartao" x-text="item.marca.nome"></h4>
                             <p class="mt-0.5 text-miudo text-tinta-suave">
                                 <span x-text="item.plano ? item.plano.nome : ''"></span>
                                 <template x-if="item.marca.adquirente">
@@ -62,13 +73,10 @@
                             </p>
                         </div>
 
-                        <div class="flex flex-wrap items-center gap-2">
+                        <div class="flex w-full flex-wrap items-center gap-2 sm:w-auto">
                             @if ($ranqueado)
-                                <template x-if="ehMelhor(item)">
-                                    <x-etiqueta tom="aferido" variante="solida">Melhor custo</x-etiqueta>
-                                </template>
                                 <template x-if="ehPior(item)">
-                                    <x-etiqueta tom="vencido">Mais caro</x-etiqueta>
+                                    <x-etiqueta tom="neutro">Mais caro</x-etiqueta>
                                 </template>
                             @endif
                             <x-etiqueta :tom="$tom">{{ $titulo }}</x-etiqueta>
@@ -78,31 +86,32 @@
                     {{-- Os quatro numeros que a etapa 07 pede, na mesma ordem em
                          todo cartao: o que sai por mes, quanto isso da em
                          percentual do que passa na maquininha, o que sai na
-                         adesao e o que sobra. --}}
-                    <dl class="grid grid-cols-2 gap-px border-b border-regua bg-regua md:grid-cols-4">
-                        <div class="bg-papel px-4 py-3">
+                         adesao e o que sobra. Mobile-first: um numero por linha
+                         ate caber dois lado a lado sem quebrar o rotulo em tres. --}}
+                    <dl class="grid grid-cols-1 gap-x-6 gap-y-4 border-b border-regua px-4 py-4 min-[30rem]:grid-cols-2 md:grid-cols-4">
+                        <div>
                             <dt class="text-etiqueta font-semibold uppercase text-tinta-suave">Custo mensal recorrente<template x-if="ehParcial(item)"><span class="text-reportado"> — parcial</span></template></dt>
-                            <dd class="numero mt-1 text-titulo" x-text="campoTexto(item, 'custo_mensal_recorrente')"></dd>
+                            <dd class="numero-destaque mt-1 text-numero" x-text="campoTexto(item, 'custo_mensal_recorrente')"></dd>
                             <p class="mt-1 text-miudo text-tinta-suave">
                                 Sem a adesão. Com ela diluída:
                                 <span class="numero" x-text="campoTexto(item, 'custo_mensal_total')"></span>
                             </p>
                         </div>
 
-                        <div class="bg-papel px-4 py-3">
+                        <div>
                             <dt class="text-etiqueta font-semibold uppercase text-tinta-suave">Taxa efetiva combinada<template x-if="ehParcial(item)"><span class="text-reportado"> — parcial</span></template></dt>
-                            <dd class="numero mt-1 text-titulo" x-text="campoTexto(item, 'taxa_efetiva_combinada') ?? '—'"></dd>
+                            <dd class="numero-destaque mt-1 text-numero" x-text="campoTexto(item, 'taxa_efetiva_combinada') ?? '—'"></dd>
                             <p class="mt-1 text-miudo text-tinta-suave">
                                 Só as taxas de venda:
                                 <span class="numero" x-text="campoTexto(item, 'taxa_efetiva_das_vendas') ?? '—'"></span>
                             </p>
                         </div>
 
-                        <div class="bg-papel px-4 py-3">
+                        <div>
                             <dt class="text-etiqueta font-semibold uppercase text-tinta-suave">Custo inicial</dt>
                             <template x-if="item.comparacao && item.comparacao.custo_inicial">
                                 <div>
-                                    <dd class="numero mt-1 text-titulo" x-text="item.comparacao.custo_inicial.formatado.com_cupom"></dd>
+                                    <dd class="numero-destaque mt-1 text-numero" x-text="item.comparacao.custo_inicial.formatado.com_cupom"></dd>
                                     <p class="mt-1 text-miudo text-tinta-suave">
                                         <template x-if="item.comparacao.custo_inicial.tem_cupom">
                                             {{-- Regra 5: o preco de onde o desconto saiu anda junto. --}}
@@ -111,7 +120,7 @@
                                                 <span class="numero line-through" x-text="item.comparacao.custo_inicial.formatado.sem_cupom"></span>
                                                 · cupom
                                                 <a
-                                                    class="numero font-medium text-aferido underline underline-offset-2 hover:no-underline"
+                                                    class="numero font-semibold text-acao underline underline-offset-2 hover:no-underline"
                                                     :href="'/cupom/' + item.marca.slug"
                                                     x-text="item.comparacao.custo_inicial.cupom"
                                                     @click="registrarCliqueCupom(item)"
@@ -136,9 +145,9 @@
                             </template>
                         </div>
 
-                        <div class="bg-papel px-4 py-3">
+                        <div>
                             <dt class="text-etiqueta font-semibold uppercase text-tinta-suave">Sobra no mês<template x-if="ehParcial(item)"><span class="text-reportado"> — parcial</span></template></dt>
-                            <dd class="numero mt-1 text-titulo" x-text="campoTexto(item, 'sobra_no_mes')"></dd>
+                            <dd class="numero-destaque mt-1 text-numero" x-text="campoTexto(item, 'sobra_no_mes')"></dd>
                             <p class="mt-1 text-miudo text-tinta-suave">
                                 Do faturamento informado, já descontado tudo acima.
                             </p>
@@ -185,7 +194,7 @@
                         {{-- Regra 8: o selo de frescor viaja no resultado e e
                              recalculado contra hoje, nao contra o dia em que o
                              JSON nasceu. --}}
-                        <p class="text-miudo" :class="item.frescor.nivel === 'fresca' ? 'text-aferido' : (item.frescor.nivel === 'desatualizada' ? 'text-reportado' : 'text-tinta-suave')">
+                        <p class="text-miudo" :class="item.frescor.nivel === 'fresca' ? 'font-medium text-aferido' : (item.frescor.nivel === 'desatualizada' ? 'text-reportado' : 'text-tinta-suave')">
                             <template x-if="item.frescor.nivel === 'sem_data'"><span>Sem data de verificação</span></template>
                             <template x-if="item.frescor.nivel !== 'sem_data'">
                                 <span>

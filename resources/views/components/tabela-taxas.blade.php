@@ -40,16 +40,25 @@
     $temFrescorPorLinha = $linhas->contains(fn ($l) => array_key_exists('data_verificacao', $l));
 
     $cabecalho = 'px-3 py-2 text-etiqueta font-semibold uppercase text-tinta-suave';
-    $celula = 'px-3 py-2 align-top';
+    $celula = 'px-3 py-2.5 align-top';
+
+    // Mobile-first: a tabela so ganha largura minima (e rola) quando tem
+    // coluna demais para caber em 375px. Rotulo + taxa cabem sem rolar.
+    $colunas = $reportada ? 4 : 2 + (int) $temFixo + (int) $temPrazo;
+    $larguraMinima = match (true) {
+        $colunas >= 4 => 'min-w-[32rem]',
+        $colunas === 3 => 'min-w-[24rem]',
+        default => '',
+    };
 
     $descricao = $reportada
         ? 'Faixa de valores reportados por lojistas, por linha de venda.'
         : 'Taxas publicadas pela marca, por linha de venda.';
 @endphp
 
-<figure {{ $attributes->class('rounded-bloco border border-regua bg-papel') }}>
+<figure {{ $attributes->class('overflow-hidden rounded-bloco border border-regua bg-papel') }}>
     <figcaption class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-regua px-4 py-3">
-        <span class="font-titulo text-subtitulo">{{ $titulo }}</span>
+        <span class="font-titulo text-cartao font-semibold">{{ $titulo }}</span>
         @if ($reportada)
             <x-etiqueta tom="reportado">Faixa reportada</x-etiqueta>
         @else
@@ -65,7 +74,7 @@
         role="region"
         aria-label="{{ $titulo ? $titulo.' — tabela rolável horizontalmente' : 'Tabela rolável horizontalmente' }}"
     >
-        <table class="w-full min-w-[32rem] border-collapse text-left text-sm">
+        <table class="w-full {{ $larguraMinima }} border-collapse text-left text-sm">
             <caption class="sr-only">{{ $titulo }}. {{ $descricao }}</caption>
 
             <thead>

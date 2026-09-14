@@ -9,14 +9,18 @@
     // Tudo nesta pagina e amostra. Nenhum numero aqui saiu do banco, e o aviso
     // no topo diz isso — a pagina existe para conferir o desenho, nao o dado.
     $cores = [
-        ['Papel', 'papel', 'bg-papel', 'Fundo da página'],
-        ['Superfície', 'superficie', 'bg-superficie', 'Zebra de tabela, rodapé de cartão'],
+        ['Papel', 'papel', 'bg-papel', 'Cartão, cabeçalho'],
+        ['Superfície', 'superficie', 'bg-superficie', 'Fundo da página, zebra de tabela'],
         ['Superfície forte', 'superficie-forte', 'bg-superficie-forte', 'Cabeçalho de tabela'],
-        ['Tinta', 'tinta', 'bg-tinta', 'Texto e botão principal escuro'],
+        ['Tinta', 'tinta', 'bg-tinta', 'Texto e título (navy)'],
         ['Tinta suave', 'tinta-suave', 'bg-tinta-suave', 'Metadado, nota de rodapé'],
-        ['Régua', 'regua', 'bg-regua', 'Fio de 1px (decorativo)'],
+        ['Régua', 'regua', 'bg-regua', 'Borda de cartão, divisor (decorativo)'],
         ['Régua forte', 'regua-forte', 'bg-regua-forte', 'Fio de seção (decorativo)'],
-        ['Contorno', 'contorno', 'bg-contorno', 'Borda de campo e de botão'],
+        ['Contorno', 'contorno', 'bg-contorno', 'Borda de campo'],
+        ['Marca', 'marca', 'bg-marca', 'Rodapé, selo “desconto parceiro”'],
+        ['Ação', 'acao', 'bg-acao', 'Botão principal, menor custo, economia'],
+        ['Ação, fundo', 'acao-fundo', 'bg-acao-fundo', 'Selo de economia'],
+        ['Ação, vivo', 'acao-vivo', 'bg-acao-vivo', 'Verde do símbolo (decorativo)'],
         ['Aferido', 'aferido', 'bg-aferido', 'Taxa divulgada, dado fresco'],
         ['Aferido, fundo', 'aferido-fundo', 'bg-aferido-fundo', 'Fundo da etiqueta aferida'],
         ['Reportado', 'reportado', 'bg-reportado', 'Faixa, promoção, condição'],
@@ -63,12 +67,13 @@
     <div class="mx-auto w-full max-w-5xl space-y-14 px-4 py-8 sm:px-6 sm:py-12">
 
         <header class="space-y-4 border-b border-regua-forte pb-8">
-            <x-etiqueta tom="neutro">Etapa 06</x-etiqueta>
+            <x-etiqueta tom="neutro">Etapa 14</x-etiqueta>
             <h1 class="text-manchete">Guia visual</h1>
             <p class="max-w-2xl text-subtitulo text-tinta-suave">
-                Direção “Boletim”: papel, tinta e fio de 1px. A cor não decora — cada acento
-                nomeia um estado que o domínio já definiu, e o desenho existe para o número
-                andar sempre colado à sua fonte e à sua data.
+                Identidade do {{ config('app.name') }}: navy do Monetizando, Saira e Figtree,
+                cartão branco sobre fundo cinza. Dois canais de cor que não se misturam — o verde
+                é ação e menor custo; o estado do dado (publicado, relatado, vencido) é dito por
+                forma e rótulo.
             </p>
             <p class="rounded-bloco border border-reportado bg-reportado-fundo px-4 py-3 text-miudo text-reportado">
                 <strong class="font-semibold">Todos os números desta página são amostra.</strong>
@@ -108,22 +113,25 @@
             <div class="space-y-2">
                 <h2 id="s-tipografia" class="text-titulo">Tipografia</h2>
                 <p class="max-w-2xl text-sm text-tinta-suave">
-                    Newsreader nos títulos, IBM Plex Sans no texto, IBM Plex Mono em todo número.
-                    O monoespaçado não é enfeite: é o que faz a vírgula alinhar numa coluna de
-                    <span class="numero">21</span> parcelas.
+                    Saira nos títulos, botões e números de destaque; Figtree no texto, nos rótulos
+                    e nas tabelas. Todo número usa algarismos tabulares — é o que faz a vírgula
+                    alinhar numa coluna de <span class="numero">21</span> parcelas.
                 </p>
             </div>
 
             <div class="space-y-4 rounded-bloco border border-regua bg-papel p-4 sm:p-6">
-                <p class="text-manchete">Quanto custa passar no crédito</p>
-                <p class="text-titulo">Título de seção em Newsreader</p>
-                <p class="text-subtitulo">Subtítulo, usado no cabeçalho de bloco e de tabela</p>
+                <p class="font-titulo text-manchete font-bold">A máquina certa</p>
+                <p class="font-titulo text-titulo font-semibold">Compare as taxas</p>
+                <p class="font-titulo text-cartao font-semibold">Nome de marca no cartão</p>
+                <p class="text-subtitulo">Subtítulo, usado na abertura da página</p>
                 <p class="max-w-prose">
-                    Texto corrido em IBM Plex Sans. A leitura acontece quase toda no celular, então
+                    Texto corrido em Figtree, 16px. A leitura acontece quase toda no celular, então
                     a medida da linha é curta e o corpo não desce abaixo de 16px em lugar nenhum.
                 </p>
+                <p class="text-etiqueta font-semibold uppercase text-tinta-suave">Rótulo · crédito parcelado</p>
                 <p class="text-miudo text-tinta-suave">Miúdo: metadado, nota de rodapé, selo de frescor.</p>
-                <p class="numero text-titulo">R$ 1.234.567,89 · 2,49% · 08/09/2026</p>
+                <p class="numero-destaque text-numero">R$ 1.234.567,89 · 2,49% · 08/09/2026</p>
+                <p class="numero">No meio do texto: R$ 1.234.567,89 · 2,49% · 08/09/2026</p>
                 <p class="text-miudo text-tinta-suave">
                     Formatação brasileira em todo número exibido (regra 11) — milhar com ponto,
                     decimal com vírgula, taxa sempre com duas casas.
@@ -138,6 +146,7 @@
             <div class="space-y-4 rounded-bloco border border-regua bg-papel p-4 sm:p-6">
                 <div class="flex flex-wrap items-center gap-3">
                     <x-botao>Comparar agora</x-botao>
+                    <x-botao variante="marca">Ver oferta</x-botao>
                     <x-botao variante="secundaria">Ver todas as taxas</x-botao>
                     <x-botao variante="discreta">Como calculamos</x-botao>
                     <x-botao disabled>Indisponível</x-botao>
@@ -149,8 +158,8 @@
                 </div>
 
                 <p class="text-miudo text-tinta-suave">
-                    Todo botão tem no mínimo <span class="numero">44px</span> de altura, o alvo de toque
-                    do celular. Link de afiliado sai com <code class="numero text-tinta">rel="sponsored nofollow"</code>
+                    Todo botão tem no mínimo <span class="numero">48px</span> de altura, a altura do
+                    manual de marca no celular. Verde só para a ação principal da tela — uma por vez. Link de afiliado sai com <code class="numero text-tinta">rel="sponsored nofollow"</code>
                     e o aviso de nova aba é lido por leitor de tela.
                 </p>
 
@@ -165,7 +174,8 @@
             <div class="space-y-2">
                 <h2 id="s-etiquetas" class="text-titulo">Etiquetas</h2>
                 <p class="max-w-2xl text-sm text-tinta-suave">
-                    Os tons nomeiam estado do dado, nunca humor.
+                    Primeira linha: estado do dado, dito por forma e rótulo. Segunda: os selos da
+                    marca — economia em verde e “desconto parceiro”, obrigatório quando há comissão.
                 </p>
             </div>
 
@@ -176,10 +186,15 @@
                     <x-etiqueta tom="reportado">Promoção de entrada</x-etiqueta>
                     <x-etiqueta tom="vencido">Cupom vencido</x-etiqueta>
                     <x-etiqueta tom="apagado">Sem dado publicado</x-etiqueta>
-                    <x-etiqueta tom="neutro">Sem mensalidade</x-etiqueta>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
-                    <x-etiqueta tom="aferido" variante="solida">Melhor preço</x-etiqueta>
+                    <x-etiqueta tom="economia">Menor custo</x-etiqueta>
+                    <x-etiqueta tom="economia">−30% adesão</x-etiqueta>
+                    <x-etiqueta tom="parceiro">Desconto parceiro</x-etiqueta>
+                    <x-etiqueta tom="neutro">Sem aluguel</x-etiqueta>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <x-etiqueta tom="aferido" variante="solida">Publicada</x-etiqueta>
                     <x-etiqueta tom="reportado" variante="solida">Vence em 3 dias</x-etiqueta>
                     <x-etiqueta tom="vencido" variante="solida">Expirado</x-etiqueta>
                     <x-etiqueta tom="apagado" variante="solida">Rascunho</x-etiqueta>
@@ -230,29 +245,29 @@
                     :estado="EstadoDoResultado::Calculado"
                     destaque
                 >
-                    <dl class="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
-                        <div>
-                            <dt class="text-miudo text-tinta-suave">Custo mensal</dt>
-                            <dd class="numero text-subtitulo font-medium">R$ 284,90</dd>
+                    <dl class="grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-4">
+                        <div class="flex flex-col-reverse">
+                            <dt class="mt-1 text-etiqueta font-semibold uppercase text-tinta-suave">Custo mensal</dt>
+                            <dd class="numero-destaque text-numero">R$ 284,90</dd>
                         </div>
-                        <div>
-                            <dt class="text-miudo text-tinta-suave">Crédito à vista</dt>
-                            <dd class="numero text-subtitulo">3,15%</dd>
+                        <div class="flex flex-col-reverse">
+                            <dt class="mt-1 text-etiqueta font-semibold uppercase text-tinta-suave">Crédito</dt>
+                            <dd class="numero-destaque text-numero">3,15%</dd>
                         </div>
-                        <div>
-                            <dt class="text-miudo text-tinta-suave">Débito</dt>
-                            <dd class="numero text-subtitulo">1,37%</dd>
+                        <div class="flex flex-col-reverse">
+                            <dt class="mt-1 text-etiqueta font-semibold uppercase text-tinta-suave">Débito</dt>
+                            <dd class="numero-destaque text-numero">1,37%</dd>
                         </div>
-                        <div>
-                            <dt class="text-miudo text-tinta-suave">Mensalidade</dt>
-                            <dd class="numero text-subtitulo">R$ 0,00</dd>
+                        <div class="flex flex-col-reverse">
+                            <dt class="mt-1 text-etiqueta font-semibold uppercase text-tinta-suave">Mensalidade</dt>
+                            <dd class="numero-destaque text-numero">R$ 0,00</dd>
                         </div>
                     </dl>
                     <x-selo-frescor class="mt-3" :data="$hoje->copy()->subDays(6)" fonte="https://exemplo.test/taxas" />
 
                     <x-slot:acoes>
-                        <x-botao href="https://exemplo.test" afiliado>Contratar com cupom</x-botao>
-                        <x-botao variante="secundaria" href="/guia-visual">Ver todas as taxas</x-botao>
+                        <x-botao href="https://exemplo.test" afiliado>Ver oferta</x-botao>
+                        <x-etiqueta tom="economia" class="self-center">−30% adesão</x-etiqueta>
                     </x-slot:acoes>
                 </x-cartao-marca>
 
@@ -263,7 +278,7 @@
                     :estado="EstadoDoResultado::Promocional"
                 >
                     <p class="text-sm">
-                        <span class="numero text-subtitulo font-medium">R$ 198,40</span>
+                        <span class="numero-destaque text-numero">R$ 198,40</span>
                         <span class="text-tinta-suave">por mês na tabela de entrada.</span>
                     </p>
                     <p class="mt-2 text-miudo text-reportado">
@@ -314,6 +329,18 @@
                     :linhas="$taxasDivulgadas"
                     coluna-rotulo="Linha de venda"
                     fonte="https://exemplo.test/taxas"
+                    :data-verificacao="$hoje->copy()->subDays(6)"
+                />
+
+                {{-- Duas colunas (linha + taxa): no celular cabe sem rolar. --}}
+                <x-tabela-taxas
+                    titulo="Marca Amostra — só percentual"
+                    :linhas="[
+                        ['rotulo' => 'Débito', 'percentual' => 1.37],
+                        ['rotulo' => 'Crédito à vista', 'percentual' => 3.15],
+                        ['rotulo' => 'Crédito 12x', 'percentual' => 13.86],
+                    ]"
+                    coluna-rotulo="Linha de venda"
                     :data-verificacao="$hoje->copy()->subDays(6)"
                 />
 
@@ -446,7 +473,7 @@
                 <li>Foco visível em tudo que recebe foco, com <span class="numero">2px</span> de folga — o anel encosta no papel dos dois lados, nunca no preenchimento do botão. Experimente navegar por esta página só com Tab.</li>
                 <li>Link “pular para o conteúdo” como primeiro elemento focável, e <code class="numero">&lt;main&gt;</code> recebe o foco de fato.</li>
                 <li>Tabela larga rola dentro da própria caixa e é alcançável pelo teclado, com rótulo de região.</li>
-                <li>Alvo de toque de <span class="numero">44px</span> em botão, link de navegação e campo.</li>
+                <li>Alvo de toque de <span class="numero">48px</span> em botão, link de navegação e campo; <span class="numero">44px</span> em link de texto.</li>
                 <li>Tema respeita a preferência do sistema sem JavaScript, e o botão do cabeçalho reporta o estado por <code class="numero">aria-pressed</code>.</li>
                 <li><code class="numero">prefers-reduced-motion</code> desliga transição e animação.</li>
             </ul>

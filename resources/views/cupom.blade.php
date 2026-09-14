@@ -29,7 +29,7 @@
         </p>
 
         {{-- Pedido explícito: esta frase não pode ficar implícita em lugar nenhum. --}}
-        <p class="mt-4 rounded-bloco border border-regua bg-superficie px-4 py-3 text-sm text-tinta">
+        <p class="mt-4 rounded-bloco border border-regua bg-papel px-4 py-3 text-sm text-tinta">
             <strong class="font-medium">As taxas exibidas aqui são exatamente as mesmas do site oficial de cada marca. Nosso link não altera sua taxa — só acrescenta desconto na adesão.</strong>
         </p>
 
@@ -51,8 +51,8 @@
 
         <section aria-labelledby="s-como-usar" class="mt-10 space-y-3">
             <h2 id="s-como-usar" class="text-titulo">Como usar</h2>
-            <ol class="list-decimal space-y-2 ps-5 text-tinta">
-                <li>Copie o código <code class="numero rounded-selo border border-dashed border-contorno bg-superficie px-2 py-1 text-sm font-medium tracking-wider">{{ $cupom->codigo }}</code>.</li>
+            <ol class="list-decimal space-y-3 ps-5 leading-relaxed text-tinta">
+                <li>Copie o código <code class="numero rounded-botao border border-dashed border-contorno bg-papel px-2 py-1 text-sm font-semibold tracking-wider">{{ $cupom->codigo }}</code>.</li>
                 <li>Clique em "Abrir {{ $marca->nome }} com o cupom" — o link já leva para a página de contratação da marca.</li>
                 <li>
                     Complete o cadastro
@@ -66,7 +66,7 @@
             </ol>
 
             @if ($cupom->termos)
-                <p class="rounded-bloco border border-regua bg-superficie px-4 py-3 text-sm text-tinta-suave">
+                <p class="rounded-bloco border border-regua bg-papel px-4 py-3 text-sm text-tinta-suave">
                     <strong class="font-medium text-tinta">Condição deste cupom:</strong> {{ $cupom->termos }}
                 </p>
             @endif

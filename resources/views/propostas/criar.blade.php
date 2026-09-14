@@ -22,7 +22,7 @@
         </header>
 
         @if ($errors->any())
-            <div role="alert" class="mt-6 rounded-bloco border border-vencido bg-papel px-4 py-3 text-sm text-vencido">
+            <div role="alert" class="mt-6 rounded-bloco border border-vencido bg-vencido-fundo px-4 py-3 text-sm text-vencido">
                 <p class="font-medium">Confira os campos abaixo:</p>
                 <ul class="mt-1 list-disc ps-5">
                     @foreach ($errors->all() as $mensagem)
@@ -63,8 +63,10 @@
                 <div data-linhas-taxa class="space-y-4">
                     @foreach ($tiposOperacao as $i => $tipo)
                         <div data-linha-taxa class="flex flex-wrap items-end gap-3 border-b border-regua pb-4 last:border-b-0 last:pb-0">
-                            <div class="min-w-[10rem]">
-                                <span class="block text-sm font-medium text-tinta">{{ $tipo->getLabel() }}</span>
+                            {{-- No celular o nome da linha fica em cima dos campos;
+                                 ao lado, so quando ha largura para os tres. --}}
+                            <div class="w-full sm:w-auto sm:min-w-[10rem] sm:self-center">
+                                <span class="block font-titulo text-base font-semibold text-tinta">{{ $tipo->getLabel() }}</span>
                                 <input type="hidden" name="taxas[{{ $i }}][tipo_operacao]" value="{{ $tipo->value }}">
                             </div>
 
@@ -109,7 +111,7 @@
                     </div>
                 </template>
 
-                <button type="button" data-adicionar-linha-taxa class="min-h-11 rounded-selo border border-contorno px-4 text-sm font-medium text-tinta hover:bg-superficie">
+                <button type="button" data-adicionar-linha-taxa class="min-h-12 rounded-botao border-[1.5px] border-tinta px-5 font-titulo text-[0.9375rem] font-semibold text-tinta hover:bg-superficie">
                     + Adicionar outra linha
                 </button>
             </fieldset>
@@ -176,13 +178,13 @@
                     id="anexo"
                     name="anexo"
                     accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,.pdf"
-                    class="block w-full text-sm text-tinta file:mr-3 file:min-h-11 file:rounded-selo file:border file:border-contorno file:bg-papel file:px-3 file:py-2 file:text-sm file:font-medium"
+                    class="block w-full text-sm text-tinta file:mr-3 file:min-h-12 file:rounded-botao file:border-[1.5px] file:border-tinta file:bg-papel file:px-4 file:py-2 file:font-titulo file:text-[0.9375rem] file:font-semibold file:text-tinta"
                 >
                 <p class="text-miudo text-tinta-suave">Máximo 8&nbsp;MB. Usamos só para conferir o relato — não publicamos o arquivo.</p>
             </div>
 
             <div class="flex items-start gap-3">
-                <input type="checkbox" id="consentimento" name="consentimento_uso_agregado" value="1" required class="mt-1 size-5 shrink-0 rounded border-contorno">
+                <input type="checkbox" id="consentimento" name="consentimento_uso_agregado" value="1" required class="mt-1 size-5 shrink-0 accent-[var(--cor-tinta)]">
                 <label for="consentimento" class="text-sm text-tinta">
                     Autorizo o uso agregado e anônimo desta informação para melhorar o comparador —
                     sem meu nome, sem meu contato, nunca publicada como número isolado.
@@ -192,9 +194,9 @@
 
             <x-campo-honeypot />
 
-            <button type="submit" class="min-h-11 rounded-selo bg-aferido px-5 py-3 text-base font-semibold text-papel hover:opacity-90">
+            <x-botao tipo="submit" tamanho="grande" class="w-full sm:w-auto">
                 Enviar proposta
-            </button>
+            </x-botao>
         </form>
     </div>
 </x-layouts.site>

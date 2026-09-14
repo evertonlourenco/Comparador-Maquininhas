@@ -82,7 +82,17 @@ const exigidos = (p) => [
     ['vencido no papel', p.vencido, p.papel, 4.5],
     ['vencido na superficie', p.vencido, p.superficie, 4.5],
     ['vencido no fundo vencido', p.vencido, p['vencido-fundo'], 4.5],
-    ['papel sobre botao aferido', p.papel, p.aferido, 4.5],
+    // Canal de acao (etapa 14): botao principal, menor custo, economia.
+    ['acao no papel', p.acao, p.papel, 4.5],
+    ['acao na superficie', p.acao, p.superficie, 4.5],
+    ['acao no fundo acao', p.acao, p['acao-fundo'], 4.5],
+    ['texto sobre botao acao', p['sobre-acao'], p.acao, 4.5],
+    ['tinta no fundo acao', p.tinta, p['acao-fundo'], 4.5],
+    // Rodape e selo "desconto parceiro", sobre o navy.
+    ['texto sobre marca', p['sobre-marca'], p.marca, 4.5],
+    ['texto suave sobre marca', p['sobre-marca-suave'], p.marca, 4.5],
+    ['anel de foco sobre marca', p['sobre-marca'], p.marca, 3],
+    ['papel sobre etiqueta solida aferido', p.papel, p.aferido, 4.5],
     ['papel sobre botao tinta', p.papel, p.tinta, 4.5],
     ['papel sobre botao vencido', p.papel, p.vencido, 4.5],
     ['papel sobre etiqueta solida reportado', p.papel, p.reportado, 4.5],

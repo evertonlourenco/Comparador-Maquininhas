@@ -35,8 +35,10 @@
 <span {{ $attributes->class(['inline-flex flex-wrap items-center gap-x-2 gap-y-1 text-miudo', $tons[$nivel]]) }}>
     <span class="inline-flex items-center gap-1.5">
         @if ($nivel === 'fresca')
-            <svg class="size-3 shrink-0" viewBox="0 0 12 12" aria-hidden="true">
-                <circle cx="6" cy="6" r="4.25" fill="currentColor" />
+            {{-- O check do simbolo da marca: o dado foi conferido. Na cor do
+                 estado (aferido), nunca no verde, que e canal de acao. --}}
+            <svg class="size-3.5 shrink-0" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                <path d="M2.25 6.4 4.9 9 9.75 3.25" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
         @elseif ($nivel === 'desatualizada')
             {{-- Meio circulo: o dado existe, mas o selo ja degradou. --}}

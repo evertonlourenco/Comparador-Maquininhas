@@ -26,7 +26,7 @@
     $descritores = collect([$ajuda ? $idAjuda : null, $erro ? $idErro : null])->filter()->implode(' ');
 
     $controle = trim(implode(' ', [
-        'block w-full min-h-11 rounded-selo border bg-papel px-3 py-2 text-base text-tinta',
+        'block w-full min-h-12 rounded-botao border bg-papel px-3 py-2 text-base text-tinta',
         'placeholder:text-tinta-suave',
         $erro ? 'border-vencido' : 'border-contorno',
         $prefixo ? 'ps-10' : '',

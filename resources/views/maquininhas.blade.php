@@ -25,16 +25,18 @@
         </header>
 
         @if ($marcas->isEmpty())
-            <p class="mt-8 rounded-bloco border border-regua bg-superficie px-4 py-3 text-sm text-tinta-suave">
+            <p class="mt-8 rounded-bloco border border-regua bg-papel px-4 py-3 text-sm text-tinta-suave">
                 Nenhuma marca ativa no momento.
             </p>
         @else
-            <div class="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-bloco border border-regua bg-superficie px-4 py-3">
+            {{-- No celular fica grudada no topo enquanto a pessoa marca os
+                 cartoes: o botao de comparar nao some ao rolar a grade. --}}
+            <div class="sticky top-0 z-10 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-bloco border border-regua bg-papel px-4 py-3">
                 <p class="text-sm text-tinta-suave">
-                    <span class="numero font-medium text-tinta" data-contagem-selecionadas>0</span>
+                    <span class="numero font-semibold text-tinta" data-contagem-selecionadas>0</span>
                     de <span class="numero">{{ $marcas->count() }}</span> marcas selecionadas.
                 </p>
-                <x-botao href="{{ route('comparador') }}" data-ir-comparar aria-disabled="true" class="pointer-events-none">
+                <x-botao href="{{ route('comparador') }}" data-ir-comparar aria-disabled="true" class="pointer-events-none w-full sm:w-auto">
                     Comparar selecionadas
                 </x-botao>
             </div>
@@ -48,33 +50,42 @@
                             :logo="$marca->logo_url"
                             :href="route('maquininhas.show', $marca->slug)"
                         >
-                            <dl class="grid grid-cols-2 gap-x-4 gap-y-3">
-                                <div>
-                                    <dt class="text-miudo text-tinta-suave">Mensalidade</dt>
-                                    <dd class="numero text-sm font-medium">{{ $resumo['mensalidade']['formatado'] ?? 'Não informado' }}</dd>
+                            {{-- A grade de numeros do cartao do manual (rotulo em caixa
+                                 alta embaixo do valor). A grade debito/credito/12x do
+                                 manual nao entra: escolher plano, prazo e grupo por
+                                 marca para montar esses tres seria decisao de dado
+                                 (regra 1), nao de estilo. --}}
+                            <dl class="grid grid-cols-2 gap-x-4 gap-y-4">
+                                <div class="flex flex-col-reverse">
+                                    <dt class="mt-1 text-etiqueta font-semibold uppercase text-tinta-suave">Mensalidade</dt>
+                                    <dd class="numero text-base font-semibold">{{ $resumo['mensalidade']['formatado'] ?? 'Não informado' }}</dd>
                                 </div>
-                                <div>
-                                    <dt class="text-miudo text-tinta-suave">Prazo mais rápido</dt>
-                                    <dd class="text-sm font-medium">{{ $resumo['prazo'] ?? 'Não informado' }}</dd>
+                                <div class="flex flex-col-reverse">
+                                    <dt class="mt-1 text-etiqueta font-semibold uppercase text-tinta-suave">Prazo mais rápido</dt>
+                                    <dd class="text-base font-semibold">{{ $resumo['prazo'] ?? 'Não informado' }}</dd>
                                 </div>
-                                <div class="col-span-2">
-                                    <dt class="flex flex-wrap items-center gap-1.5 text-miudo text-tinta-suave">
+                                <div class="col-span-2 flex flex-col-reverse">
+                                    <dt class="mt-1 flex flex-wrap items-center gap-1.5 text-etiqueta font-semibold uppercase text-tinta-suave">
                                         Faixa de taxa
                                         @if (($resumo['faixa_taxa']['classe'] ?? null) === 'reportada')
                                             <x-etiqueta tom="reportado">Faixa reportada</x-etiqueta>
                                         @endif
                                     </dt>
-                                    <dd class="numero text-sm font-medium">{{ $resumo['faixa_taxa']['formatado'] ?? 'Sem dado publicado' }}</dd>
+                                    @if ($resumo['faixa_taxa'] ?? null)
+                                        <dd class="numero-destaque text-numero">{{ $resumo['faixa_taxa']['formatado'] }}</dd>
+                                    @else
+                                        <dd class="text-base font-semibold text-tinta-suave">Sem dado publicado</dd>
+                                    @endif
                                 </div>
                             </dl>
 
                             <x-slot:acoes>
-                                <label class="flex min-h-11 flex-1 cursor-pointer items-center gap-2 text-sm text-tinta">
+                                <label class="flex min-h-12 flex-1 cursor-pointer items-center gap-3 text-sm font-medium text-tinta">
                                     <input
                                         type="checkbox"
                                         data-marca-checkbox
                                         value="{{ $marca->slug }}"
-                                        class="size-5 shrink-0 accent-[var(--cor-aferido)]"
+                                        class="size-5 shrink-0 accent-[var(--cor-tinta)]"
                                     >
                                     Selecionar para comparar
                                 </label>

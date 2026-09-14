@@ -59,12 +59,17 @@ por ele que o trabalho de dados acontece enquanto o site espera.
 - [x] **11** — Deploy, SSH, backup e commits
 - [x] **12** — Cloudflare, medição, SEO, segurança e performance
 - [x] **13** — Monitor de mudanças (pasta `monitor/`, projeto Node à parte; ver CLAUDE.md)
+- [x] **14** — Identidade visual e reforma da interface (Máquina Certa, 14/09/2026; ver CLAUDE.md)
 
 ---
 
 ## Etapas restantes
 
 ### 14 — Identidade visual e reforma da interface
+
+> **Concluída em 14/09/2026.** O registro do que foi feito e decidido está no
+> `CLAUDE.md`, seção "Identidade visual Máquina Certa (etapa 14)". O texto abaixo
+> fica como o planejamento que a orientou.
 
 A identidade do Máquina Certa ainda vai ser criada — logo, paleta, tipografia.
 Esta etapa aplica o resultado ao site inteiro.

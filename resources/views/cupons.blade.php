@@ -22,12 +22,12 @@
         </header>
 
         {{-- Pedido explícito: esta frase não pode ficar implícita em lugar nenhum. --}}
-        <p class="mt-6 rounded-bloco border border-regua bg-superficie px-4 py-3 text-sm text-tinta">
+        <p class="mt-6 rounded-bloco border border-regua bg-papel px-4 py-3 text-sm text-tinta">
             <strong class="font-medium">As taxas exibidas aqui são exatamente as mesmas do site oficial de cada marca. Nosso link não altera sua taxa — só acrescenta desconto na adesão.</strong>
         </p>
 
         @if ($cartoes->isEmpty())
-            <p class="mt-8 rounded-bloco border border-regua bg-superficie px-4 py-3 text-sm text-tinta-suave">
+            <p class="mt-8 rounded-bloco border border-regua bg-papel px-4 py-3 text-sm text-tinta-suave">
                 Nenhum cupom vigente no momento. Volte em breve.
             </p>
         @else
@@ -47,12 +47,15 @@
                             :valido-ate="$cupom->valido_ate"
                             :url="$cupom->link_afiliado"
                             :condicao="$cupom->termos"
+                            {{-- Grade de cupons: nenhum e "a" acao principal, entao
+                                 nenhum sai em verde (manual de marca). --}}
+                            variante-botao="marca"
                         />
-                        <div class="flex flex-wrap gap-x-4 gap-y-1 px-1 text-miudo">
-                            <a href="{{ route('cupons.show', $marca->slug) }}" class="text-link underline underline-offset-4 hover:no-underline">
+                        <div class="flex flex-wrap gap-x-4 px-1 text-miudo">
+                            <a href="{{ route('cupons.show', $marca->slug) }}" class="inline-flex min-h-11 items-center text-link underline underline-offset-4 hover:no-underline">
                                 Página deste cupom
                             </a>
-                            <a href="{{ route('maquininhas.show', $marca->slug) }}" class="text-link underline underline-offset-4 hover:no-underline">
+                            <a href="{{ route('maquininhas.show', $marca->slug) }}" class="inline-flex min-h-11 items-center text-link underline underline-offset-4 hover:no-underline">
                                 Ver a {{ $marca->nome }} completa
                             </a>
                         </div>

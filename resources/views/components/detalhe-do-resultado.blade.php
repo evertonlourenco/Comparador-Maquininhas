@@ -32,7 +32,7 @@
                 </thead>
                 <tbody>
                     <template x-for="(linha, i) in item.vendas" :key="i">
-                        <tr class="border-b border-regua odd:bg-superficie">
+                        <tr class="border-b border-regua even:bg-superficie">
                             <th scope="row" class="px-3 py-2 text-start font-normal">
                                 <span x-text="rotuloDaVenda(linha.venda)"></span>
                                 <span class="numero block text-miudo text-tinta-suave" x-text="real(linha.venda.valor_mensal)"></span>

@@ -570,6 +570,13 @@ taxa), pelos meses de espera do recebível.
 
 ## Identidade visual (etapa 06)
 
+> **Substituída na etapa 14** pela identidade do Máquina Certa — ver "Identidade
+> visual Máquina Certa (etapa 14)", mais abaixo. Continua valendo daqui: tokens
+> semânticos em vez de `dark:`, tema no atributo escrito antes da pintura, a
+> separação `régua`/`contorno`, o anel de foco com folga e tudo em "O que os
+> componentes já sabem do domínio". O que mudou: paleta, fontes, raios, a
+> direção "Boletim" e o papel do verde.
+
 Direção **"Boletim"**: a referência é a folha de boletim de consumo impressa, não o
 painel de fintech. Papel, tinta, fio de 1px e espaço em branco — sem sombra, sem
 gradiente, e dois raios de borda no arquivo inteiro (2px em botão e etiqueta, 3px em
@@ -1166,8 +1173,8 @@ PHP completo, e span de aspas dentro de um atributo é outro ponto cego dele.
   Os três vivem só no `.env` de produção — o `.env.example` continua com os
   campos comentados, e em local as páginas seguem mostrando o aviso honesto
   de "a definir".
-- **Logo e identidade visual próprios do Máquina Certa ainda não existem.**
-  Decisão do Everton na etapa 11: a identidade específica da marca será
+- ~~**Logo e identidade visual próprios do Máquina Certa ainda não existem.**~~
+  **Resolvido na etapa 14** — ver a seção própria. Histórico: decisão do Everton na etapa 11: a identidade específica da marca será
   criada depois, e o front-end (paleta, tipografia, componentes da etapa 06)
   será ajustado a ela **no fim do projeto**, não agora. Até lá o portal vai
   ao ar com o design system genérico da etapa 06, que é funcional e passa no
@@ -1980,6 +1987,152 @@ repositório do monitor — só falta confirmar quais fontes precisam disso.
   também ganhou uma segunda tentativa em HTTP 503/429, que apareceu de
   verdade no teste (sobrecarga passageira do modelo gratuito do Google).
 
+## Identidade visual Máquina Certa (etapa 14)
+
+A fonte é o manual de marca, versionado em `id_visual/`:
+`brandbook-maquina-certa.md` (texto), `manual-de-marca.pdf` (o mesmo conteúdo,
+diagramado — a página 8 tem o desenho de botão, selo e cartão) e `assets/`
+(PNGs do logo e favicons). **Não há SVG do logo**, só PNG em 1x e 2x.
+
+| Arquivo | Papel |
+|---|---|
+| `resources/css/app.css` | Paleta, fontes, raios e escala. Continua sendo a fonte única da verdade |
+| `scripts/verifica-contraste.mjs` | Ganhou os pares do canal de ação e do navy do rodapé |
+| `vite.config.js` | Saira (400/600/700) e Figtree (400/500/600), baixadas no build |
+| `public/marca/` | Os PNGs que o site usa: logo com assinatura (normal e negativo, 1x/2x) e favicons |
+| `public/favicon.ico` | ICO com carga PNG (32 e 64px), montado a partir de `favicon-32/64.png` |
+
+### A decisão que a etapa carregava: dois canais de cor
+
+O manual pede verde para "botão principal, melhor taxa, selos de economia". O
+site já usava verde para `aferido` (taxa publicada) — e, descoberto ao medir,
+**o conflito já existia no código da etapa 07**: "Melhor custo" saía em
+`aferido` e "Mais caro" em `vencido`. Decidido com o Everton, em 14/09/2026:
+
+- **Canal de ação** (tokens `acao`, `acao-fundo`, `acao-vivo`, `sobre-acao`):
+  botão principal, cartão de menor custo, selo de economia de cupom. O menor
+  custo só existe dentro do bloco `calculado`, então **um verde é sempre, por
+  construção, um número publicado** — a regra 4 não depende da cor.
+- **Estado do dado** sai do verde e passa a ser dito por **forma e rótulo**:
+  `aferido` virou navy com contorno cheio, `reportado` é **tracejado** em ocre
+  (cartão promocional, faixa reportada, etiqueta), `vencido` é o vermelho de
+  alerta. Os **nomes** dos tokens não mudaram — só os valores.
+- **"Mais caro" não tem cor.** Vermelho é de vencido.
+- O rótulo do cartão destacado é **"Menor custo no seu cenário"**, não o
+  "Melhor para seu perfil" do manual: o site ranqueia custo, não recomenda
+  perfil, e o próprio manual diz que "a escolha é do usuário".
+
+### Onde o manual foi corrigido pelo contraste
+
+- **Branco sobre `#009C82` dá 3,46:1** (o manual diz 3,2:1 e libera "peso 600 a
+  partir de 14px", mas pela WCAG texto grande em negrito começa em ~18,7px). O
+  botão principal usa **`#00705E`**, o verde escuro do próprio manual (6,04:1).
+  O `#009C82` ficou como `acao-vivo`, decorativo.
+- **O cinza `#C8C8C8` dá 1,67:1** — serve de fio (`regua-forte`), não de borda
+  de campo. `contorno` continua derivado (`#7A8397`, ≥ 3:1).
+- **O manual não tem cor para `reportado`.** Ficou o ocre (`#7A4D05`), longe do
+  laranja `#D26432`, que é reservado ao Monetizando Negócios.
+- **O manual não tem tema escuro.** Decidido manter, derivado do navy
+  (`#0C1324` de fundo). Remover mexeria no script inline de tema, cujo hash está
+  fixado à mão na CSP (middleware **e** regra do Cloudflare).
+
+### Tipografia: `numero` e `numero-destaque`
+
+Saira nos títulos, botões e números de destaque; Figtree no texto. **Os dois
+servidos pelo Bunny mantêm algarismos tabulares** — conferido no navegador
+medindo `1111111` e `0000000` com `tabular-nums`: 174px e 174px nas duas
+famílias (proporcional: 111 × 186 na Saira). Sem isso a vírgula não alinharia
+na coluna de 21 parcelas.
+
+`numero` virou Figtree tabular, para número no meio de frase. O número herói de
+cartão usa `numero-destaque` (Saira 700 tabular, −2%) com `text-numero` (22px,
+o do manual). Saira 700 no meio de uma frase de 13px ficava pesada demais.
+
+Escala: `manchete` = H1 do manual (40–56px), `titulo` = H2 (28–32px), e um
+degrau novo, `cartao` (20px), para nome de marca e cabeçalho de bloco — o H2 de
+28px empurrava o número para a linha de baixo num cartão de 375px. Raios: `selo`
+4px, `botao` 6px (novo, também em campo), `bloco` 10px.
+
+### Botão: verde, uma ação por tela
+
+`<x-botao>` tem quatro variantes: `principal` (verde), `marca` (navy sólido —
+o "Ver oferta" do cartão que não é o destaque), `secundaria` (contorno) e
+`discreta`. Altura mínima de **48px** (manual), Saira 600. Desativado é fundo
+cinza com texto apagado, nunca o verde lavado.
+
+Para cumprir "verde só para a ação principal da tela — um por vez",
+`<x-bloco-cupom>` ganhou `variante-botao`: `/cupons` (grade) e o topo de
+`/maquininha/{slug}` (que já tem o CTA verde no fim) passam `marca`. O banner
+de cookies não usa verde em nenhum dos dois botões — pela LGPD, aceitar e recusar
+têm o mesmo peso.
+
+**Selo "Desconto parceiro"** (`<x-etiqueta tom="parceiro">`, navy) sai em todo
+bloco de cupom e no CTA da página de marca: o manual o torna obrigatório
+sempre que há comissão, e todo cupom daqui é link de afiliado.
+
+### Logo: PNG, então a versão escura é outra imagem
+
+Cabeçalho, rodapé (navy, logo negativo) e em-breve usam
+`logo-horizontal-assinatura`, com `srcset` 2x e mínimo de 140px. Nas telas que
+trocam de tema há **duas `<img>`**, com as classes `so-tema-claro` e
+`so-tema-escuro` do `app.css`. **Não `dark:`**: a variante `dark:` só enxerga o
+atributo `data-tema`, e sem JavaScript o logo navy sumiria no fundo escuro. As
+classes seguem as mesmas duas vias da paleta (atributo e `prefers-color-scheme`).
+
+**O script inline de tema de `em-breve.blade.php` e do layout não foi tocado**:
+o hash dele está fixado na CSP em dois lugares. Um comentário no topo da
+em-breve avisa disso.
+
+### Mobile-first: o que mudou de layout
+
+- Fundo da página em `superficie` (`#F6F7F9`) e cartão em `papel` (branco): os
+  nomes não inverteram de sentido, só o `body` trocou de token.
+- A direção "Boletim" montava grades de fio de 1px (`gap-px bg-regua`). Saíram
+  todas: os quatro números do resultado são **uma coluna até 30rem**, duas até
+  `md`, quatro no desktop — antes o rótulo "CUSTO MENSAL RECORRENTE" quebrava em
+  três linhas numa grade de 2 colunas a 375px.
+- `<x-tabela-taxas>` só ganha largura mínima (e rolagem) quando tem coluna
+  demais para 375px: rótulo + taxa cabe sem rolar; 3 colunas pedem 24rem; 4
+  pedem 32rem.
+- A barra "N de 9 marcas selecionadas" de `/maquininhas` fica **fixa no topo**
+  ao rolar a grade; botões de ação principal ocupam a largura toda no celular.
+- A barra de rolagem da navegação do cabeçalho está escondida (a rolagem por
+  toque continua): na emulação de celular ela desenhava uma faixa cinza.
+- Em `/enviar-proposta`, o nome da linha de venda fica em cima dos campos no
+  celular.
+
+### Conferido no navegador
+
+Todas as 9 páginas públicas em 375px e em desktop, mais `/guia-visual` e a
+em-breve (renderizada num HTML temporário em `public/`, apagado depois, porque
+localmente `SITE_EM_BREVE` fica desligado), e o tema escuro na em-breve e nas
+tabelas. Nenhuma página rola na horizontal em 375px (`scrollWidth` = 375).
+
+**Para ver `/cupons` e `/cupom/{slug}` com conteúdo foi preciso um cupom** — o
+banco local não tem nenhum. Criado um temporário (`TESTE-ETAPA14`, InfinitePay)
+e **apagado ao fim da verificação**.
+
+### O que ficou de fora, e por quê
+
+- **A grade débito/crédito/12x do cartão do manual não entrou na listagem de
+  marcas.** `ResumoDeMarca` entrega mensalidade, prazo mais rápido e faixa de
+  taxa; montar débito, crédito e 12x por marca exigiria escolher sozinho plano,
+  prazo e grupo de bandeira — três das cinco dimensões da chave da regra 1. É
+  decisão de dado, não de estilo. A listagem ganhou a *forma* da grade do manual
+  com os três dados que já existem.
+- **O painel Filament não foi tocado** — ele tem tema próprio e não lê este
+  `app.css`.
+- **Logo de marca no cartão continua sendo a inicial** (etapa 15). O quadrado
+  agora fica à direita, como no desenho do manual.
+- Localmente o `APP_NAME` é "Comparador de Maquininhas", e é o que aparece em
+  `<title>` e no `alt` do logo; em produção o `.env` já diz "Máquina Certa".
+
+### Corrigido de passagem
+
+`/metodologia` dizia que o selo degradado aparece como etiqueta `vencido`, mas
+`<x-selo-frescor>` sempre usou `reportado` para "desatualizada". O texto passou
+a usar `reportado`, igual ao componente.
+
 - [x] **01** — Ambiente local, Filament, Git e CLAUDE.md
 - [x] **02** — Schema do banco
 - [x] **03** — Painel admin no Filament
@@ -1993,7 +2146,7 @@ repositório do monitor — só falta confirmar quais fontes precisam disso.
 - [x] **11** — Deploy, SSH, backup e commits
 - [x] **12** — Cloudflare, medição, SEO, segurança e performance
 - [x] **13** — Monitor de mudanças
-- [ ] 14 — Identidade visual e reforma da interface
+- [x] **14** — Identidade visual e reforma da interface
 - [ ] 15 — Imagens: logos de marca, equipamentos e bandeiras
 - [ ] 16 — Painel de saúde e observabilidade do administrador
 - [ ] 17 — Curadoria e validação das taxas

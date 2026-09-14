@@ -50,8 +50,8 @@
             {{-- 1 ----------------------------------------------------------- --}}
             <section aria-labelledby="passo-faturamento" class="rounded-bloco border border-regua bg-papel">
                 <div class="border-b border-regua px-4 py-3">
-                    <h2 id="passo-faturamento" class="text-titulo">
-                        <span class="numero me-1 text-tinta-suave">1.</span> Quanto você fatura por mês
+                    <h2 id="passo-faturamento" class="flex items-center gap-3 text-cartao sm:text-2xl">
+                        <span class="numero-destaque inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-marca text-base text-sobre-marca">1</span> Quanto você fatura por mês
                     </h2>
                 </div>
 
@@ -83,8 +83,8 @@
             {{-- 2 ----------------------------------------------------------- --}}
             <section aria-labelledby="passo-mix" class="rounded-bloco border border-regua bg-papel">
                 <div class="border-b border-regua px-4 py-3">
-                    <h2 id="passo-mix" class="text-titulo">
-                        <span class="numero me-1 text-tinta-suave">2.</span> Como seus clientes pagam
+                    <h2 id="passo-mix" class="flex items-center gap-3 text-cartao sm:text-2xl">
+                        <span class="numero-destaque inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-marca text-base text-sobre-marca">2</span> Como seus clientes pagam
                     </h2>
                     <p class="mt-1 text-miudo text-tinta-suave">
                         É o que mais mexe no resultado: a mesma marca ganha ou perde conforme você
@@ -102,10 +102,10 @@
                                     type="button"
                                     x-on:click="escolherSegmento(s.chave)"
                                     :aria-pressed="segmento === s.chave"
-                                    class="inline-flex min-h-11 items-center rounded-selo border px-3 py-2 text-sm font-medium"
+                                    class="inline-flex min-h-12 items-center rounded-botao border-[1.5px] px-4 py-2 font-titulo text-[0.9375rem] font-semibold"
                                     :class="segmento === s.chave
-                                        ? 'border-aferido bg-aferido text-papel'
-                                        : 'border-contorno bg-transparent text-tinta hover:bg-superficie'"
+                                        ? 'border-tinta bg-tinta text-papel'
+                                        : 'border-contorno bg-papel text-tinta hover:bg-superficie'"
                                     x-text="s.rotulo"
                                 ></button>
                             </template>
@@ -143,7 +143,7 @@
                                         min="0"
                                         max="100"
                                         step="1"
-                                        class="col-span-2 mt-1 w-full accent-[var(--cor-aferido)]"
+                                        class="col-span-2 mt-1 w-full accent-[var(--cor-tinta)]"
                                         aria-describedby="mix-{{ $chave }}-ajuda"
                                         :value="mix.{{ $chave }}"
                                         x-on:input="ajustarMix('{{ $chave }}', $event.target.value)"
@@ -181,7 +181,7 @@
                                     <label for="campo-parcelas" class="block text-sm font-medium text-tinta">Parcelas mais comuns</label>
                                     <select
                                         id="campo-parcelas"
-                                        class="block min-h-11 w-full rounded-selo border border-contorno bg-papel px-3 py-2 text-base text-tinta"
+                                        class="block min-h-12 w-full rounded-botao border border-contorno bg-papel px-3 py-2 text-base text-tinta"
                                         aria-describedby="campo-parcelas-ajuda"
                                         x-model.number="parcelas"
                                     >
@@ -207,7 +207,7 @@
                                     min="0"
                                     max="100"
                                     step="5"
-                                    class="col-span-2 mt-1 w-full accent-[var(--cor-aferido)]"
+                                    class="col-span-2 mt-1 w-full accent-[var(--cor-tinta)]"
                                     aria-describedby="campo-visa-master-ajuda"
                                     x-model.number="visaMaster"
                                 >
@@ -225,8 +225,8 @@
             {{-- 3 ----------------------------------------------------------- --}}
             <section aria-labelledby="passo-prazo" class="rounded-bloco border border-regua bg-papel">
                 <div class="border-b border-regua px-4 py-3">
-                    <h2 id="passo-prazo" class="text-titulo">
-                        <span class="numero me-1 text-tinta-suave">3.</span> Quando você quer o dinheiro
+                    <h2 id="passo-prazo" class="flex items-center gap-3 text-cartao sm:text-2xl">
+                        <span class="numero-destaque inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-marca text-base text-sobre-marca">3</span> Quando você quer o dinheiro
                     </h2>
                     <p class="mt-1 text-miudo text-tinta-suave">
                         Receber na hora custa mais caro: o adiantamento já está dentro do percentual.
@@ -237,7 +237,7 @@
                     <label for="campo-prazo" class="block text-sm font-medium text-tinta">Prazo de recebimento desejado</label>
                     <select
                         id="campo-prazo"
-                        class="block min-h-11 w-full max-w-md rounded-selo border border-contorno bg-papel px-3 py-2 text-base text-tinta"
+                        class="block min-h-12 w-full max-w-md rounded-botao border border-contorno bg-papel px-3 py-2 text-base text-tinta"
                         aria-describedby="campo-prazo-ajuda"
                         x-model="prazo"
                     >
@@ -255,11 +255,12 @@
 
             {{-- 4 ----------------------------------------------------------- --}}
             <section aria-labelledby="passo-marcas" class="rounded-bloco border border-regua bg-papel">
-                <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-regua px-4 py-3">
-                    <h2 id="passo-marcas" class="text-titulo">
-                        <span class="numero me-1 text-tinta-suave">4.</span> Quais marcas comparar
+                <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-regua px-4 py-3">
+                    <h2 id="passo-marcas" class="flex items-center gap-3 text-cartao sm:text-2xl">
+                        <span class="numero-destaque inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-marca text-base text-sobre-marca">4</span> Quais marcas comparar
                     </h2>
-                    <x-botao x-on:click="escolhaPorMim()">Escolha por mim</x-botao>
+                    {{-- A acao principal da tela: o unico verde do formulario. --}}
+                    <x-botao x-on:click="escolhaPorMim()" class="w-full sm:w-auto">Escolha por mim</x-botao>
                 </div>
 
                 <div class="px-4 py-4">
@@ -277,7 +278,7 @@
                                     <input
                                         type="checkbox"
                                         :id="'marca-' + marca.slug"
-                                        class="size-5 shrink-0 accent-[var(--cor-aferido)]"
+                                        class="size-5 shrink-0 accent-[var(--cor-tinta)]"
                                         :checked="marcaEscolhida(marca.slug)"
                                         x-on:change="alternarMarca(marca.slug)"
                                     >
@@ -315,7 +316,7 @@
                                 id="campo-{{ Str::slug($modelo) }}"
                                 type="text"
                                 inputmode="numeric"
-                                class="block min-h-11 w-full rounded-selo border border-contorno bg-papel px-3 py-2 text-base text-tinta"
+                                class="block min-h-12 w-full rounded-botao border border-contorno bg-papel px-3 py-2 text-base text-tinta"
                                 aria-describedby="campo-{{ Str::slug($modelo) }}-ajuda"
                                 x-model.number="{{ $modelo }}"
                             >
@@ -327,7 +328,7 @@
                         <label for="campo-horizonte" class="block text-sm font-medium text-tinta">Diluir a adesão em quantos meses</label>
                         <select
                             id="campo-horizonte"
-                            class="block min-h-11 w-full rounded-selo border border-contorno bg-papel px-3 py-2 text-base text-tinta"
+                            class="block min-h-12 w-full rounded-botao border border-contorno bg-papel px-3 py-2 text-base text-tinta"
                             aria-describedby="campo-horizonte-ajuda"
                             x-model.number="horizonte"
                         >
@@ -342,7 +343,7 @@
                     </div>
 
                     <div class="flex items-start gap-2 sm:col-span-2 lg:col-span-1">
-                        <input type="checkbox" id="campo-antecipacao" class="mt-1 size-5 shrink-0 accent-[var(--cor-aferido)]" x-model="antecipacao">
+                        <input type="checkbox" id="campo-antecipacao" class="mt-1 size-5 shrink-0 accent-[var(--cor-tinta)]" x-model="antecipacao">
                         <label for="campo-antecipacao" class="text-sm text-tinta">
                             Antecipar os recebíveis
                             <span class="block text-miudo text-tinta-suave">
@@ -352,7 +353,7 @@
                     </div>
 
                     <div class="flex items-start gap-2 sm:col-span-2 lg:col-span-1">
-                        <input type="checkbox" id="campo-cupom" class="mt-1 size-5 shrink-0 accent-[var(--cor-aferido)]" x-model="aplicarCupom">
+                        <input type="checkbox" id="campo-cupom" class="mt-1 size-5 shrink-0 accent-[var(--cor-tinta)]" x-model="aplicarCupom">
                         <label for="campo-cupom" class="text-sm text-tinta">
                             Considerar cupons de desconto
                             <span class="block text-miudo text-tinta-suave">
@@ -366,10 +367,10 @@
 
         {{-- Resultado --------------------------------------------------------- --}}
         <section id="resultado" tabindex="-1" aria-labelledby="titulo-resultado" class="mt-12 scroll-mt-4 space-y-8 focus:outline-none">
-            <div class="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-b-2 border-regua-forte pb-3">
+            <div class="flex flex-wrap items-end justify-between gap-x-4 gap-y-3 border-b border-regua-forte pb-4">
                 <h2 id="titulo-resultado" class="text-titulo">O resultado</h2>
 
-                <div class="flex items-center gap-3">
+                <div class="flex flex-wrap items-center gap-3">
                     <span class="text-miudo text-tinta-suave" x-show="copiado" x-cloak>Link copiado.</span>
                     <x-botao variante="secundaria" x-on:click="copiarLink()">Copiar link deste resultado</x-botao>
                 </div>
@@ -380,7 +381,7 @@
             {{-- O anuncio curto para leitor de tela. A tela inteira nao pode ser
                  aria-live: recalcular a cada arrasto de slider viraria ruido. --}}
             <p role="status" aria-live="polite" class="sr-only" x-text="resultado ? (resultado.resumo.melhor
-                ? 'Melhor custo: ' + resultado.resumo.melhor.marca + ', ' + resultado.resumo.melhor.formatado.custo_mensal_total + ' por mês.'
+                ? 'Menor custo: ' + resultado.resumo.melhor.marca + ', ' + resultado.resumo.melhor.formatado.custo_mensal_total + ' por mês.'
                 : 'Nenhuma marca fecha a conta com os dados publicados hoje.') : ''"></p>
 
             <template x-if="! carregando && ! erroDeCarga && ! resultado">
@@ -390,26 +391,27 @@
                 </p>
             </template>
 
-            {{-- O veredito, quando ha mais de uma marca com numero fechado. --}}
+            {{-- O veredito, quando ha mais de uma marca com numero fechado. Verde
+                 so no menor custo (canal de acao); o mais caro fica neutro. --}}
             <template x-if="resultado && resultado.resumo.melhor && resultado.resumo.pior">
-                <div class="grid gap-px rounded-bloco border border-regua-forte bg-regua-forte md:grid-cols-3">
-                    <div class="bg-aferido-fundo px-4 py-4">
-                        <p class="text-etiqueta font-semibold uppercase text-aferido">Melhor custo</p>
-                        <p class="mt-1 text-titulo" x-text="resultado.resumo.melhor.marca"></p>
-                        <p class="numero text-subtitulo text-aferido" x-text="resultado.resumo.melhor.formatado.custo_mensal_total + ' por mês'"></p>
-                        <p class="mt-1 text-miudo text-tinta-suave" x-text="resultado.resumo.melhor.plano"></p>
+                <div class="grid gap-3 md:grid-cols-3">
+                    <div class="rounded-bloco border-[1.5px] border-acao bg-acao-fundo px-4 py-4">
+                        <p class="text-etiqueta font-semibold uppercase text-acao">Menor custo</p>
+                        <p class="mt-1 font-titulo text-cartao font-semibold" x-text="resultado.resumo.melhor.marca"></p>
+                        <p class="numero-destaque text-numero text-acao" x-text="resultado.resumo.melhor.formatado.custo_mensal_total + ' por mês'"></p>
+                        <p class="mt-1 text-miudo text-tinta" x-text="resultado.resumo.melhor.plano"></p>
                     </div>
 
-                    <div class="bg-papel px-4 py-4">
+                    <div class="rounded-bloco border border-regua bg-papel px-4 py-4">
                         <p class="text-etiqueta font-semibold uppercase text-tinta-suave">Mais caro</p>
-                        <p class="mt-1 text-titulo" x-text="resultado.resumo.pior.marca"></p>
-                        <p class="numero text-subtitulo" x-text="resultado.resumo.pior.formatado.custo_mensal_total + ' por mês'"></p>
+                        <p class="mt-1 font-titulo text-cartao font-semibold" x-text="resultado.resumo.pior.marca"></p>
+                        <p class="numero-destaque text-numero" x-text="resultado.resumo.pior.formatado.custo_mensal_total + ' por mês'"></p>
                         <p class="mt-1 text-miudo text-tinta-suave" x-text="resultado.resumo.pior.plano"></p>
                     </div>
 
-                    <div class="bg-papel px-4 py-4">
+                    <div class="rounded-bloco border border-regua bg-papel px-4 py-4">
                         <p class="text-etiqueta font-semibold uppercase text-tinta-suave">A diferença</p>
-                        <p class="numero mt-1 text-titulo" x-text="resultado.resumo.formatado.diferenca_mensal"></p>
+                        <p class="numero-destaque mt-1 text-numero" x-text="resultado.resumo.formatado.diferenca_mensal"></p>
                         <p class="text-miudo text-tinta-suave">
                             por mês —
                             <span class="numero" x-text="resultado.resumo.formatado.diferenca_no_horizonte"></span>
@@ -442,9 +444,9 @@
                  nunca tem um numero unico para imprimir. --}}
             <section x-cloak x-show="itensNoEstado('faixa_reportada').length > 0" class="space-y-4">
                 <div class="space-y-1">
-                    <h3 class="text-titulo">
+                    <h3 class="text-cartao sm:text-2xl">
                         Faixa relatada por lojistas
-                        <span class="numero text-tinta-suave" x-text="'(' + itensNoEstado('faixa_reportada').length + ')'"></span>
+                        <span class="numero font-normal text-tinta-suave" x-text="'(' + itensNoEstado('faixa_reportada').length + ')'"></span>
                     </h3>
                     <p class="max-w-3xl text-miudo text-reportado">
                         Estas marcas não publicam tabela de taxas. O que aparece aqui é o intervalo
@@ -456,10 +458,12 @@
                 <ol class="space-y-4">
                     <template x-for="item in itensNoEstado('faixa_reportada')" :key="item.marca.slug + '-' + (item.plano ? item.plano.id : 0)">
                         <li>
-                            <article class="rounded-bloco border-2 border-dashed border-reportado bg-reportado-fundo">
-                                <div class="flex flex-wrap items-start justify-between gap-x-3 gap-y-2 border-b border-reportado px-4 py-3">
+                            {{-- A forma diz o estado (etapa 14): borda tracejada em ocre,
+                                 nunca a borda cheia do cartao de taxa publicada. --}}
+                            <article class="overflow-hidden rounded-bloco border-2 border-dashed border-reportado bg-papel">
+                                <div class="flex flex-wrap items-start justify-between gap-x-3 gap-y-2 border-b border-dashed border-reportado bg-reportado-fundo px-4 py-3">
                                     <div class="min-w-0">
-                                        <h4 class="text-titulo" x-text="item.marca.nome"></h4>
+                                        <h4 class="text-cartao" x-text="item.marca.nome"></h4>
                                         <p class="mt-0.5 text-miudo text-tinta-suave" x-text="item.plano ? item.plano.nome : ''"></p>
                                     </div>
                                     <div class="flex flex-wrap items-center gap-2">
@@ -472,28 +476,28 @@
 
                                 {{-- Tres pontas, sempre. Nao existe aqui a chave de um
                                      valor unico, nem no motor nem nesta tela. --}}
-                                <dl class="grid grid-cols-1 gap-px border-b border-reportado bg-reportado sm:grid-cols-3">
-                                    <div class="bg-reportado-fundo px-4 py-3">
+                                <dl class="grid grid-cols-1 gap-x-6 gap-y-4 border-b border-dashed border-reportado px-4 py-4 sm:grid-cols-3">
+                                    <div>
                                         <dt class="text-etiqueta font-semibold uppercase text-tinta-suave">Custo mensal — mínimo relatado</dt>
-                                        <dd class="numero mt-1 text-subtitulo" x-text="item.comparacao.formatado.custo_mensal_recorrente_minimo"></dd>
+                                        <dd class="numero mt-1 text-subtitulo font-medium" x-text="item.comparacao.formatado.custo_mensal_recorrente_minimo"></dd>
                                         <p class="numero text-miudo text-tinta-suave" x-text="item.comparacao.formatado.taxa_efetiva_combinada_minima ?? '—'"></p>
                                     </div>
-                                    <div class="bg-reportado-fundo px-4 py-3">
+                                    <div>
                                         <dt class="text-etiqueta font-semibold uppercase text-reportado">Mediana dos relatos</dt>
-                                        <dd class="numero mt-1 text-titulo text-reportado" x-text="item.comparacao.formatado.custo_mensal_recorrente_mediana"></dd>
+                                        <dd class="numero-destaque mt-1 text-numero text-reportado" x-text="item.comparacao.formatado.custo_mensal_recorrente_mediana"></dd>
                                         <p class="numero text-miudo text-tinta-suave" x-text="item.comparacao.formatado.taxa_efetiva_combinada_mediana ?? '—'"></p>
                                     </div>
-                                    <div class="bg-reportado-fundo px-4 py-3">
+                                    <div>
                                         <dt class="text-etiqueta font-semibold uppercase text-tinta-suave">Custo mensal — máximo relatado</dt>
-                                        <dd class="numero mt-1 text-subtitulo" x-text="item.comparacao.formatado.custo_mensal_recorrente_maximo"></dd>
+                                        <dd class="numero mt-1 text-subtitulo font-medium" x-text="item.comparacao.formatado.custo_mensal_recorrente_maximo"></dd>
                                         <p class="numero text-miudo text-tinta-suave" x-text="item.comparacao.formatado.taxa_efetiva_combinada_maxima ?? '—'"></p>
                                     </div>
                                 </dl>
 
-                                <p class="border-b border-reportado px-4 py-3 text-miudo text-reportado" x-text="item.motivo"></p>
+                                <p class="border-b border-dashed border-reportado px-4 py-3 text-miudo text-reportado" x-text="item.motivo"></p>
 
                                 <template x-if="item.comparacao.custo_inicial">
-                                    <p class="border-b border-reportado px-4 py-2 text-miudo text-tinta-suave">
+                                    <p class="border-b border-dashed border-reportado px-4 py-2 text-miudo text-tinta-suave">
                                         Custo inicial:
                                         <span class="numero" x-text="item.comparacao.custo_inicial.formatado.com_cupom"></span>
                                         <template x-if="item.comparacao.custo_inicial.tem_cupom">
@@ -524,11 +528,11 @@
             {{-- Marca sem dado nenhum nao some do resultado (regra 4): ela
                  aparece com o motivo, e sem numero. Zero seria mentira. --}}
             <section x-cloak x-show="itensNoEstado('sem_dado_publicado').length > 0" class="space-y-3">
-                <h3 class="text-titulo">
+                <h3 class="text-cartao sm:text-2xl">
                     Sem dado publicado
-                    <span class="numero text-tinta-suave" x-text="'(' + itensNoEstado('sem_dado_publicado').length + ')'"></span>
+                    <span class="numero font-normal text-tinta-suave" x-text="'(' + itensNoEstado('sem_dado_publicado').length + ')'"></span>
                 </h3>
-                <ul class="divide-y divide-regua rounded-bloco border border-regua bg-superficie">
+                <ul class="divide-y divide-regua rounded-bloco border border-regua bg-papel">
                     <template x-for="item in itensNoEstado('sem_dado_publicado')" :key="item.marca.slug">
                         <li class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-4 py-3">
                             <span class="font-medium" x-text="item.marca.nome"></span>

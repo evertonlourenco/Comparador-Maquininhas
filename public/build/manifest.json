@@ -1,74 +1,58 @@
 {
-  "_fonts-Coisi7hZ.css": {
-    "file": "assets/fonts-Coisi7hZ.css",
-    "src": "_fonts-Coisi7hZ.css"
+  "_figtree-400-normal-BD4aNku5.woff": {
+    "file": "assets/figtree-400-normal-BD4aNku5.woff",
+    "src": "_figtree-400-normal-BD4aNku5.woff"
   },
-  "_ibm-plex-mono-400-normal-CvHOgSBP.woff": {
-    "file": "assets/ibm-plex-mono-400-normal-CvHOgSBP.woff",
-    "src": "_ibm-plex-mono-400-normal-CvHOgSBP.woff"
+  "_figtree-400-normal-g7Dtegnw.woff2": {
+    "file": "assets/figtree-400-normal-g7Dtegnw.woff2",
+    "src": "_figtree-400-normal-g7Dtegnw.woff2"
   },
-  "_ibm-plex-mono-400-normal-DMJ8VG8y.woff2": {
-    "file": "assets/ibm-plex-mono-400-normal-DMJ8VG8y.woff2",
-    "src": "_ibm-plex-mono-400-normal-DMJ8VG8y.woff2"
+  "_figtree-500-normal-BWnGEVsr.woff2": {
+    "file": "assets/figtree-500-normal-BWnGEVsr.woff2",
+    "src": "_figtree-500-normal-BWnGEVsr.woff2"
   },
-  "_ibm-plex-mono-500-normal-CB9ihrfo.woff": {
-    "file": "assets/ibm-plex-mono-500-normal-CB9ihrfo.woff",
-    "src": "_ibm-plex-mono-500-normal-CB9ihrfo.woff"
+  "_figtree-500-normal-B_yy1phn.woff": {
+    "file": "assets/figtree-500-normal-B_yy1phn.woff",
+    "src": "_figtree-500-normal-B_yy1phn.woff"
   },
-  "_ibm-plex-mono-500-normal-DSY6xOcd.woff2": {
-    "file": "assets/ibm-plex-mono-500-normal-DSY6xOcd.woff2",
-    "src": "_ibm-plex-mono-500-normal-DSY6xOcd.woff2"
+  "_figtree-600-normal-BM_oTo4n.woff": {
+    "file": "assets/figtree-600-normal-BM_oTo4n.woff",
+    "src": "_figtree-600-normal-BM_oTo4n.woff"
   },
-  "_ibm-plex-sans-400-normal-CDDApCn2.woff2": {
-    "file": "assets/ibm-plex-sans-400-normal-CDDApCn2.woff2",
-    "src": "_ibm-plex-sans-400-normal-CDDApCn2.woff2"
+  "_figtree-600-normal-Cv_xCTDl.woff2": {
+    "file": "assets/figtree-600-normal-Cv_xCTDl.woff2",
+    "src": "_figtree-600-normal-Cv_xCTDl.woff2"
   },
-  "_ibm-plex-sans-400-normal-CYLoc0-x.woff": {
-    "file": "assets/ibm-plex-sans-400-normal-CYLoc0-x.woff",
-    "src": "_ibm-plex-sans-400-normal-CYLoc0-x.woff"
+  "_fonts-BLnF2WQe.css": {
+    "file": "assets/fonts-BLnF2WQe.css",
+    "src": "_fonts-BLnF2WQe.css"
   },
-  "_ibm-plex-sans-500-normal-6ng42L7E.woff2": {
-    "file": "assets/ibm-plex-sans-500-normal-6ng42L7E.woff2",
-    "src": "_ibm-plex-sans-500-normal-6ng42L7E.woff2"
+  "_saira-400-normal-6Q3FbzbH.woff2": {
+    "file": "assets/saira-400-normal-6Q3FbzbH.woff2",
+    "src": "_saira-400-normal-6Q3FbzbH.woff2"
   },
-  "_ibm-plex-sans-500-normal-BgVn5rGT.woff": {
-    "file": "assets/ibm-plex-sans-500-normal-BgVn5rGT.woff",
-    "src": "_ibm-plex-sans-500-normal-BgVn5rGT.woff"
+  "_saira-400-normal-Du12DsUY.woff": {
+    "file": "assets/saira-400-normal-Du12DsUY.woff",
+    "src": "_saira-400-normal-Du12DsUY.woff"
   },
-  "_ibm-plex-sans-600-normal-Cu4Hd6ag.woff": {
-    "file": "assets/ibm-plex-sans-600-normal-Cu4Hd6ag.woff",
-    "src": "_ibm-plex-sans-600-normal-Cu4Hd6ag.woff"
+  "_saira-600-normal-DF-o6wW3.woff": {
+    "file": "assets/saira-600-normal-DF-o6wW3.woff",
+    "src": "_saira-600-normal-DF-o6wW3.woff"
   },
-  "_ibm-plex-sans-600-normal-CuJfVYMP.woff2": {
-    "file": "assets/ibm-plex-sans-600-normal-CuJfVYMP.woff2",
-    "src": "_ibm-plex-sans-600-normal-CuJfVYMP.woff2"
+  "_saira-600-normal-DYxBFP1f.woff2": {
+    "file": "assets/saira-600-normal-DYxBFP1f.woff2",
+    "src": "_saira-600-normal-DYxBFP1f.woff2"
   },
-  "_newsreader-400-normal-BFBkh4jY.woff2": {
-    "file": "assets/newsreader-400-normal-BFBkh4jY.woff2",
-    "src": "_newsreader-400-normal-BFBkh4jY.woff2"
+  "_saira-700-normal-CObqxJsW.woff2": {
+    "file": "assets/saira-700-normal-CObqxJsW.woff2",
+    "src": "_saira-700-normal-CObqxJsW.woff2"
   },
-  "_newsreader-400-normal-gRTjlS2D.woff": {
-    "file": "assets/newsreader-400-normal-gRTjlS2D.woff",
-    "src": "_newsreader-400-normal-gRTjlS2D.woff"
-  },
-  "_newsreader-500-normal-B66TYsaK.woff2": {
-    "file": "assets/newsreader-500-normal-B66TYsaK.woff2",
-    "src": "_newsreader-500-normal-B66TYsaK.woff2"
-  },
-  "_newsreader-500-normal-DFwuUcdu.woff": {
-    "file": "assets/newsreader-500-normal-DFwuUcdu.woff",
-    "src": "_newsreader-500-normal-DFwuUcdu.woff"
-  },
-  "_newsreader-600-normal-30OJ_TG_.woff2": {
-    "file": "assets/newsreader-600-normal-30OJ_TG_.woff2",
-    "src": "_newsreader-600-normal-30OJ_TG_.woff2"
-  },
-  "_newsreader-600-normal-DUnT2r2g.woff": {
-    "file": "assets/newsreader-600-normal-DUnT2r2g.woff",
-    "src": "_newsreader-600-normal-DUnT2r2g.woff"
+  "_saira-700-normal-CWqLIJDh.woff": {
+    "file": "assets/saira-700-normal-CWqLIJDh.woff",
+    "src": "_saira-700-normal-CWqLIJDh.woff"
   },
   "resources/css/app.css": {
-    "file": "assets/app-BtwtwPjR.css",
+    "file": "assets/app-CVRiJbiG.css",
     "name": "app",
     "names": [
       "app.css"

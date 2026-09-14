@@ -19,6 +19,10 @@
     // rastreia nada — nao existe cupom de amostra para reconciliar.
     'marcaSlug' => null,
     'origem' => null,
+    // Manual de marca: verde so para a acao principal da tela, uma por vez.
+    // Numa grade de cupons, ou quando a pagina ja tem o seu CTA verde, o
+    // botao do bloco sai em navy (`marca`).
+    'varianteBotao' => 'principal',
 ])
 
 @php
@@ -44,7 +48,9 @@
         default => Dinheiro::real((float) $valor).' de desconto '.$sobre,
     };
 
-    $tom = $vencido ? 'vencido' : ($vencendo ? 'reportado' : 'aferido');
+    // Vigente nao ganha cor de estado: o verde do selo de economia ja diz que
+    // ha desconto. So o que degradou (a vencer, vencido) chama atencao.
+    $tom = $vencido ? 'vencido' : ($vencendo ? 'reportado' : 'neutro');
 
     $rastreia = $marcaSlug && $origem;
 @endphp
@@ -53,31 +59,36 @@
     {{-- Regra 5: some sozinho ao vencer, sem depender de alguem lembrar. --}}
 @else
     <section {{ $attributes->class([
-        'rounded-bloco border bg-papel',
-        $vencido ? 'border-vencido' : ($vencendo ? 'border-reportado' : 'border-aferido'),
+        'overflow-hidden rounded-bloco bg-papel',
+        $vencido ? 'border border-vencido' : ($vencendo ? 'border border-dashed border-reportado' : 'border border-regua'),
     ]) }} aria-labelledby="cupom-{{ Str::slug($codigo) }}">
         <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-regua px-4 py-3">
-            <h3 id="cupom-{{ Str::slug($codigo) }}" class="text-subtitulo">
+            <h3 id="cupom-{{ Str::slug($codigo) }}" class="text-cartao">
                 Cupom{{ $marca ? ' '.$marca : '' }}
             </h3>
-            <x-etiqueta :tom="$tom">
-                @if ($vencido)
-                    Vencido
-                @elseif ($vencendo)
-                    Vence em {{ $diasRestantes }} {{ $diasRestantes === 1 ? 'dia' : 'dias' }}
-                @else
-                    Vigente
-                @endif
-            </x-etiqueta>
+            <div class="flex flex-wrap items-center gap-1.5">
+                {{-- Manual de marca: "desconto parceiro" e obrigatorio sempre que
+                     ha comissao — e todo cupom daqui sai por link de afiliado. --}}
+                <x-etiqueta tom="parceiro">Desconto parceiro</x-etiqueta>
+                <x-etiqueta :tom="$tom">
+                    @if ($vencido)
+                        Vencido
+                    @elseif ($vencendo)
+                        Vence em {{ $diasRestantes }} {{ $diasRestantes === 1 ? 'dia' : 'dias' }}
+                    @else
+                        Vigente
+                    @endif
+                </x-etiqueta>
+            </div>
         </div>
 
         <div class="space-y-3 px-4 py-4">
             @if ($desconto)
-                <p class="text-titulo font-titulo">{{ $desconto }}</p>
+                <p class="font-titulo text-numero font-bold {{ $vencido ? 'text-tinta-suave' : 'text-acao' }}">{{ $desconto }}</p>
             @endif
 
             <div class="flex flex-wrap items-center gap-2">
-                <code class="numero rounded-selo border border-dashed border-contorno bg-superficie px-3 py-2 text-base font-medium tracking-wider {{ $vencido ? 'line-through text-tinta-suave' : '' }}">{{ $codigo }}</code>
+                <code class="numero rounded-botao border border-dashed border-contorno bg-superficie px-3 py-2.5 text-base font-semibold tracking-wider {{ $vencido ? 'line-through text-tinta-suave' : '' }}">{{ $codigo }}</code>
 
                 @unless ($vencido)
                     {{-- Blade nao aceita @if dentro da tag de um componente: um
@@ -90,7 +101,6 @@
                         :data-marca="$rastreia ? $marcaSlug : null"
                         :data-cupom="$rastreia ? $codigo : null"
                         :data-origem="$rastreia ? $origem : null"
-                        class="text-miudo"
                     >Copiar código</x-botao>
                 @endunless
             </div>
@@ -112,7 +122,7 @@
                  mesma do site oficial, e a vantagem e so o desconto na adesao.
                  Escondermos isso seria vender o que nao existe. --}}
             <p class="border-t border-regua pt-3 text-miudo text-tinta-suave">
-                Link de afiliado. <strong class="font-medium text-tinta">A taxa pelo nosso link é a mesma do site oficial</strong> —
+                Link de afiliado. <strong class="font-semibold text-tinta">A taxa pelo nosso link é a mesma do site oficial</strong> —
                 o cupom desconta apenas {{ $sobre === 'na adesão' ? 'a adesão' : 'o valor do aparelho' }}.
             </p>
         </div>
@@ -122,6 +132,7 @@
                 <div class="border-t border-regua bg-superficie px-4 py-3">
                     <x-botao
                         :href="$url"
+                        :variante="$varianteBotao"
                         afiliado
                         largo
                         tamanho="grande"
