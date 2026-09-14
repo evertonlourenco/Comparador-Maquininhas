@@ -17,9 +17,29 @@ use Symfony\Component\HttpFoundation\Response;
  * ComponentesDoPortalTest da ao site publico arrisca quebrar o que ja
  * funciona. Global (bootstrap/app.php), nao so no grupo `web`, para cobrir
  * tambem o `/up` de health-check e qualquer rota futura.
+ *
+ * A CSP daqui e so metade da historia em producao: a Hostinger injeta o
+ * proprio `Content-Security-Policy: upgrade-insecure-requests` numa camada
+ * depois do PHP (hPanel/LiteSpeed, fora de qualquer .htaccess do projeto) e
+ * ele vence o desta classe — achado testando em producao, nao suposto. A
+ * politica que de fato chega ao visitante e replicada numa Regra de
+ * Transformacao de Cabecalho de Resposta no Cloudflare (ver CLAUDE.md,
+ * secao Cloudflare). Por isso os dois scripts inline que sobram (o flash de
+ * tema e o leitor de hex do guia visual) sao liberados por HASH, nao so por
+ * nonce: o Cloudflare nao tem como replicar um nonce por requisicao numa
+ * regra estatica, mas hash de conteudo que nunca muda funciona nos dois
+ * lugares. O nonce continua aqui por profundidade de defesa, para o caso
+ * (hoje hipotetico) de a resposta do PHP chegar ao navegador sem passar por
+ * cima da Hostinger.
  */
 class CabecalhosDeSeguranca
 {
+    /** Etapa 12: sha256 do conteudo exato do script de flash de tema — ver a nota da classe. */
+    private const HASH_SCRIPT_TEMA = "'sha256-mJn4dLa/RdEwTxtgEbvBHS9SdS470aTxNwUHcPuXa24='";
+
+    /** Etapa 12: sha256 do script que le a paleta em vigor, so em /guia-visual. */
+    private const HASH_SCRIPT_GUIA_VISUAL = "'sha256-3PhRvITcvu2sY39c+ywMIvxnO7cK1z/KptnnM8vy/kE='";
+
     public function handle(Request $request, Closure $next): Response
     {
         // Compartilhado antes do proximo middleware/controller rodar, para
@@ -60,7 +80,8 @@ class CabecalhosDeSeguranca
     {
         return implode('; ', [
             "default-src 'self'",
-            "script-src 'self' 'nonce-{$nonce}' 'unsafe-eval' https://www.googletagmanager.com https://www.clarity.ms",
+            'script-src \'self\' \'nonce-'.$nonce.'\' '.self::HASH_SCRIPT_TEMA.' '.self::HASH_SCRIPT_GUIA_VISUAL
+                .' \'unsafe-eval\' https://www.googletagmanager.com https://www.clarity.ms',
             // 'unsafe-inline' aqui, nao em script-src: o Alpine (x-show,
             // x-transition) escreve direto em element.style via JS, e CSP
             // trata isso como estilo inline. Risco bem menor que a mesma
