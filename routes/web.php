@@ -55,3 +55,12 @@ Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
 Route::view('/guia-visual', 'guia-visual')->name('guia-visual');
 
 });
+
+// Etapa 12: diagnostico temporario para conferir se o OPcache esta ativo no
+// SAPI web (no CLI ele nunca aparece, mesmo que esteja ligado). Fora do
+// grupo SiteEmBreve de proposito, para responder mesmo com o site fechado.
+// REMOVER depois de conferir — proximo commit desta etapa.
+Route::get('/__diag-opcache', fn () => response()->json([
+    'opcache.enable' => ini_get('opcache.enable'),
+    'opcache_get_status' => function_exists('opcache_get_status') ? opcache_get_status(false) : 'funcao nao existe',
+]));
