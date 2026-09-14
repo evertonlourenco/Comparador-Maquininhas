@@ -123,6 +123,35 @@ cp "$APP/.env" "$ENVB"
 chmod 600 "$ENVB"
 registrar "env:      $(basename "$ENVB") (600)"
 
+# --------------------------------------------------------------- offsite ---
+# Etapa 12: fecha a pendencia da etapa 11 — backup no mesmo servidor que ele
+# protege resolve "apaguei sem querer", nao resolve servidor perdido, conta
+# suspensa ou disco morto. Copia os tres arquivos de hoje para o Google
+# Drive via rclone (remoto "gdrive", escopo drive.file: so enxerga a pasta
+# que ele mesmo criou, nunca o resto do Drive da conta).
+#
+# Falha aqui FALHA o backup do dia (falhar() sai com exit 1), de proposito:
+# um backup so local voltou a ser exatamente o problema que esta etapa
+# fechou. Mas o dump, os arquivos e o .env de hoje ja estao gravados e
+# intactos no disco local quando isto roda — nao se perde nada, so nao ha
+# copia externa nesta rodada.
+RCLONE="$HOME/bin/rclone"
+REMOTO="${RCLONE_REMOTE:-gdrive:}"
+
+if [ -x "$RCLONE" ]; then
+    "$RCLONE" copy "$DESTINO" "$REMOTO" --include "*$CARIMBO*" >>"$LOG" 2>&1 \
+        || falhar "rclone nao conseguiu copiar para $REMOTO."
+    registrar "offsite:  copiado para $REMOTO"
+
+    # Mesma janela de 14 dias do backup local, para o Drive nao crescer para
+    # sempre. Isto e limpeza, nao a prova de que o backup de hoje deu certo —
+    # por isso so avisa, nao usa falhar().
+    "$RCLONE" delete "$REMOTO" --min-age "${DIAS}d" >>"$LOG" 2>&1 \
+        || registrar "offsite:  aviso — rotacao no Drive nao rodou"
+else
+    falhar "rclone nao encontrado em $RCLONE — sem copia externa."
+fi
+
 # --------------------------------------------------------------- rotacao ---
 # -mtime +N e "modificado ha mais de N dias". Com 14, o mais antigo mantido tem
 # no maximo 14 dias — duas semanas de historico.
