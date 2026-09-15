@@ -93,7 +93,14 @@ class StatusDeOperacao
     }
 
     /**
-     * @return array{sem_dado: bool, motivo: ?string, dias_restantes: ?int, valido_ate: ?Carbon}
+     * `valido_ate` fica como string ISO 8601, nunca Carbon: um objeto Carbon
+     * dentro do array cacheado (Cache::remember serializa com serialize() no
+     * driver de arquivo) quebrou em produção com "tried to call a method on
+     * an incomplete object" ao desserializar - a classe não é resolvida a
+     * tempo em todo contexto de leitura. String é sempre serializável sem
+     * essa armadilha; quem consome refaz o Carbon na hora (OperacaoWidget).
+     *
+     * @return array{sem_dado: bool, motivo: ?string, dias_restantes: ?int, valido_ate: ?string}
      */
     public static function certificadoSsl(): array
     {
@@ -135,7 +142,7 @@ class StatusDeOperacao
                     'sem_dado' => false,
                     'motivo' => null,
                     'dias_restantes' => (int) Carbon::now()->diffInDays($validoAte, false),
-                    'valido_ate' => $validoAte,
+                    'valido_ate' => $validoAte->toIso8601String(),
                 ];
             } catch (Throwable $e) {
                 return ['sem_dado' => true, 'motivo' => str($e->getMessage())->limit(150)->toString(), 'dias_restantes' => null, 'valido_ate' => null];

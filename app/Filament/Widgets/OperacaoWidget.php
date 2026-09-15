@@ -5,6 +5,7 @@ namespace App\Filament\Widgets;
 use App\Support\Saude\StatusDeOperacao;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Support\Carbon;
 
 /**
  * Etapa 16, prioridade 3: um lugar só para "o site está bem?" sem abrir SSH
@@ -90,7 +91,7 @@ class OperacaoWidget extends StatsOverviewWidget
         $dias = $ssl['dias_restantes'];
 
         return Stat::make('Certificado SSL', "{$dias} dia(s)")
-            ->description('Vence em '.$ssl['valido_ate']->format('d/m/Y'))
+            ->description('Vence em '.Carbon::parse($ssl['valido_ate'])->format('d/m/Y'))
             ->color(match (true) {
                 $dias < 14 => 'danger',
                 $dias < 30 => 'warning',
