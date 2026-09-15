@@ -4,12 +4,16 @@ namespace App\Filament\Resources\Planos\Tables;
 
 use App\Enums\StatusItem;
 use App\Enums\TipoEnquadramento;
+use App\Filament\Resources\TaxaDivulgadas\TaxaDivulgadaResource;
 use App\Models\Marca;
+use App\Models\Plano;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreBulkAction;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
@@ -58,6 +62,11 @@ class PlanosTable
                 TrashedFilter::make(),
             ])
             ->recordActions([
+                Action::make('tabelaDeTaxas')
+                    ->label('Tabela de taxas')
+                    ->icon(Heroicon::OutlinedTableCells)
+                    ->color('primary')
+                    ->url(fn (Plano $record) => TaxaDivulgadaResource::getUrl('tabela-do-plano', ['plano' => $record])),
                 EditAction::make(),
             ])
             ->toolbarActions([

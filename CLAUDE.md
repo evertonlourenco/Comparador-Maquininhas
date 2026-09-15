@@ -402,6 +402,41 @@ lote atualiza em vez de duplicar. O Select de marca já filtra `publica_tabela =
 (regra 4); mesmo assim o método `lancar()` captura `DomainException` do model e avisa
 por notificação em vez de estourar erro 500.
 
+**Tabela do plano** (`TaxaDivulgadaResource\Pages\TabelaDoPlano`, rota
+`/admin/taxas-divulgadas/plano/{plano}`) é a etapa 17: editar taxa por taxa era o
+maior atrito do dia a dia do painel, segundo o Everton. Mostra a tabela inteira de
+um plano — Pix, débito e crédito de 1x a 21x, por grupo de bandeiras e por prazo —
+numa tela só, **pré-preenchida** com o que já existe (diferente do Lançamento em
+Lote, que sempre abre em branco). O nome do plano é editável no topo da mesma
+tela, porque a marca às vezes renomeia sem mudar as taxas. Acessível pela coluna
+"Plano" e pelo botão "Tabela do plano" na listagem de Taxas Divulgadas, e pelo
+botão homônimo na listagem de Planos.
+
+Só aparecem as colunas de grupo de bandeiras que a marca de fato usa
+(`marca->bandeiras()`, união com qualquer grupo que já tenha taxa gravada, pra
+nunca esconder dado existente) — mostrar uma coluna que a marca não usa é
+exatamente o tipo de erro que confunde o cliente no site (achado real: SidePay
+entrou com o grupo `elo` isolado numa primeira leitura da etapa 17, quando a
+marca publica "Elo + Outros" como uma coluna só).
+
+Célula em branco que tinha valor = a taxa foi apagada (regra 6, ausência é
+honesta). Célula alterada grava com a fonte/data/status do bloco comum da tela;
+célula que não mudou não é tocada — mantém a fonte e a data de quando aquele
+número foi lido de verdade.
+
+**Achado escrevendo o teste, não por inspeção:** a primeira versão comparava o
+estado novo contra uma propriedade **privada** (`$original`) preenchida no
+`mount()`. O Livewire só re-hidrata propriedade **pública** entre uma interação
+e outra — cada clique ou edição em campo é uma request nova, e `mount()` só roda
+na primeira. Uma propriedade privada guardada ali volta vazia em todo `salvar()`
+seguinte, o que fazia a tela regravar a fonte de células que ninguém tocou (toda
+célula preenchida parecia "nova") e "apagar" nunca apagar nada (célula limpa
+parecia já ter sido branco antes). A correção: `salvar()` relê o banco na hora,
+nunca depende de estado guardado do `mount()`. `tests/Feature/Admin/
+TabelaDoPlanoTest.php` cobre os três comportamentos (grava só o que mudou, não
+toca no que não mudou, apaga o que foi limpo) — remover a correção faz 2 dos 6
+testes falharem.
+
 **Painel inicial** (`app/Filament/Widgets/PainelInicial.php`) soma três alertas
 operacionais: taxas com `data_verificacao` há mais de 30 dias (um aviso antecipado ao
 selo de frescor de 45 dias da regra 8, não o mesmo limite), cupons vigentes vencendo
@@ -2483,10 +2518,21 @@ seeder próprio (`YellySeeder`, `SidePaySeeder`, `FacilityPaySeeder`,
 
 | Marca | Cobertura | O que falta |
 |---|---|---|
-| Yelly | Completa: 2 planos (Flash D+0, Premium D+1) × 3 grupos × 1x-18x + Pix | — |
-| SidePay | Parcial: 1 plano (D+1) × 2 grupos (Visa/Master, Elo) | Tabela "receba na hora", 3º grupo ("demais"), Pix — nenhum apareceu no scrape, mesmo a marca provavelmente tendo os três (números idênticos aos da Yelly Premium onde dá para comparar) |
+| Yelly | Completa: 2 planos (Flash D+0, Premium D+1) × 3 grupos (Visa/Master, Elo, demais) × 1x-18x + Pix | — |
+| SidePay | Completa: 2 planos (Receba em 1 dia D+1, Receba na hora D+0) × 2 grupos × 1x-18x + Pix | — (corrigido: ver nota abaixo) |
 | FacilityPay | Parcial: 1 dos 3 planos (Express) × 2 grupos + Pix | Planos Profit e Light — os cliques nas abas não mudaram o conteúdo capturado |
 | TrincaPay | Parcial: 1 faixa (a "oferta Canal Monetizando") × 2 grupos, sem Pix | A página mistura dois números de faturamento diferentes para a mesma tabela ("acima de R$ 5.000" no texto, "> R$ 45K" no cabeçalho) — não resolvido, plano ficou sem faixa de faturamento declarada até alguém confirmar |
+
+**Correção real sobre a SidePay, achada pelo Everton batendo o olho no painel
+admin (não por mim):** a primeira leitura tinha só 2 dos 4 blocos de taxa (faltava
+o plano D+0 inteiro) e gravou a segunda coluna no grupo `elo` — errado, porque a
+página da SidePay rotula essa coluna como **"Elo + Outros"**, diferente da Yelly,
+que tem Elo isolada. Gravar em `elo` mostraria ao lojista "essa taxa vale só pra
+Elo" quando na verdade vale pra qualquer bandeira fora Visa/Master. Corrigido pra
+usar o grupo `demais` (o mesmo que Ton/PagBank/InfinitePay/SumUp já usam pro
+mesmo padrão), e o plano "Receba na hora" foi completado com screenshots que o
+Everton mandou. `SidePaySeeder` apaga qualquer taxa gravada sob o grupo errado
+antes de recarregar, pra não deixar lixo órfão.
 
 **Adquirente das quatro:** Yelly, SidePay e FacilityPay são PagSeguro/PagBank
 (dito pelo Everton). TrincaPay ficou sem adquirente — ele não sabe, a conta

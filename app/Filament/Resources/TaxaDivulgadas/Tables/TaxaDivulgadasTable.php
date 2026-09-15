@@ -4,14 +4,17 @@ namespace App\Filament\Resources\TaxaDivulgadas\Tables;
 
 use App\Enums\StatusPublicacao;
 use App\Enums\TipoOperacao;
+use App\Filament\Resources\TaxaDivulgadas\TaxaDivulgadaResource;
 use App\Models\GrupoBandeira;
 use App\Models\Marca;
 use App\Models\PrazoRecebimento;
 use App\Models\TaxaDivulgada;
+use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -30,7 +33,9 @@ class TaxaDivulgadasTable
                 TextColumn::make('plano.nome')
                     ->label('Plano')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->url(fn (TaxaDivulgada $record) => TaxaDivulgadaResource::getUrl('tabela-do-plano', ['plano' => $record->plano_id]))
+                    ->tooltip('Abrir a tabela inteira deste plano'),
                 TextColumn::make('tipo_operacao')
                     ->badge()
                     ->sortable(),
@@ -80,7 +85,14 @@ class TaxaDivulgadasTable
                     ->query(fn ($query) => $query->desatualizadas()),
             ])
             ->recordActions([
-                EditAction::make(),
+                Action::make('tabelaDoPlano')
+                    ->label('Tabela do plano')
+                    ->icon(Heroicon::OutlinedTableCells)
+                    ->color('primary')
+                    ->url(fn (TaxaDivulgada $record) => TaxaDivulgadaResource::getUrl('tabela-do-plano', ['plano' => $record->plano_id])),
+                EditAction::make()
+                    ->label('Editar só esta')
+                    ->color('gray'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

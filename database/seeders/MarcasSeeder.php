@@ -137,11 +137,13 @@ class MarcasSeeder extends Seeder
             [
                 'nome' => 'SidePay', 'slug' => 'sidepay', 'adquirente' => 'pagseguro',
                 'site' => 'https://sidepay.com.br/planos-taxas/', 'publica_tabela' => true, 'ordem' => 11,
-                'descricao' => 'Publica tabela por grupo de bandeira. Os numeros batem identicos aos '
-                    .'da Yelly (mesma adquirente).',
+                'descricao' => 'Publica dois planos (Receba em 1 dia, Receba na hora), cada um com '
+                    .'duas colunas: "Visa/Mastercard" e "Elo + Outros" (rotulo literal da marca - '
+                    .'ao contrario da Yelly, aqui Elo NAO tem coluna propria). Numeros identicos aos '
+                    .'da Yelly nas faixas equivalentes (mesma adquirente).',
                 'bandeiras' => [
                     $vm,
-                    ['elo', ['elo']],
+                    [GrupoBandeira::DEMAIS, ['elo', 'american-express', 'hipercard', 'diners-club', 'cabal', 'hiper']],
                 ],
             ],
             [

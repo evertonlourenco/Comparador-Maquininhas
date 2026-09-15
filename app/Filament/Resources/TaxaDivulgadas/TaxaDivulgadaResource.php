@@ -6,6 +6,7 @@ use App\Filament\Resources\TaxaDivulgadas\Pages\CreateTaxaDivulgada;
 use App\Filament\Resources\TaxaDivulgadas\Pages\EditTaxaDivulgada;
 use App\Filament\Resources\TaxaDivulgadas\Pages\LancamentoEmLote;
 use App\Filament\Resources\TaxaDivulgadas\Pages\ListTaxaDivulgadas;
+use App\Filament\Resources\TaxaDivulgadas\Pages\TabelaDoPlano;
 use App\Filament\Resources\TaxaDivulgadas\Schemas\TaxaDivulgadaForm;
 use App\Filament\Resources\TaxaDivulgadas\Tables\TaxaDivulgadasTable;
 use App\Models\TaxaDivulgada;
@@ -56,6 +57,7 @@ class TaxaDivulgadaResource extends Resource
             'create' => CreateTaxaDivulgada::route('/create'),
             'edit' => EditTaxaDivulgada::route('/{record}/edit'),
             'lancamento-em-lote' => LancamentoEmLote::route('/lancamento-em-lote'),
+            'tabela-do-plano' => TabelaDoPlano::route('/plano/{plano}'),
         ];
     }
 }
