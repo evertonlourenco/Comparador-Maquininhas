@@ -23,6 +23,13 @@ final class EconomiaDoCupom
     /** @return array{valor: float, formatado: string, base: ?string}|null */
     public static function calcular(Cupom $cupom, Marca $marca): ?array
     {
+        // Etapa 17: PagBank e Mercado Pago tem desconto real mas sem valor
+        // conhecido (varia por equipamento/mes) - sem isso, (float) null vira
+        // 0.0 e a tela mentiria "economize R$ 0,00" em vez de cair pro texto.
+        if ($cupom->valor === null) {
+            return null;
+        }
+
         if ($cupom->tipo_desconto === TipoDesconto::Valor) {
             $valor = (float) $cupom->valor;
 

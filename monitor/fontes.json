@@ -164,8 +164,8 @@
     "tipo_conteudo": "html",
     "requer_navegador": false,
     "roda_no_mac": false,
-    "ativo": false,
-    "observacao": "Link de afiliado fornecido em 14/09/2026, mas a marca 'yelly' ainda NAO existe na tabela marcas (so e citada como exemplo da regra 7 no CLAUDE.md) — sem marca cadastrada, marca_slug nao resolve e o alerta do Telegram fica sem link de admin. Guardado aqui pra nao perder a URL; ativar depois que a marca for cadastrada (trabalho de catalogo, fora desta etapa)."
+    "ativo": true,
+    "observacao": "Ativado em 15/09/2026 (etapa 17): a marca ja existe na tabela marcas."
   },
   {
     "id": "sidepay-equipamento-cupom",
@@ -176,8 +176,8 @@
     "tipo_conteudo": "html",
     "requer_navegador": false,
     "roda_no_mac": false,
-    "ativo": false,
-    "observacao": "Mesmo caso do Yelly: marca 'sidepay' ainda nao existe na tabela marcas. Guardado aqui pra nao perder a URL."
+    "ativo": true,
+    "observacao": "Ativado em 15/09/2026 (etapa 17): a marca ja existe na tabela marcas."
   },
   {
     "id": "trincapay-equipamento-cupom",
@@ -188,8 +188,8 @@
     "tipo_conteudo": "html",
     "requer_navegador": false,
     "roda_no_mac": false,
-    "ativo": false,
-    "observacao": "Mesmo caso do Yelly: marca 'trincapay' ainda nao existe na tabela marcas. Guardado aqui pra nao perder a URL."
+    "ativo": true,
+    "observacao": "Ativado em 15/09/2026 (etapa 17): a marca ja existe na tabela marcas."
   },
   {
     "id": "facilitypay-equipamento-cupom",
@@ -200,7 +200,7 @@
     "tipo_conteudo": "html",
     "requer_navegador": false,
     "roda_no_mac": false,
-    "ativo": false,
-    "observacao": "Mesmo caso do Yelly: marca 'facilitypay' ainda nao existe na tabela marcas. Guardado aqui pra nao perder a URL — vale conferir se app.facilitypay.com.br/indicacao/... e uma pagina de conteudo real ou um redirect/app logado, ainda nao testado com o coletor."
+    "ativo": true,
+    "observacao": "Ativado em 15/09/2026 (etapa 17): a marca ja existe na tabela marcas."
   }
 ]

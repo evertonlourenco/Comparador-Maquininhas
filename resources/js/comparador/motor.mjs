@@ -693,9 +693,15 @@ function orcamentoDoAparelho(equipamento, cupom, cenario) {
   const aluguelMensal = arredondar(Number(aluguel ?? 0));
 
   // Regra 5: o cupom desconta a adesao. Nunca o percentual da taxa.
+  // Etapa 17: cupom com valor nao informado (desconto real, mas sem numero -
+  // PagBank e Mercado Pago) nao entra na conta: 0 mentiria "sem desconto".
   let desconto = 0;
 
-  if (cupom !== null && (cupom.equipamento_id === null || cupom.equipamento_id === equipamento.id)) {
+  if (
+    cupom !== null &&
+    cupom.valor !== null &&
+    (cupom.equipamento_id === null || cupom.equipamento_id === equipamento.id)
+  ) {
     desconto =
       cupom.tipo_desconto === 'percentual'
         ? arredondar((adesaoCheia * Number(cupom.valor)) / 100)

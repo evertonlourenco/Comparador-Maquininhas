@@ -52,8 +52,13 @@ class CuponsRelationManager extends RelationManager
                 TextColumn::make('valido_ate')
                     ->label('Válido até')
                     ->date('d/m/Y')
+                    ->placeholder('Sem prazo')
                     ->badge()
                     ->color(function ($record): string {
+                        if ($record->valido_ate === null) {
+                            return 'success';
+                        }
+
                         $hoje = Carbon::today();
 
                         if ($record->valido_ate->lt($hoje)) {

@@ -117,13 +117,69 @@ class MarcasSeeder extends Seeder
                 'descricao' => 'Nao publica tabela de taxas. O dado desta marca e faixa reportada.',
                 'bandeiras' => [],
             ],
+            // Etapa 17: parceiras de afiliado que so eram citadas como exemplo
+            // da regra 7 (etapa 13). O Everton confirmou que Yelly, SidePay e
+            // FacilityPay sao a mesma adquirente - o PagSeguro/PagBank, que ja
+            // e uma das marcas comparadas aqui. Confirmado por dado tambem: as
+            // tabelas de taxa de Yelly e SidePay batem identicas ate a segunda
+            // casa decimal (achado nesta mesma etapa, antes da confirmacao).
+            [
+                'nome' => 'Yelly', 'slug' => 'yelly', 'adquirente' => 'pagseguro',
+                'site' => 'https://www.yelly.com.br/taxas', 'publica_tabela' => true, 'ordem' => 10,
+                'descricao' => 'Publica dois planos (Flash, na hora; Premium, em 1 dia util), cada um '
+                    .'com tabela por grupo de bandeira (Visa/Master, Elo, demais) e Pix.',
+                'bandeiras' => [
+                    $vm,
+                    ['elo', ['elo']],
+                    [GrupoBandeira::DEMAIS, ['american-express', 'hipercard', 'diners-club', 'cabal', 'hiper']],
+                ],
+            ],
+            [
+                'nome' => 'SidePay', 'slug' => 'sidepay', 'adquirente' => 'pagseguro',
+                'site' => 'https://sidepay.com.br/planos-taxas/', 'publica_tabela' => true, 'ordem' => 11,
+                'descricao' => 'Publica tabela por grupo de bandeira. Os numeros batem identicos aos '
+                    .'da Yelly (mesma adquirente).',
+                'bandeiras' => [
+                    $vm,
+                    ['elo', ['elo']],
+                ],
+            ],
+            [
+                'nome' => 'FacilityPay', 'slug' => 'facilitypay', 'adquirente' => 'pagseguro',
+                'site' => 'https://facilitypay.com.br/planos', 'publica_tabela' => true, 'ordem' => 12,
+                'descricao' => 'Publica tres planos (Profit, Express, Light); so o Express foi lido '
+                    .'nesta etapa. Duas tabelas por plano: Visa/Master e "demais bandeiras" (sem Elo '
+                    .'separada, ao contrario de Yelly/SidePay), mais Pix unico.',
+                'bandeiras' => [
+                    $vm,
+                    [GrupoBandeira::DEMAIS, ['elo', 'american-express', 'hipercard', 'diners-club', 'cabal', 'hiper']],
+                ],
+            ],
+            // TrincaPay: adquirente deliberadamente em branco - o Everton nao
+            // sabe (marca nova, conta dele ainda nem abriu) e disse pra deixar
+            // assim em vez de adivinhar. Campo ficou opcional na etapa 17
+            // exatamente por este caso (ver migration
+            // alter_marcas_adquirente_id_opcional).
+            [
+                'nome' => 'TrincaPay', 'slug' => 'trincapay', 'adquirente' => null,
+                'site' => 'https://trincapay.com.br/', 'publica_tabela' => true, 'ordem' => 13,
+                'descricao' => 'Diferencial: repasse automatico (split de pagamento) para parceiros e '
+                    .'comissoes. So uma faixa de taxa foi lida (a da oferta especial do Canal '
+                    .'Monetizando) - a pagina nao deixa claro se ha outras faixas por faturamento.',
+                'bandeiras' => [
+                    $vm,
+                    ['elo', ['elo']],
+                ],
+            ],
         ];
 
         foreach ($marcas as $dados) {
             $marca = Marca::updateOrCreate(
                 ['slug' => $dados['slug']],
                 [
-                    'adquirente_id' => Adquirente::where('slug', $dados['adquirente'])->value('id'),
+                    'adquirente_id' => $dados['adquirente'] === null
+                        ? null
+                        : Adquirente::where('slug', $dados['adquirente'])->value('id'),
                     'nome' => $dados['nome'],
                     'site_url' => $dados['site'],
                     'descricao' => $dados['descricao'],

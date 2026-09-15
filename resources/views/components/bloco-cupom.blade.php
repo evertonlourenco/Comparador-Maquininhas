@@ -7,7 +7,9 @@
     'tipoDesconto' => 'valor',
     // App\Enums\IncideSobre: adesao | equipamento. Regra 5 — nunca sobre a taxa.
     'incideSobre' => 'adesao',
-    'validoAte',
+    // Etapa 17: a maioria dos cupons nao tem prazo - nulo aqui e o normal,
+    // nao excecao.
+    'validoAte' => null,
     'url' => null,
     'condicao' => null,
     // Regra 5: cupom vencido some sozinho. Desligue so no guia visual, para
@@ -31,11 +33,15 @@
     use App\Support\Dinheiro;
     use Illuminate\Support\Carbon;
 
-    $limite = $validoAte instanceof Carbon ? $validoAte->copy() : Carbon::parse($validoAte);
-    $diasRestantes = (int) Carbon::today()->diffInDays($limite->copy()->startOfDay(), false);
-    $vencido = $diasRestantes < 0;
+    $limite = match (true) {
+        $validoAte === null => null,
+        $validoAte instanceof Carbon => $validoAte->copy(),
+        default => Carbon::parse($validoAte),
+    };
+    $diasRestantes = $limite === null ? null : (int) Carbon::today()->diffInDays($limite->copy()->startOfDay(), false);
+    $vencido = $diasRestantes !== null && $diasRestantes < 0;
     // Mesmo limite que o Painel Inicial usa para avisar no admin.
-    $vencendo = ! $vencido && $diasRestantes <= 7;
+    $vencendo = $diasRestantes !== null && ! $vencido && $diasRestantes <= 7;
 
     $incide = $incideSobre instanceof IncideSobre ? $incideSobre : IncideSobre::tryFrom((string) $incideSobre);
     $sobre = $incide === IncideSobre::Equipamento ? 'no valor do aparelho' : 'na adesão';
@@ -106,12 +112,13 @@
             </div>
 
             <p class="text-miudo {{ $vencido ? 'text-vencido' : 'text-tinta-suave' }}">
-                @if ($vencido)
-                    Valeu até
+                @if ($limite === null)
+                    Sem prazo de validade divulgado pela marca — link, código ou desconto podem mudar sem aviso.
+                @elseif ($vencido)
+                    Valeu até <time datetime="{{ $limite->toDateString() }}" class="numero font-medium">{{ Dinheiro::data($limite) }}</time>.
                 @else
-                    Válido até
+                    Válido até <time datetime="{{ $limite->toDateString() }}" class="numero font-medium">{{ Dinheiro::data($limite) }}</time>.
                 @endif
-                <time datetime="{{ $limite->toDateString() }}" class="numero font-medium">{{ Dinheiro::data($limite) }}</time>.
             </p>
 
             @if ($condicao)

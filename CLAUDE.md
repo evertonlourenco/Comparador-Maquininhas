@@ -87,15 +87,25 @@ Estas regras vêm da análise de viabilidade e não devem ser simplificadas:
    - `faixa_reportada` — mediana/mín/máx/`n_relatos`/período, para Cielo, Rede, GetNet e
      Stone, que não publicam tabela. Nunca exibir como número exato.
 5. **A taxa do afiliado é igual à do site oficial.** Não existe campo de taxa paralela.
-   A vantagem do link é o cupom de desconto na adesão — entidade `cupons` separada,
-   com `validade` obrigatória e ocultação automática ao vencer.
+   A vantagem do link é o cupom de desconto na adesão — entidade `cupons` separada.
+   **`valido_ate` é opcional** (revisto na etapa 17: cupom de afiliado via de regra
+   não tem prazo — o que muda de vez em quando é o link, o código ou o percentual,
+   não uma data de expiração publicada pela marca). Com data, a ocultação automática
+   ao vencer continua valendo; sem data, o cupom fica vigente até alguém marcar como
+   inativo no painel. `valor`/`tipo_desconto` também são opcionais, para o caso de
+   desconto real mas não quantificado (ver PagBank e Mercado Pago, etapa 17) — nesse
+   caso a tela mostra a `descricao` em vez de um número, nunca zero.
 6. **Nenhuma taxa entra sem `fonte` e `data_verificacao`.** Campo vazio é honesto;
    número errado é risco de CDC. Selo de frescor degrada após 45 dias.
-7. **Marcas têm `adquirente_subjacente`** — informação de transparência, não de
-   deduplicação. Yelly, SidePay e FacilityPay compartilham adquirente mas são
-   empresas distintas, com suporte, atendimento e política de adesão próprios, e
-   concorrem como opções independentes. O desempate entre marcas de taxa idêntica
-   é por reputação e custo total, nunca por adquirente.
+7. **Marcas podem ter `adquirente_subjacente`** — informação de transparência
+   interna quando conhecida, não de deduplicação e não é dado que o site precisa
+   publicar (revisto na etapa 17: o campo era obrigatório, virou opcional — a
+   TrincaPay entrou sem ele porque o Everton não sabe e não faz sentido inventar).
+   Yelly, SidePay e FacilityPay compartilham adquirente (o PagSeguro/PagBank, dito
+   pelo Everton — e as tabelas de taxa batem idênticas entre Yelly e SidePay, achado
+   nesta mesma etapa) mas são empresas distintas, com suporte, atendimento e política
+   de adesão próprios, e concorrem como opções independentes. O desempate entre
+   marcas de taxa idêntica é por reputação e custo total, nunca por adquirente.
 8. **A nota do Reclame Aqui é campo manual** com data de consulta e link. Nunca raspar.
 9. **O comparador roda no navegador** sobre um JSON estático gerado por comando artisan.
    Sem consulta ao banco por visita — a carga é em picos de vídeo, não constante.
@@ -2433,6 +2443,84 @@ funciona é testar o widget diretamente como componente raiz —
 schema da página. `tests/Feature/Admin/PainelDeSaudeTest.php` faz as duas
 coisas: um smoke test no dashboard inteiro, e um teste de conteúdo por
 widget.
+
+## Curadoria e validação das taxas (etapa 17, em andamento)
+
+Sessão de 15/09/2026. Trabalho de dado real feito com o Everton, não código
+novo de feature — mas exigiu três mudanças de schema porque duas premissas da
+etapa 02 não se sustentaram na prática (ver regras 5 e 7 revistas acima).
+
+**Aprovação em lote:** o painel só tinha `EditAction` por registro — aprovar
+964 taxas uma a uma era inviável. `TaxaDivulgadasTable` e
+`FaixaReportadasTable` ganharam `BulkAction` "Aprovar e publicar" e "Voltar
+para rascunho" (undo). A aprovação de verdade em produção é o Everton quem
+faz — ele já tem acesso.
+
+**Buracos fechados** (confirmados pelo Everton, dono do domínio):
+
+- Ton e PagBank não cobram mensalidade → `0`, não mais ausente.
+- Adesão parcela em 12x sem juros em toda marca → `equipamento_plano.parcelas_adesao`.
+- Preço real dos 3 aparelhos da SumUp (Smart R$ 190,80, Solo R$ 58,80, Top
+  R$ 46,80) — a etapa 04 tinha deixado em branco por ambiguidade na página.
+- Pix de Ton (0,49%) e SumUp (0,9%): regra do Everton para esse par — **o
+  número que aparece na tela é o real** (o que se paga por padrão), a
+  condição para a taxa cair a 0% vai colada como `condicao`, nunca como
+  número.
+- Mercado Pago ganhou catálogo: bandeiras (grupo novo `geral` — "mesma taxa
+  para qualquer bandeira", criado porque nenhum grupo existente servia),
+  `publica_tabela = true`, e um plano promocional real (débito e crédito à
+  vista 0,74%, 12x 8,99%, 30 dias ou R$ 5 mil processados) — só 1x e 12x
+  tinham número na página, o resto ficou de fora de propósito (regra 6).
+
+**Grupo de bandeira novo `elo`**, para marca que publica Elo com percentual
+próprio, separado de "demais bandeiras" (Yelly, SidePay, TrincaPay — a
+maioria das marcas antigas trata as duas juntas, sem precisar dele).
+
+**Quatro marcas novas cadastradas** (Yelly, SidePay, FacilityPay, TrincaPay —
+eram só citadas como exemplo da regra 7 desde a etapa 13). Cada uma com
+seeder próprio (`YellySeeder`, `SidePaySeeder`, `FacilityPaySeeder`,
+`TrincaPaySeeder`), leitura de 15/09/2026:
+
+| Marca | Cobertura | O que falta |
+|---|---|---|
+| Yelly | Completa: 2 planos (Flash D+0, Premium D+1) × 3 grupos × 1x-18x + Pix | — |
+| SidePay | Parcial: 1 plano (D+1) × 2 grupos (Visa/Master, Elo) | Tabela "receba na hora", 3º grupo ("demais"), Pix — nenhum apareceu no scrape, mesmo a marca provavelmente tendo os três (números idênticos aos da Yelly Premium onde dá para comparar) |
+| FacilityPay | Parcial: 1 dos 3 planos (Express) × 2 grupos + Pix | Planos Profit e Light — os cliques nas abas não mudaram o conteúdo capturado |
+| TrincaPay | Parcial: 1 faixa (a "oferta Canal Monetizando") × 2 grupos, sem Pix | A página mistura dois números de faturamento diferentes para a mesma tabela ("acima de R$ 5.000" no texto, "> R$ 45K" no cabeçalho) — não resolvido, plano ficou sem faixa de faturamento declarada até alguém confirmar |
+
+**Adquirente das quatro:** Yelly, SidePay e FacilityPay são PagSeguro/PagBank
+(dito pelo Everton). TrincaPay ficou sem adquirente — ele não sabe, a conta
+dele lá nem abriu ainda, e o campo virou opcional nesta etapa exatamente por
+isso.
+
+**Cupons reais cadastrados**, todos incidindo sobre a adesão de qualquer
+maquininha da marca (nunca um equipamento específico — dito pelo Everton
+"assim como de todas as demais"), sem `equipamento_id`:
+
+| Marca | Código | Desconto |
+|---|---|---|
+| Ton | `EVERTONLOURENCOBF20` | 20% |
+| Yelly | `AFILIADOS10` | 10% |
+| SidePay | `MONETIZANDO` | 10% |
+| FacilityPay | `EVERTON10` | 10% |
+| TrincaPay | `CANALMONETIZANDO`¹ | 16% |
+| PagBank | `vzArXydV` | Real, mas variável — sem percentual fixo (ver regra 5) |
+| Mercado Pago | `ZQXZWS3OLW` | Real, mas variável — sem percentual fixo |
+
+¹ O Everton escreveu "CANAL-MONETIZANDO" (com hífen); a própria página, ao
+abrir o link, mostra e aplica "CANALMONETIZANDO" (sem hífen) — usado o que
+foi verificado na página real. Vale confirmar.
+
+**Pendente, sem inventar nada (regra 6):**
+
+- `taxa_antecipacao_mensal`: só 4 planos precisam de verdade (a maioria já é
+  D+0/D+1 embutido) — PagBank "Taxas iniciais", InfinitePay "Acima de 20/40/80
+  mil". O Everton não sabe os valores.
+- Voucher: fechado como não resolvível — depende da negociação do lojista com
+  a empresa do vale-refeição, não é dado que a maquininha publique.
+- As lacunas de Yelly/SidePay/FacilityPay/TrincaPay da tabela acima.
+- Faixas reportadas de Cielo/Rede/GetNet/Stone: zero relatos captados até
+  agora (0 propostas, 0 relatos pendentes no painel).
 
 ## Pendente ao fim da etapa 05
 

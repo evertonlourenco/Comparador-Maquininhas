@@ -60,26 +60,32 @@ class Cupom extends Model
         return Attribute::get(fn (): bool => $this->equipamento_id === null);
     }
 
+    /**
+     * Etapa 17: valido_ate nulo significa "sem prazo definido" (o comum, dito
+     * pelo Everton), nao "vencido" - so vence quem tem data e ela passou.
+     */
     protected function estaVigente(): Attribute
     {
         return Attribute::get(fn (): bool => $this->status === StatusItem::Ativo
             && $this->valido_de?->startOfDay()->lessThanOrEqualTo(Carbon::today())
-            && $this->valido_ate?->startOfDay()->greaterThanOrEqualTo(Carbon::today()));
+            && ($this->valido_ate === null
+                || $this->valido_ate->startOfDay()->greaterThanOrEqualTo(Carbon::today())));
     }
 
-    /** Regra 5: ocultacao automatica ao vencer. */
+    /** Regra 5: ocultacao automatica ao vencer - so quando ha data pra vencer. */
     #[Scope]
     protected function vigentes(Builder $query): void
     {
         $query->where('status', StatusItem::Ativo)
             ->whereDate('valido_de', '<=', Carbon::today())
-            ->whereDate('valido_ate', '>=', Carbon::today());
+            ->where(fn (Builder $q) => $q->whereNull('valido_ate')
+                ->orWhereDate('valido_ate', '>=', Carbon::today()));
     }
 
     #[Scope]
     protected function vencidos(Builder $query): void
     {
-        $query->whereDate('valido_ate', '<', Carbon::today());
+        $query->whereNotNull('valido_ate')->whereDate('valido_ate', '<', Carbon::today());
     }
 
     /** Etapa 16: link de afiliado que o verificador marcou como fora do ar. */

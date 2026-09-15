@@ -102,13 +102,17 @@ class CupomController extends Controller
 
     private static function metaDescricao(Marca $marca, Cupom $cupom, ?array $economia): string
     {
+        // Etapa 17: a maioria dos cupons nao tem valido_ate - a frase de
+        // validade so entra quando ha data de verdade pra citar.
+        $validade = $cupom->valido_ate ? ', válido até '.$cupom->valido_ate->format('d/m/Y') : '';
+
         if ($economia) {
-            return "Cupom {$cupom->codigo} da {$marca->nome}: economize {$economia['formatado']} na adesão. "
-                .'Válido até '.$cupom->valido_ate->format('d/m/Y').'. A taxa é a mesma do site oficial.';
+            return "Cupom {$cupom->codigo} da {$marca->nome}: economize {$economia['formatado']} na "
+                ."adesão{$validade}. A taxa é a mesma do site oficial.";
         }
 
-        return "Cupom {$cupom->codigo} da {$marca->nome}, válido até ".$cupom->valido_ate->format('d/m/Y')
-            .'. A taxa é a mesma do site oficial — o cupom só desconta a adesão.';
+        return "Cupom {$cupom->codigo} da {$marca->nome}{$validade}. A taxa é a mesma do site oficial "
+            .'— o cupom só desconta a adesão.';
     }
 
     private static function schema(Marca $marca, Cupom $cupom, ?array $economia, string $url): array
@@ -121,9 +125,14 @@ class CupomController extends Controller
             'url' => $url,
             'seller' => ['@type' => 'Organization', 'name' => $marca->nome],
             'validFrom' => $cupom->valido_de->toDateString(),
-            'validThrough' => $cupom->valido_ate->toDateString(),
             'availability' => 'https://schema.org/InStock',
         ];
+
+        // Etapa 17: sem validade divulgada (o comum), nao ha validThrough pra
+        // declarar - regra 6 vale para dado estruturado tambem.
+        if ($cupom->valido_ate) {
+            $schema['validThrough'] = $cupom->valido_ate->toDateString();
+        }
 
         // Regra 6 vale para dado estruturado também: preço só entra quando dá
         // para calcular sobre um valor de adesão real e verificado.

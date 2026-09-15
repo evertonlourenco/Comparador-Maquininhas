@@ -36,15 +36,24 @@ class CuponsTable
                     ->weight(FontWeight::Bold)
                     ->searchable(),
                 TextColumn::make('valor')
-                    ->formatStateUsing(fn (Cupom $record): string => $record->tipo_desconto->value === 'percentual'
-                        ? number_format((float) $record->valor, 2, ',', '.').'%'
-                        : 'R$ '.number_format((float) $record->valor, 2, ',', '.')),
+                    ->formatStateUsing(fn (Cupom $record): string => match (true) {
+                        // Etapa 17: PagBank/Mercado Pago tem desconto real,
+                        // valor desconhecido - a descricao e que carrega isso.
+                        $record->valor === null => 'Variável',
+                        $record->tipo_desconto?->value === 'percentual' => number_format((float) $record->valor, 2, ',', '.').'%',
+                        default => 'R$ '.number_format((float) $record->valor, 2, ',', '.'),
+                    }),
                 TextColumn::make('valido_ate')
                     ->label('Válido até')
                     ->date('d/m/Y')
+                    ->placeholder('Sem prazo')
                     ->sortable()
                     ->badge()
                     ->color(function (Cupom $record): string {
+                        if ($record->valido_ate === null) {
+                            return 'success';
+                        }
+
                         $hoje = Carbon::today();
 
                         if ($record->valido_ate->lt($hoje)) {
@@ -56,6 +65,10 @@ class CuponsTable
                             : 'success';
                     })
                     ->description(function (Cupom $record): ?string {
+                        if ($record->valido_ate === null) {
+                            return null;
+                        }
+
                         $hoje = Carbon::today();
 
                         if ($record->valido_ate->lt($hoje)) {

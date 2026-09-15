@@ -54,14 +54,15 @@ class CupomForm
                         ->maxLength(255),
                     Select::make('tipo_desconto')
                         ->options(TipoDesconto::class)
-                        ->required()
-                        ->live(),
+                        ->live()
+                        ->helperText('Deixe em branco quando o desconto é real mas o valor exato não '
+                            .'é conhecido (varia por equipamento, por mês etc.) — o cupom mostra a '
+                            .'descrição abaixo em vez de um número.'),
                     Select::make('incide_sobre')
                         ->options(IncideSobre::class)
                         ->required(),
                     TextInput::make('valor')
                         ->numeric()
-                        ->required()
                         ->prefix(function (Get $get): string {
                             $tipo = $get('tipo_desconto');
                             $valor = $tipo instanceof TipoDesconto ? $tipo->value : $tipo;
@@ -74,7 +75,9 @@ class CupomForm
                         ->default(StatusItem::Ativo),
                 ]),
             Section::make('Vigência')
-                ->description('Regra 5: valido_ate é obrigatório — o cupom some sozinho ao vencer.')
+                ->description('A maioria dos cupons de afiliado não tem prazo — deixe "Válido até" em '
+                    .'branco nesse caso (regra 5: um cupom com data some sozinho quando ela passa; sem '
+                    .'data, ele fica vigente até alguém marcar como inativo aqui).')
                 ->columns(3)
                 ->components([
                     DatePicker::make('valido_de')
@@ -84,10 +87,9 @@ class CupomForm
                         ->default(now())
                         ->required(),
                     DatePicker::make('valido_ate')
-                        ->label('Válido até')
+                        ->label('Válido até (opcional)')
                         ->native(false)
                         ->displayFormat('d/m/Y')
-                        ->required()
                         ->afterOrEqual('valido_de'),
                     TextInput::make('ordem')
                         ->numeric()

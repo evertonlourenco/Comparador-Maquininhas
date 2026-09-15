@@ -126,7 +126,9 @@ final class CatalogoDoComparador
             'cupons' => $marca->cupons->map(fn ($cupom): array => [
                 'codigo' => $cupom->codigo,
                 'descricao' => $cupom->descricao,
-                'tipo_desconto' => $cupom->tipo_desconto->value,
+                // Etapa 17: PagBank/Mercado Pago tem desconto real sem valor
+                // conhecido - tipo_desconto e valor ficam nulos nesse caso.
+                'tipo_desconto' => $cupom->tipo_desconto?->value,
                 // Regra 5: nao existe cupom que mexa em percentual de taxa.
                 'incide_sobre' => $cupom->incide_sobre->value,
                 'valor' => Dinheiro::doBanco($cupom->valor),

@@ -13,23 +13,25 @@ use Illuminate\Database\Seeder;
  * Regra 5: cupons dos links de afiliado do Everton, passados em 15/09/2026
  * (etapa 17). O desconto do link é sempre além do que a página oficial da
  * marca já mostra - nunca desconto na taxa (a taxa do afiliado é igual à do
- * site oficial, regra 5).
+ * site oficial, regra 5). Todos incidem sobre a adesão de qualquer
+ * maquininha da marca (dito pelo Everton: "assim como de todas as demais"),
+ * nunca preso a um equipamento - por isso `equipamento_id` fica sempre nulo.
  *
- * Nem toda marca com link de afiliado entra aqui: PagBank (vzArXydV) não tem
- * desconto adicional nenhum - só rastreamento -, e Mercado Pago (ZQXZWS3OLW)
- * tem desconto real mas o Everton não sabe o percentual. Regra 6 vale para
- * cupom também: sem valor confirmado, sem linha.
+ * `valido_ate` fica nulo em todos: o Everton confirmou que cupom de afiliado
+ * via de regra não expira - o que muda de vez em quando é o link, o código
+ * ou o percentual, não uma data publicada. Isso deixou de ser um campo
+ * obrigatório na etapa 17 (ver migration
+ * alter_cupons_permite_prazo_e_desconto_indefinidos) exatamente por causa
+ * desta correção.
  *
- * `valido_ate` é NOT NULL (regra 5), mas nenhuma marca declarou validade -
- * são links de afiliado "correntes", sem data de expiração publicada. Usado
- * como checkpoint de revisão, não como validade real: 90 dias a partir da
- * carga, para o cupom aparecer no alerta de "vencendo em 7 dias" do painel
- * inicial e alguém confirmar que o link/percentual ainda vale.
+ * PagBank e Mercado Pago têm desconto real mas sem valor conhecido - o
+ * Everton confirmou que existe desconto adicional pelo link, variável por
+ * equipamento e que muda mês a mês, mas não sabe o percentual. `valor` e
+ * `tipo_desconto` ficam nulos (também liberado na etapa 17) e a descrição
+ * carrega o texto em vez de um número - regra 6 não admite valor chutado.
  */
 class CuponsAfiliadoSeeder extends Seeder
 {
-    private const REVISAR_EM = '2026-12-15';
-
     public function run(): void
     {
         $cupons = [
@@ -37,15 +39,72 @@ class CuponsAfiliadoSeeder extends Seeder
                 'marca' => 'ton',
                 'codigo' => 'EVERTONLOURENCOBF20',
                 'tipo_desconto' => TipoDesconto::Percentual,
-                // Suposição a confirmar com o Everton: o desconto do Ton incide
-                // sobre a adesão (não há equipamento específico amarrado ao
-                // link). Se for sobre um aparelho em especial, mover para
-                // incide_sobre = Equipamento e vincular equipamento_id.
-                'incide_sobre' => IncideSobre::Adesao,
                 'valor' => 20,
-                // URL real, ja usada pelo monitor de mudancas (monitor/fontes.json,
+                'descricao' => null,
+                // URL real, já usada pelo monitor de mudanças (monitor/fontes.json,
                 // id ton-equipamento-cupom, fonte etapa 13).
                 'link' => 'https://www.ton.com.br/catalogo?coupon=EVERTONLOURENCOBF20&userAnticipation=0&utm_medium=invite_share&utm_source=revendedor',
+                'termos' => null,
+            ],
+            [
+                'marca' => 'pagbank',
+                'codigo' => 'vzArXydV',
+                'tipo_desconto' => null,
+                'valor' => null,
+                'descricao' => 'Desconto adicional variável na adesão pelo link',
+                'link' => 'https://loja.pagbank.com.br/?cm=vzArXydV&utm_source=mgm&utm_medium=midia-interna&utm_campaign=indicacao-maquina',
+                'termos' => 'Desconto real, mas sem percentual fixo divulgado: varia por equipamento '
+                    .'e pode mudar de um mês para outro. Confirmado pelo Everton em 15/09/2026.',
+            ],
+            [
+                'marca' => 'mercado-pago',
+                'codigo' => 'ZQXZWS3OLW',
+                'tipo_desconto' => null,
+                'valor' => null,
+                'descricao' => 'Desconto adicional variável na adesão pelo link',
+                'link' => 'https://www.mercadopago.com.br/ferramentas-para-vender/maquininhas-point?code=ZQXZWS3OLW&utm_source=share_mgm_web&utm_medium=APP&matt_tool=53347321&matt_word=mgm_point_all',
+                'termos' => 'Desconto real, mas sem percentual fixo divulgado: varia por equipamento '
+                    .'e pode mudar de um mês para outro. Confirmado pelo Everton em 15/09/2026.',
+            ],
+            [
+                'marca' => 'yelly',
+                'codigo' => 'AFILIADOS10',
+                'tipo_desconto' => TipoDesconto::Percentual,
+                'valor' => 10,
+                'descricao' => null,
+                'link' => 'https://checkout.yelly.com.br/monetizando/?cupom=AFILIADOS10',
+                'termos' => null,
+            ],
+            [
+                'marca' => 'sidepay',
+                'codigo' => 'MONETIZANDO',
+                'tipo_desconto' => TipoDesconto::Percentual,
+                'valor' => 10,
+                'descricao' => null,
+                'link' => 'https://checkout.sidepay.com.br/?afiliado=MONETIZANDO',
+                'termos' => null,
+            ],
+            [
+                'marca' => 'facilitypay',
+                'codigo' => 'EVERTON10',
+                'tipo_desconto' => TipoDesconto::Percentual,
+                'valor' => 10,
+                'descricao' => null,
+                'link' => 'https://app.facilitypay.com.br/indicacao/EVERTON10',
+                'termos' => null,
+            ],
+            [
+                'marca' => 'trincapay',
+                // O Everton escreveu "CANAL-MONETIZANDO" (com hífen), mas a
+                // própria página, ao abrir o link, mostra e aplica
+                // "CANALMONETIZANDO" (sem hífen) - usado o que foi
+                // verificado na página real. Vale confirmar com o Everton.
+                'codigo' => 'CANALMONETIZANDO',
+                'tipo_desconto' => TipoDesconto::Percentual,
+                'valor' => 16,
+                'descricao' => null,
+                'link' => 'https://www.trincapay.com.br/canal-monetizando/',
+                'termos' => null,
             ],
         ];
 
@@ -56,14 +115,14 @@ class CuponsAfiliadoSeeder extends Seeder
                 ['marca_id' => $marca->getKey(), 'codigo' => $dados['codigo']],
                 [
                     'equipamento_id' => null,
+                    'descricao' => $dados['descricao'],
                     'tipo_desconto' => $dados['tipo_desconto'],
-                    'incide_sobre' => $dados['incide_sobre'],
+                    'incide_sobre' => IncideSobre::Adesao,
                     'valor' => $dados['valor'],
                     'valido_de' => now()->toDateString(),
-                    'valido_ate' => self::REVISAR_EM,
+                    'valido_ate' => null,
                     'link_afiliado' => $dados['link'],
-                    'termos' => 'Sem validade declarada pela marca - data acima é checkpoint de '
-                        .'revisão (90 dias), não expiração real.',
+                    'termos' => $dados['termos'],
                     'status' => StatusItem::Ativo,
                     'ordem' => 0,
                 ],

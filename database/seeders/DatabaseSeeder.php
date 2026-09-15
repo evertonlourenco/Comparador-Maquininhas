@@ -32,6 +32,10 @@ class DatabaseSeeder extends Seeder
             TonSeeder::class,
             SumUpSeeder::class,
             MercadoPagoSeeder::class,
+            YellySeeder::class,
+            SidePaySeeder::class,
+            FacilityPaySeeder::class,
+            TrincaPaySeeder::class,
             CuponsAfiliadoSeeder::class,
         ]);
 
