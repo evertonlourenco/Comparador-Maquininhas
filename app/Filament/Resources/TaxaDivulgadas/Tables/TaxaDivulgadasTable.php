@@ -8,6 +8,7 @@ use App\Models\GrupoBandeira;
 use App\Models\Marca;
 use App\Models\PrazoRecebimento;
 use App\Models\TaxaDivulgada;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -83,6 +84,21 @@ class TaxaDivulgadasTable
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    BulkAction::make('aprovar')
+                        ->label('Aprovar e publicar')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->modalDescription('Regra 10: as taxas selecionadas passam a status "publicado". Elas só aparecem de fato no site depois de rodar comparador:gerar-json e o deploy.')
+                        ->action(fn ($records) => $records->each->update(['status' => StatusPublicacao::Publicado]))
+                        ->deselectRecordsAfterCompletion(),
+                    BulkAction::make('marcar_rascunho')
+                        ->label('Voltar para rascunho')
+                        ->icon('heroicon-o-arrow-uturn-left')
+                        ->color('gray')
+                        ->requiresConfirmation()
+                        ->action(fn ($records) => $records->each->update(['status' => StatusPublicacao::Rascunho]))
+                        ->deselectRecordsAfterCompletion(),
                     DeleteBulkAction::make(),
                 ]),
             ]);
