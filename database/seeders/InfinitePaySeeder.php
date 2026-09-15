@@ -61,6 +61,7 @@ class InfinitePaySeeder extends SeederDeMarca
                 'mensalidade' => 0,
                 'tarifa_pix_recebimento' => 0,
                 'tarifa_pix_envio' => 0,
+                'taxa_antecipacao_mensal' => $dados['taxa_antecipacao'] ?? null,
                 'compromisso' => 'Enquadramento automatico pelo faturamento do mes anterior. '
                     .'A marca declara nao praticar taxa promocional por tempo limitado.',
                 'status' => StatusItem::Ativo,
@@ -139,9 +140,13 @@ class InfinitePaySeeder extends SeederDeMarca
     {
         return [
             'plano-inicial' => ['nome' => 'Plano Inicial', 'min' => null, 'max' => 19999.99, 'ordem' => 0],
-            'acima-de-20-mil' => ['nome' => 'Acima de 20 mil', 'min' => 20000, 'max' => 39999.99, 'ordem' => 1],
-            'acima-de-40-mil' => ['nome' => 'Acima de 40 mil', 'min' => 40000, 'max' => 79999.99, 'ordem' => 2],
-            'acima-de-80-mil' => ['nome' => 'Acima de 80 mil', 'min' => 80000, 'max' => null, 'ordem' => 3],
+            // Etapa 17, dito pelo Everton: nao ha taxa adicional de
+            // antecipacao avulsa - as taxas publicadas (inclusive no plano
+            // "sem antecipacao", que so existe a partir daqui) ja sao as
+            // finais.
+            'acima-de-20-mil' => ['nome' => 'Acima de 20 mil', 'min' => 20000, 'max' => 39999.99, 'ordem' => 1, 'taxa_antecipacao' => 0],
+            'acima-de-40-mil' => ['nome' => 'Acima de 40 mil', 'min' => 40000, 'max' => 79999.99, 'ordem' => 2, 'taxa_antecipacao' => 0],
+            'acima-de-80-mil' => ['nome' => 'Acima de 80 mil', 'min' => 80000, 'max' => null, 'ordem' => 3, 'taxa_antecipacao' => 0],
         ];
     }
 

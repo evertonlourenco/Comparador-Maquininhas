@@ -2511,11 +2511,15 @@ maquininha da marca (nunca um equipamento específico — dito pelo Everton
 abrir o link, mostra e aplica "CANALMONETIZANDO" (sem hífen) — usado o que
 foi verificado na página real. Vale confirmar.
 
+**`taxa_antecipacao_mensal`: resolvido.** O Everton confirmou que nenhuma marca
+cobra antecipação avulsa à parte — a taxa publicada já é a final, inclusive nos
+planos que usam prazo sem antecipação embutida. `0`, não mais ausente, nos
+únicos 4 planos onde o campo chega a ser consultado (os que têm alguma taxa em
+prazo `d_30`/`parcela_a_parcela`): PagBank "Taxas iniciais", InfinitePay
+"Acima de 20/40/80 mil".
+
 **Pendente, sem inventar nada (regra 6):**
 
-- `taxa_antecipacao_mensal`: só 4 planos precisam de verdade (a maioria já é
-  D+0/D+1 embutido) — PagBank "Taxas iniciais", InfinitePay "Acima de 20/40/80
-  mil". O Everton não sabe os valores.
 - Voucher: fechado como não resolvível — depende da negociação do lojista com
   a empresa do vale-refeição, não é dado que a maquininha publique.
 - As lacunas de Yelly/SidePay/FacilityPay/TrincaPay da tabela acima.

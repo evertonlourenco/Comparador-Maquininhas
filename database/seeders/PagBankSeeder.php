@@ -47,6 +47,10 @@ class PagBankSeeder extends SeederDeMarca
                 .'comercial. A propria pagina avisa que as taxas podem variar por negociacao.',
             // Etapa 17, dito pelo Everton: o PagBank nao cobra mensalidade.
             'mensalidade' => 0,
+            // Etapa 17, dito pelo Everton: nao ha taxa adicional de antecipacao
+            // avulsa - as taxas publicadas ja sao as finais, inclusive no
+            // prazo de 30 dias (que nao embute antecipacao, regra 3).
+            'taxa_antecipacao_mensal' => 0,
             'status' => StatusItem::Ativo,
             'ordem' => 0,
         ]);
