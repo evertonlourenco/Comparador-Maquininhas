@@ -2320,16 +2320,21 @@ cupons). `MarcasTable` e `CuponsTable` ganharam coluna badge (Não
 verificado/No ar/Quebrado) e filtro, para quem já está editando a marca ou o
 cupom ver o estado sem precisar abrir o dashboard.
 
+Rodado manualmente uma vez em produção ao fim desta etapa: 9 marcas e 0
+cupons verificados (ainda não há cupom cadastrado — ver `PLANO.md`), 0
+links quebrados.
+
 **Pendente, e só o Everton pode fazer:** o cron do hPanel. Este servidor não
 tem `php artisan schedule:run` agendado — só o script de backup, direto no
 cron (ver "Deploy, backup e producao"). `routes/console.php` registra
 `Schedule::command('links:verificar')->dailyAt('07:00')` para quem rodar
 `schedule:work` em local, mas em produção o jeito que funciona de fato é um
 **Cron Job novo no hPanel** (Avançado → Cron Jobs), tipo Comando, diário,
-chamando:
+chamando (mesmo binário PHP que o `deploy.sh` usa — `/usr/bin/php` desta
+Hostinger tem `proc_open` e symlink desabilitados, não serve):
 
 ```
-/usr/bin/php /home/u835756808/domains/maquinacerta.com.br/comparador/artisan links:verificar
+/opt/alt/php84/usr/bin/php /home/u835756808/domains/maquinacerta.com.br/comparador/artisan links:verificar
 ```
 
 ### 2. Cliques em cupom
@@ -2358,8 +2363,10 @@ escolhe cor e ícone. `config/saude.php` é onde tudo isso é opcional:
   `$HOME`) e faz o parse do último bloco `--- inicio --- ... --- fim, ok
   ---`/`FALHOU:` do log que `scripts/backup-comparador.sh` escreve.
   Verificado contra o log real de produção via `ssh comparador` durante esta
-  etapa. **Falta adicionar `BACKUP_LOG_PATH` ao `.env` de produção** — sem
-  isso o cartão mostra "Sem dado" honestamente, nunca finge ter lido o log.
+  etapa, e `BACKUP_LOG_PATH=/home/u835756808/backups/comparador/backup.log`
+  já entrou no `.env` de produção (com `config:cache` refeito) no fim desta
+  mesma etapa. Sem essa variável, em qualquer outro ambiente, o cartão
+  mostra "Sem dado" honestamente — nunca finge ter lido o log.
 - **Fila**: `jobs` e `failed_jobs` — `QUEUE_CONNECTION=database` em produção
   (não `sync`), então essas tabelas existem e o cartão é real, não decorativo.
 - **Certificado SSL**: `stream_socket_client` direto (sem `exec`, que está

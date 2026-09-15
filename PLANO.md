@@ -172,8 +172,8 @@ Também nesta etapa:
 > abaixo fica como o planejamento que a orientou. Uma pendência real ficou:
 > o cron do `links:verificar` precisa ser criado no hPanel à mão (mesmo
 > motivo do cron do backup — não há `crontab` na linha de comando neste
-> servidor), e `BACKUP_LOG_PATH` precisa entrar no `.env` de produção para o
-> cartão de backup deixar de mostrar "sem dado".
+> servidor; o comando exato está no CLAUDE.md). `BACKUP_LOG_PATH` já entrou
+> no `.env` de produção nesta mesma etapa.
 
 Um lugar só, no `/admin`, para responder "o site está bem?" sem abrir SSH nem
 hPanel. Parte disso já existe (`PainelInicial` soma três alertas operacionais);
