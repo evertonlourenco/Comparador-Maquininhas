@@ -176,20 +176,26 @@ class MarcasSeeder extends Seeder
         ];
 
         foreach ($marcas as $dados) {
-            $marca = Marca::updateOrCreate(
-                ['slug' => $dados['slug']],
-                [
-                    'adquirente_id' => $dados['adquirente'] === null
-                        ? null
-                        : Adquirente::where('slug', $dados['adquirente'])->value('id'),
-                    'nome' => $dados['nome'],
-                    'site_url' => $dados['site'],
-                    'descricao' => $dados['descricao'],
-                    'publica_tabela' => $dados['publica_tabela'],
-                    'status' => StatusMarca::Ativa,
-                    'ordem' => $dados['ordem'],
-                ],
-            );
+            $chave = ['slug' => $dados['slug']];
+            $valores = [
+                'adquirente_id' => $dados['adquirente'] === null
+                    ? null
+                    : Adquirente::where('slug', $dados['adquirente'])->value('id'),
+                'nome' => $dados['nome'],
+                'site_url' => $dados['site'],
+                'descricao' => $dados['descricao'],
+                'publica_tabela' => $dados['publica_tabela'],
+                'status' => StatusMarca::Ativa,
+                'ordem' => $dados['ordem'],
+            ];
+
+            // Achado em produção (etapa 17): reseed não pode desfazer uma
+            // marca que o admin pausou no painel - status só vale na criação.
+            if (Marca::where($chave)->exists()) {
+                unset($valores['status']);
+            }
+
+            $marca = Marca::updateOrCreate($chave, $valores);
 
             $this->vincularBandeiras($marca, $dados['bandeiras']);
         }

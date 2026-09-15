@@ -259,6 +259,26 @@ Os dados reais vivem em seeders versionados, não em dump — assim a carga é
 reproduzível, revisável no diff e reexecutável. Todos usam `updateOrCreate`:
 rodar `php artisan db:seed` de novo atualiza, nunca duplica.
 
+**Reseed nunca desfaz decisão do admin — achado em produção em 15/09/2026,
+etapa 17.** `updateOrCreate` originalmente regravava `status` (e, no caso de
+`Plano`, também `nome`) em toda linha que já existia, porque o array de
+valores do seeder sempre trazia o padrão dele (`rascunho`/`ativo`/o nome da
+tabela oficial). Efeito real: o Everton aprovava taxas no painel, alguém
+(inclusive o Claude, sugerindo `db:seed --force` pra pegar uma marca nova)
+rodava o seeder de novo, e a aprovação sumia — sem aviso nenhum, porque
+`updateOrCreate` não distingue "criando" de "sobrescrevendo". `SeederDeMarca`
+(taxa e plano), `MarcasSeeder` e `CuponsAfiliadoSeeder` agora conferem se o
+registro já existe antes de montar o array de valores, e removem `status`
+(e `nome`, só em `Plano`) desse array quando já existe — a criação continua
+recebendo o padrão normalmente. `tests/Feature/Dominio/
+ReseedNaoDesfazAprovacaoTest.php` cobre isso pros quatro modelos, incluindo
+que o reseed **continua** atualizando percentual/fonte de uma taxa não
+aprovada (a correção não virou seeder-que-não-faz-nada). **Todo seeder novo
+que usa `updateOrCreate` sobre uma tabela que o admin edita precisa do mesmo
+cuidado** — não é específico dessas quatro classes, é o risco de qualquer
+`updateOrCreate` cujo array de valores inclua um campo que o painel também
+edita.
+
 | Seeder | O que carrega |
 |---|---|
 | `AdquirentesSeeder` | 8 adquirentes, cada um confirmado no rodapé ou no texto institucional do site da própria marca |

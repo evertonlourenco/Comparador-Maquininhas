@@ -110,23 +110,29 @@ class CuponsAfiliadoSeeder extends Seeder
 
         foreach ($cupons as $dados) {
             $marca = Marca::where('slug', $dados['marca'])->sole();
+            $chave = ['marca_id' => $marca->getKey(), 'codigo' => $dados['codigo']];
+            $valores = [
+                'equipamento_id' => null,
+                'descricao' => $dados['descricao'],
+                'tipo_desconto' => $dados['tipo_desconto'],
+                'incide_sobre' => IncideSobre::Adesao,
+                'valor' => $dados['valor'],
+                'valido_de' => now()->toDateString(),
+                'valido_ate' => null,
+                'link_afiliado' => $dados['link'],
+                'termos' => $dados['termos'],
+                'status' => StatusItem::Ativo,
+                'ordem' => 0,
+            ];
 
-            Cupom::updateOrCreate(
-                ['marca_id' => $marca->getKey(), 'codigo' => $dados['codigo']],
-                [
-                    'equipamento_id' => null,
-                    'descricao' => $dados['descricao'],
-                    'tipo_desconto' => $dados['tipo_desconto'],
-                    'incide_sobre' => IncideSobre::Adesao,
-                    'valor' => $dados['valor'],
-                    'valido_de' => now()->toDateString(),
-                    'valido_ate' => null,
-                    'link_afiliado' => $dados['link'],
-                    'termos' => $dados['termos'],
-                    'status' => StatusItem::Ativo,
-                    'ordem' => 0,
-                ],
-            );
+            // Achado em produção (etapa 17): reseed não pode reativar um
+            // cupom que o admin desativou no painel (ex.: link quebrou) -
+            // status só vale na criação.
+            if (Cupom::where($chave)->exists()) {
+                unset($valores['status']);
+            }
+
+            Cupom::updateOrCreate($chave, $valores);
         }
     }
 }

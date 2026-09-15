@@ -36,12 +36,25 @@ abstract class SeederDeMarca extends Seeder
         return Marca::where('slug', $slug)->sole();
     }
 
+    /**
+     * Etapa 17, achado em produção: reseed sobrescrevia `status` e `nome` de
+     * quem já existia, desfazendo aprovação e rename feitos no painel. `nome`
+     * e `status` só valem na criação - num plano que já existe, quem decide
+     * os dois é o admin (Tabela do Plano renomeia; o painel normal pausa),
+     * nunca uma releitura da fonte. Os demais atributos (mensalidade, taxa de
+     * antecipação etc.) continuam vindo do seeder sempre: são fato de
+     * domínio, não decisão administrativa.
+     */
     protected function plano(Marca $marca, string $nome, array $atributos = []): Plano
     {
-        return Plano::updateOrCreate(
-            ['marca_id' => $marca->getKey(), 'slug' => Str::slug($nome)],
-            [...['nome' => $nome], ...$atributos],
-        );
+        $chave = ['marca_id' => $marca->getKey(), 'slug' => Str::slug($nome)];
+        $valores = ['nome' => $nome, ...$atributos];
+
+        if (Plano::where($chave)->exists()) {
+            unset($valores['nome'], $valores['status']);
+        }
+
+        return Plano::updateOrCreate($chave, $valores);
     }
 
     /**
@@ -69,6 +82,16 @@ abstract class SeederDeMarca extends Seeder
         ];
     }
 
+    /**
+     * Achado em produção em 15/09/2026: rodar um seeder de novo (para pegar
+     * marca nova ou corrigir um número) revalidava a chave de TODA taxa já
+     * existente e reescrevia `status` para "rascunho" - desfazendo aprovação
+     * que o Everton já tinha feito no painel, silenciosamente. `fonte()`
+     * sempre devolve status rascunho porque é o padrão certo pra taxa NOVA
+     * (regra 10); numa que já existe, quem decide o status é o admin, nunca
+     * o reseed. Célula que já existe: número, fonte e data continuam vindo
+     * do seeder (são fato, releitura corrige); status nunca é tocado.
+     */
     protected function taxa(
         Plano $plano,
         TipoOperacao $tipo,
@@ -78,16 +101,21 @@ abstract class SeederDeMarca extends Seeder
         float $percentual,
         array $fonte,
     ): void {
-        TaxaDivulgada::updateOrCreate(
-            [
-                'plano_id' => $plano->getKey(),
-                'tipo_operacao' => $tipo->value,
-                'grupo_bandeira_id' => $this->grupo($grupo),
-                'parcelas' => $parcelas,
-                'prazo_recebimento_id' => $this->prazo($prazo),
-            ],
-            [...$fonte, ...['percentual' => $percentual, 'valor_fixo' => 0]],
-        );
+        $chave = [
+            'plano_id' => $plano->getKey(),
+            'tipo_operacao' => $tipo->value,
+            'grupo_bandeira_id' => $this->grupo($grupo),
+            'parcelas' => $parcelas,
+            'prazo_recebimento_id' => $this->prazo($prazo),
+        ];
+
+        $valores = [...$fonte, ...['percentual' => $percentual, 'valor_fixo' => 0]];
+
+        if (TaxaDivulgada::where($chave)->exists()) {
+            unset($valores['status']);
+        }
+
+        TaxaDivulgada::updateOrCreate($chave, $valores);
     }
 
     protected function debito(Plano $plano, string $grupo, string $prazo, float $percentual, array $fonte): void
