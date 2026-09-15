@@ -2537,7 +2537,7 @@ seeder próprio (`YellySeeder`, `SidePaySeeder`, `FacilityPaySeeder`,
 |---|---|---|
 | Yelly | Completa: 2 planos (Flash D+0, Premium D+1) × 3 grupos (Visa/Master, Elo, demais) × 1x-18x + Pix | — |
 | SidePay | Completa: 2 planos (Receba em 1 dia D+1, Receba na hora D+0) × 2 grupos × 1x-18x + Pix | — (corrigido: ver nota abaixo) |
-| FacilityPay | Parcial: 1 dos 3 planos (Express) × 2 grupos + Pix | Planos Profit e Light — os cliques nas abas não mudaram o conteúdo capturado |
+| FacilityPay | Completa: 3 planos (Express D+0, Profit D+1, Light D+1) × 2 grupos + Pix | — (Profit e Light completados por screenshot do Everton) |
 | TrincaPay | Parcial: 1 faixa (a "oferta Canal Monetizando") × 2 grupos, sem Pix | A página mistura dois números de faturamento diferentes para a mesma tabela ("acima de R$ 5.000" no texto, "> R$ 45K" no cabeçalho) — não resolvido, plano ficou sem faixa de faturamento declarada até alguém confirmar |
 
 **Correção real sobre a SidePay, achada pelo Everton batendo o olho no painel
