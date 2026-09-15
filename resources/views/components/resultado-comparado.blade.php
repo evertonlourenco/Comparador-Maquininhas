@@ -62,6 +62,17 @@
                             <span class="sr-only" x-text="(indice + 1) + 'º lugar.'"></span>
                         @endif
 
+                        {{-- O mesmo quadrado do cartao de marca (etapa 15): logo se
+                             tiver, senao a inicial — nunca um placeholder generico. --}}
+                        <div class="flex size-11 shrink-0 items-center justify-center rounded-botao border border-regua bg-superficie">
+                            <template x-if="item.marca.logo_url">
+                                <img :src="item.marca.logo_url" alt="" class="max-h-8 max-w-8 object-contain" width="32" height="32" loading="lazy" decoding="async">
+                            </template>
+                            <template x-if="!item.marca.logo_url">
+                                <span class="font-titulo text-lg font-semibold text-tinta-suave" aria-hidden="true" x-text="item.marca.nome.charAt(0)"></span>
+                            </template>
+                        </div>
+
                         <div class="min-w-0 flex-1">
                             <h4 class="text-cartao" x-text="item.marca.nome"></h4>
                             <p class="mt-0.5 text-miudo text-tinta-suave">

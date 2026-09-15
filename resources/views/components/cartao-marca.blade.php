@@ -87,7 +87,7 @@
             @if ($logo)
                 {{-- alt vazio de proposito: o nome da marca esta ao lado, e repetir
                      duplicaria a leitura em leitor de tela. --}}
-                <img src="{{ $logo }}" alt="" class="max-h-10 max-w-10 object-contain" loading="lazy" decoding="async">
+                <img src="{{ $logo }}" alt="" class="max-h-10 max-w-10 object-contain" width="40" height="40" loading="lazy" decoding="async">
             @else
                 <span class="font-titulo text-xl font-semibold text-tinta-suave" aria-hidden="true">{{ mb_substr($nome, 0, 1) }}</span>
             @endif

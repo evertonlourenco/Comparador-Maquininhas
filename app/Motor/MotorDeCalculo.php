@@ -370,6 +370,7 @@ final class MotorDeCalculo
                 'nome' => $marca['nome'],
                 'slug' => $marca['slug'],
                 'site_url' => $marca['site_url'],
+                'logo_url' => $marca['logo_url'],
                 'publica_tabela' => $marca['publica_tabela'],
                 'adquirente' => $marca['adquirente'],
                 'reclame_aqui' => $marca['reclame_aqui'],

@@ -60,6 +60,7 @@ por ele que o trabalho de dados acontece enquanto o site espera.
 - [x] **12** — Cloudflare, medição, SEO, segurança e performance
 - [x] **13** — Monitor de mudanças (pasta `monitor/`, projeto Node à parte; ver CLAUDE.md)
 - [x] **14** — Identidade visual e reforma da interface (Máquina Certa, 14/09/2026; ver CLAUDE.md)
+- [x] **15** — Imagens: logos de marca, equipamentos e bandeiras (14/09/2026; ver CLAUDE.md)
 
 ---
 
@@ -122,6 +123,13 @@ Cobrado nesta etapa:
 - Revisão das oito páginas públicas no navegador, não só em teste
 
 ### 15 — Imagens: logos de marca, equipamentos e bandeiras
+
+> **Concluída em 14/09/2026.** O registro do que foi feito e decidido está no
+> `CLAUDE.md`, seção "Imagens (etapa 15)". O texto abaixo fica como o
+> planejamento que a orientou — inclusive a decisão de incluir o logo também no
+> resultado do comparador, tomada com o Everton durante a etapa (custo: tocar
+> os dois motores e o teste de paridade), e a de manter o candidato em memória
+> (base64) até a aprovação, nunca em disco.
 
 Hoje não há **nenhuma** imagem no catálogo. O schema já as prevê
 (`marcas.logo_path`, `equipamentos.imagem_path`, `bandeiras.logo_path`) e o

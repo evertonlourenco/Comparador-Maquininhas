@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Marcas\Tables;
 
 use App\Enums\StatusMarca;
+use App\Filament\Actions\BuscarImagemPorUrlAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -66,6 +67,7 @@ class MarcasTable
             ])
             ->recordActions([
                 EditAction::make(),
+                BuscarImagemPorUrlAction::make('logo_path', 'marcas/logos', 'logo'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

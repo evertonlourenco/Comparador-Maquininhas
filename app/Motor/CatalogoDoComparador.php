@@ -107,6 +107,9 @@ final class CatalogoDoComparador
             'nome' => $marca->nome,
             'slug' => $marca->slug,
             'site_url' => $marca->site_url,
+            // Etapa 15: mesmo caminho de listagem e pagina de marca — nulo
+            // quando a marca nao tem logo, nunca um placeholder generico.
+            'logo_url' => $marca->logo_url,
             // Regra 4: quem consome precisa saber de que classe de dado se
             // trata antes de ler qualquer numero.
             'publica_tabela' => (bool) $marca->publica_tabela,

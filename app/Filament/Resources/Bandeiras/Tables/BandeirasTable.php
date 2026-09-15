@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Bandeiras\Tables;
 
+use App\Filament\Actions\BuscarImagemPorUrlAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\ImageColumn;
@@ -37,6 +38,7 @@ class BandeirasTable
             ->reorderable('ordem')
             ->recordActions([
                 EditAction::make(),
+                BuscarImagemPorUrlAction::make('logo_path', 'bandeiras', 'logo'),
                 DeleteAction::make()
                     ->modalDescription('Excluir a bandeira também a desvincula de todas as marcas que a aceitam. As taxas não são afetadas: elas são por grupo, não por bandeira.'),
             ]);

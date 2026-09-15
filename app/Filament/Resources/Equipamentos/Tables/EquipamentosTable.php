@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Equipamentos\Tables;
 
 use App\Enums\StatusItem;
 use App\Enums\TipoEquipamento;
+use App\Filament\Actions\BuscarImagemPorUrlAction;
 use App\Models\Marca;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -60,6 +61,7 @@ class EquipamentosTable
             ])
             ->recordActions([
                 EditAction::make(),
+                BuscarImagemPorUrlAction::make('imagem_path', 'equipamentos', 'foto'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

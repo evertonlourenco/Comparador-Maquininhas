@@ -462,9 +462,20 @@
                                  nunca a borda cheia do cartao de taxa publicada. --}}
                             <article class="overflow-hidden rounded-bloco border-2 border-dashed border-reportado bg-papel">
                                 <div class="flex flex-wrap items-start justify-between gap-x-3 gap-y-2 border-b border-dashed border-reportado bg-reportado-fundo px-4 py-3">
-                                    <div class="min-w-0">
-                                        <h4 class="text-cartao" x-text="item.marca.nome"></h4>
-                                        <p class="mt-0.5 text-miudo text-tinta-suave" x-text="item.plano ? item.plano.nome : ''"></p>
+                                    <div class="flex min-w-0 items-start gap-3">
+                                        {{-- Etapa 15: mesmo quadrado de logo/inicial dos outros blocos. --}}
+                                        <div class="flex size-11 shrink-0 items-center justify-center rounded-botao border border-regua bg-papel">
+                                            <template x-if="item.marca.logo_url">
+                                                <img :src="item.marca.logo_url" alt="" class="max-h-8 max-w-8 object-contain" width="32" height="32" loading="lazy" decoding="async">
+                                            </template>
+                                            <template x-if="!item.marca.logo_url">
+                                                <span class="font-titulo text-lg font-semibold text-tinta-suave" aria-hidden="true" x-text="item.marca.nome.charAt(0)"></span>
+                                            </template>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <h4 class="text-cartao" x-text="item.marca.nome"></h4>
+                                            <p class="mt-0.5 text-miudo text-tinta-suave" x-text="item.plano ? item.plano.nome : ''"></p>
+                                        </div>
                                     </div>
                                     <div class="flex flex-wrap items-center gap-2">
                                         <template x-if="relatosDe(item)">

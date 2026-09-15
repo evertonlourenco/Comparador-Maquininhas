@@ -674,8 +674,8 @@ teclado (`role="region"` + `tabindex="0"`), alvo de toque de 44px, e
   home é o comparador, e o `welcome.blade.php` saiu do repositório.
 - **Navegação e links de rodapé são vazios por padrão** — as páginas das etapas 08 a 10
   entregam os seus. Link morto no cabeçalho é pior que cabeçalho sem link.
-- **Nenhum logo de marca no guia visual**: `<x-cartao-marca>` cai na inicial da marca
-  quando não recebe `logo`. Os arquivos entram com as páginas de marca (etapa 08).
+- ~~**Nenhum logo de marca no guia visual**~~: resolvido na etapa 15 — a busca de
+  imagem por URL no painel, com aprovação humana antes de gravar.
 
 ## O comparador (etapa 07)
 
@@ -2140,6 +2140,116 @@ e **apagado ao fim da verificação**.
 `<x-selo-frescor>` sempre usou `reportado` para "desatualizada". O texto passou
 a usar `reportado`, igual ao componente.
 
+## Imagens (etapa 15)
+
+O catálogo não tinha nenhuma imagem até aqui. O schema já previa
+`marcas.logo_path`, `equipamentos.imagem_path` e `bandeiras.logo_path`
+(etapa 02), e `App\Support\Uploads\ImagemSeguraWebp` (etapa 10) já validava
+upload manual pelo conteúdo real do arquivo e convertia para WebP. Esta etapa
+não trocou esse caminho manual — ele continua existindo no formulário de cada
+recurso — e somou um segundo caminho: uma ação no painel que busca a imagem a
+partir de uma URL.
+
+| Arquivo | Papel |
+|---|---|
+| `App\Support\ImagensExternas\UrlExternaSegura` | SSRF: esquema, IP privado/reservado/CGNAT, resolução de DNS pinável |
+| `App\Support\ImagensExternas\BuscaDeImagemExterna` | Busca, segue redirecionamento (revalidando cada salto), extrai `og:image`/ícone, converte |
+| `App\Support\ImagensExternas\ResultadoDaBusca` | O que a busca devolve: sucesso, erro, WebP em base64, de onde veio |
+| `App\Filament\Actions\BuscarImagemPorUrlAction` | A ação de linha em Marca, Equipamento e Bandeira |
+| `App\Support\Uploads\ImagemSeguraWebp` | Ganhou `converterParaWebp()` e `gravar()`, operando sobre bytes — sem tocar em disco antes da aprovação |
+| `resources/views/filament/imagem-externa/preview.blade.php` | A pré-visualização dentro do modal |
+
+### O fluxo: buscar, ver, só então aprovar
+
+O admin cola uma URL (kit de mídia, página de imprensa, ou a própria página do
+produto) numa ação por linha nas três listagens. Um botão "Buscar", dentro do
+mesmo modal, dispara a busca no servidor: acha o candidato — `og:image`,
+`apple-touch-icon` (o maior, pelo atributo `sizes`), `<link rel="icon">`, ou a
+própria URL quando o `Content-Type` já é `image/*` —, passa pelo mesmo
+conversor para WebP do upload manual, e mostra a pré-visualização.
+
+**O candidato fica em base64, num campo oculto do próprio formulário — nunca
+em disco.** Essa é a leitura mais literal possível da regra 10 aqui: não existe
+nem um caminho público provisório antes da aprovação. Só o clique em "Aprovar e
+salvar" (`BuscarImagemPorUrlAction::aprovarEGravar()`) decodifica, reconfere o
+tipo pelos bytes (defesa contra um campo adulterado entre a busca e a
+aprovação) e grava no disco `public`, no mesmo diretório que o upload manual já
+usava. Buscar sem aprovar não muda nada no registro — é o que
+`BuscaDeImagemPorUrlTest` cobra.
+
+### A busca em si é risco de SSRF, e é tratada como tal
+
+`UrlExternaSegura` só libera `http`/`https`, resolve o host para um IP e
+recusa se ele for privado, loopback, link-local (inclusive o range do
+metadado de nuvem, `169.254.169.254`), CGNAT (`100.64.0.0/10`) ou multicast —
+usando `FILTER_FLAG_NO_PRIV_RANGE|FILTER_FLAG_NO_RES_RANGE` do próprio PHP como
+base, mais os CIDRs que esses dois flags não cobrem. `BuscaDeImagemExterna`
+pina a conexão real no IP resolvido (`CURLOPT_RESOLVE`), para que a checagem e
+a conexão usem o mesmo endereço — sem isso, o DNS poderia responder diferente
+entre a validação e a busca (rebinding). Redirecionamento desliga o
+`allow_redirects` do Guzzle e segue a mão, até 3 saltos, **revalidando cada
+salto pela mesma checagem** — um `og:image` ou um `Location` apontando para
+`169.254.169.254` é bloqueado igual à URL de entrada. Timeout de 3s para
+conectar e 6s no total, limite de 5 MB, e só `image/*` ou `text/html` são
+aceitos como resposta.
+
+`UrlExternaSeguraTest` cobre a lista de IP bloqueado/permitido e a resolução
+via DNS injetado (nunca o real — os testes não dependem de rede). 
+`BuscaDeImagemExternaTest` cobre fim a fim com `Http::fake()`: esquema
+recusado, IP literal privado, DNS apontando para rede privada, redirecionamento
+para IP privado, tipo inválido, arquivo grande demais, e a extração de
+`og:image` (absoluta e relativa) e `apple-touch-icon`.
+
+### O logo entrou no comparador também
+
+Decidido com o Everton: o resultado do comparador (regra 9, JSON estático,
+motor duplicado em PHP e JavaScript) ganhou `marca.logo_url`. Foram quatro
+arquivos, não um: `CatalogoDoComparador::marcas()`, `MotorDeCalculo::esqueleto()`,
+`motor.mjs::esqueleto()` e o fixture sintético de teste
+(`tests/Support/CatalogoDeTeste.php`) — os três primeiros porque o campo
+atravessa a mesma duplicação que a regra 1 já exige para qualquer número do
+motor, o quarto porque o teste de paridade roda sobre catálogo sintético, não
+só sobre a carga real. `ParidadeDoMotorTest` continuou passando sem alteração
+própria: é um campo repassado, não calculado, e por isso os dois motores já
+concordavam nele.
+
+O quadrado de logo (ou a inicial, como no cartão de marca) entrou no card do
+bloco `calculado` e no do bloco `promocional` — os dois usam o mesmo
+`resultado-comparado.blade.php`. O bloco `faixa_reportada` tem markup próprio
+(motivo na etapa 07: nunca reaproveitar o cartão de número único) e ganhou o
+mesmo quadrado, escrito à parte em `comparador.blade.php`. A lista minúscula de
+"sem dado publicado" ficou sem logo de propósito — é texto corrido, de
+propósito apagado, e um quadrado ali seria peso visual sem função.
+
+### Placeholder continua honesto
+
+Nada mudou aqui — a etapa 14 já deixava isso pronto e esta etapa só confirmou:
+marca sem logo mostra a inicial no quadrado (nunca um ícone de banco de
+imagem), equipamento sem foto mostra "Sem foto", bandeira sem logo mostra a
+inicial. `<x-cartao-marca>`, a página de marca e o resultado do comparador
+usam o mesmo critério: `if (logo_url) <img> else <inicial>`.
+
+### `loading="lazy"`, `decoding="async"`, WebP, próprio domínio
+
+Já valiam antes desta etapa (regra 9: CSP só aceita imagem do próprio domínio,
+e nada aqui contraria isso — toda imagem sai de `Storage::disk('public')`).
+Isso a etapa somou: `width`/`height` explícitos em todo `<img>` que já
+existia (o quadrado de logo e a foto de equipamento), calculados a partir da
+caixa CSS que já delimitava o tamanho (`max-h-10 max-w-10` → `40×40`, e assim
+por diante) — o layout já não deslocava ao carregar, porque a caixa em si já
+tinha tamanho fixo, mas o atributo é a declaração explícita que a regra pede.
+
+### O que ficou de fora, e por quê
+
+- **Nenhuma imagem real foi cadastrada em produção nesta etapa.** A
+  verificação usou uma marca, um equipamento e uma bandeira com uma imagem
+  gerada localmente (não baixada de lugar nenhum — regra 8 do domínio, "nunca
+  raspar", vale pelo mesmo espírito aqui: nada entra sem o admin colar a URL de
+  propósito), e foi revertida ao fim da conferência.
+- **Não existe rota nem asset pública para o candidato não aprovado.** Foi
+  decisão, não esquecimento: qualquer caminho público, mesmo temporário,
+  seria "no ar" antes da aprovação.
+
 - [x] **01** — Ambiente local, Filament, Git e CLAUDE.md
 - [x] **02** — Schema do banco
 - [x] **03** — Painel admin no Filament
@@ -2154,7 +2264,7 @@ a usar `reportado`, igual ao componente.
 - [x] **12** — Cloudflare, medição, SEO, segurança e performance
 - [x] **13** — Monitor de mudanças
 - [x] **14** — Identidade visual e reforma da interface
-- [ ] 15 — Imagens: logos de marca, equipamentos e bandeiras
+- [x] **15** — Imagens: logos de marca, equipamentos e bandeiras
 - [ ] 16 — Painel de saúde e observabilidade do administrador
 - [ ] 17 — Curadoria e validação das taxas
 - [ ] 18 — Manual do administrador
@@ -2163,10 +2273,10 @@ a usar `reportado`, igual ao componente.
 
 **A ordem da 12 em diante foi refeita em 11/09/2026** (o motivo está em
 `PLANO.md`). Nada até a 11 mudou. O resumo: a identidade visual própria ainda
-não existe e leva dias para ficar pronta, então as etapas que não encostam em
-estética passaram na frente, a reforma visual entra antes do lançamento — nunca
-depois —, e a curadoria das taxas foi para depois dela, por decisão do Everton:
-avaliar taxa e avaliar tela ao mesmo tempo confunde as duas coisas.
+não existia e levava dias para ficar pronta, então as etapas que não encostam
+em estética passaram na frente, a reforma visual entrou antes do lançamento —
+nunca depois —, e a curadoria das taxas foi para depois dela, por decisão do
+Everton: avaliar taxa e avaliar tela ao mesmo tempo confunde as duas coisas.
 
 ## Pendente ao fim da etapa 05
 

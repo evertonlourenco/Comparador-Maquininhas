@@ -43,6 +43,19 @@ final class ImagemSeguraWebp
         return $tipo;
     }
 
+    /** Mesma checagem de tipoReal(), mas sobre bytes em memoria — usada pela busca de imagem externa (etapa 15), que nunca grava o candidato em disco antes da aprovacao. */
+    public static function tipoRealDosBytes(string $bytes): ?string
+    {
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $tipo = $finfo ? (finfo_buffer($finfo, $bytes) ?: null) : null;
+
+        if ($finfo) {
+            finfo_close($finfo);
+        }
+
+        return $tipo;
+    }
+
     /** Regra de validacao do form: falha se os bytes do arquivo nao forem de uma imagem aceita. */
     public static function regraDeValidacao(): Closure
     {
@@ -71,14 +84,28 @@ final class ImagemSeguraWebp
      */
     public static function salvar(string $caminhoAbsoluto, string $diretorio, string $disco = 'public'): ?string
     {
-        $tipo = self::tipoReal($caminhoAbsoluto);
-        $criador = self::CRIADORES[$tipo] ?? null;
+        $bytesOriginais = file_get_contents($caminhoAbsoluto);
+        $bytesWebp = $bytesOriginais === false ? null : self::converterParaWebp($bytesOriginais);
 
-        if ($criador === null) {
+        return $bytesWebp === null ? null : self::gravar($bytesWebp, $diretorio, $disco);
+    }
+
+    /**
+     * Converte bytes de imagem (JPEG, PNG, GIF ou WebP, verificados pelo
+     * conteudo real) para bytes WebP, sem tocar em disco. E a peca que a
+     * busca de imagem externa (etapa 15) usa para converter o candidato
+     * antes de mostrar a pre-visualizacao — a aprovacao humana acontece
+     * antes de qualquer gravacao, nunca depois.
+     */
+    public static function converterParaWebp(string $bytesOriginais): ?string
+    {
+        $tipo = self::tipoRealDosBytes($bytesOriginais);
+
+        if (! self::ehImagemAceita($tipo)) {
             return null;
         }
 
-        $imagem = @$criador($caminhoAbsoluto);
+        $imagem = @imagecreatefromstring($bytesOriginais);
 
         if ($imagem === false) {
             return null;
@@ -88,13 +115,27 @@ final class ImagemSeguraWebp
         imagealphablending($imagem, true);
         imagesavealpha($imagem, true);
 
-        $caminhoTemporario = tempnam(sys_get_temp_dir(), 'webp_');
-        imagewebp($imagem, $caminhoTemporario, 82);
+        ob_start();
+        imagewebp($imagem, quality: 82);
+        $bytesWebp = ob_get_clean();
         imagedestroy($imagem);
 
+        return $bytesWebp === false || $bytesWebp === '' ? null : $bytesWebp;
+    }
+
+    /**
+     * Grava bytes ja em WebP no disco, com nome novo. Reverifica o tipo por
+     * conta propria — defesa em profundidade contra um campo oculto
+     * adulterado entre a busca e a aprovacao (etapa 15).
+     */
+    public static function gravar(string $bytesWebp, string $diretorio, string $disco = 'public'): ?string
+    {
+        if (self::tipoRealDosBytes($bytesWebp) !== 'image/webp') {
+            return null;
+        }
+
         $caminhoRelativo = trim($diretorio, '/').'/'.Str::ulid().'.webp';
-        Storage::disk($disco)->put($caminhoRelativo, file_get_contents($caminhoTemporario));
-        unlink($caminhoTemporario);
+        Storage::disk($disco)->put($caminhoRelativo, $bytesWebp);
 
         return $caminhoRelativo;
     }

@@ -192,6 +192,10 @@ final class CatalogoDeTeste
             'nome' => $nome,
             'slug' => strtolower($nome),
             'site_url' => 'https://'.strtolower($nome).'.test',
+            // Etapa 15: nenhuma marca sintetica tem logo — o caso honesto de
+            // hoje, e o motor precisa devolver nulo, nao quebrar por chave
+            // ausente.
+            'logo_url' => null,
             'publica_tabela' => $publicaTabela,
             'adquirente' => ['nome' => 'Adquirente '.$nome, 'slug' => 'adq-'.strtolower($nome)],
             'reclame_aqui' => ['nota' => null, 'url' => null, 'consultado_em' => null],

@@ -31,7 +31,7 @@
                 <div class="flex items-center gap-4">
                     <div class="flex size-16 shrink-0 items-center justify-center rounded-bloco border border-regua bg-superficie">
                         @if ($marca->logo_url)
-                            <img src="{{ $marca->logo_url }}" alt="" class="max-h-12 max-w-12 object-contain" loading="lazy" decoding="async">
+                            <img src="{{ $marca->logo_url }}" alt="" class="max-h-12 max-w-12 object-contain" width="48" height="48" loading="lazy" decoding="async">
                         @else
                             <span class="font-titulo text-2xl text-tinta-suave" aria-hidden="true">{{ mb_substr($marca->nome, 0, 1) }}</span>
                         @endif
@@ -182,7 +182,7 @@
                     <li class="flex flex-col overflow-hidden rounded-bloco border border-regua bg-papel">
                         <div class="flex aspect-4/3 items-center justify-center border-b border-regua bg-superficie">
                             @if ($equipamento->imagem_url)
-                                <img src="{{ $equipamento->imagem_url }}" alt="" class="max-h-full max-w-full object-contain p-4" loading="lazy" decoding="async">
+                                <img src="{{ $equipamento->imagem_url }}" alt="" class="max-h-full max-w-full object-contain p-4" width="400" height="300" loading="lazy" decoding="async">
                             @else
                                 <span class="text-miudo text-tinta-suave">Sem foto</span>
                             @endif
@@ -242,7 +242,7 @@
                     <li class="flex items-center gap-2 rounded-botao border border-regua bg-papel px-3 py-2">
                         <span class="flex size-8 shrink-0 items-center justify-center rounded-selo border border-regua bg-superficie">
                             @if ($bandeira->logo_url)
-                                <img src="{{ $bandeira->logo_url }}" alt="" class="max-h-5 max-w-5 object-contain" loading="lazy" decoding="async">
+                                <img src="{{ $bandeira->logo_url }}" alt="" class="max-h-5 max-w-5 object-contain" width="20" height="20" loading="lazy" decoding="async">
                             @else
                                 <span class="text-miudo font-medium text-tinta-suave" aria-hidden="true">{{ mb_substr($bandeira->nome, 0, 1) }}</span>
                             @endif
