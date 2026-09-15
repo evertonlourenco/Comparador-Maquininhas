@@ -156,14 +156,19 @@ class TabelaDoPlano extends Page
                             ->helperText('A marca às vezes renomeia sem mudar as taxas - troque aqui sem sair da tabela.'),
                     ]),
                 Section::make('Fonte e verificação')
-                    ->description('Aplicada só às células que você mudar nesta tela. Célula não tocada mantém a fonte e a data que já tinha.')
+                    ->description('Aplicada só às células que você mudar nesta tela. Célula não tocada mantém a fonte e a data que já tinha. Regra 8: URL ou descrição, ao menos um dos dois.')
                     ->columns(4)
                     ->components([
                         TextInput::make('url_fonte')
                             ->label('URL da fonte')
                             ->url()
-                            ->required()
+                            ->requiredWithout('fonte_descricao')
                             ->maxLength(500),
+                        TextInput::make('fonte_descricao')
+                            ->label('Descrição da fonte (se não houver URL)')
+                            ->requiredWithout('url_fonte')
+                            ->maxLength(255)
+                            ->helperText('Ex.: "PDF enviado por e-mail pelo gerente de contas".'),
                         Select::make('fonte_tipo')
                             ->label('Tipo de fonte')
                             ->options(FonteTipo::class)
@@ -220,6 +225,35 @@ class TabelaDoPlano extends Page
     protected function getHeaderActions(): array
     {
         return [
+            // Pedido do Everton: publicar o plano inteiro de uma vez, sem
+            // precisar ir na listagem selecionar linha por linha. Só muda o
+            // status - não mexe em número, fonte ou data de nenhuma célula.
+            Action::make('publicarTudo')
+                ->label('Publicar toda a tabela')
+                ->icon(Heroicon::OutlinedCheckCircle)
+                ->color('success')
+                ->requiresConfirmation()
+                ->modalDescription('Regra 10: muda o status de TODAS as taxas deste plano para "publicado". '
+                    .'Não altera percentual, fonte ou data de nenhuma célula.')
+                ->action(function (): void {
+                    $n = TaxaDivulgada::query()
+                        ->where('plano_id', $this->plano->getKey())
+                        ->update(['status' => StatusPublicacao::Publicado]);
+
+                    Notification::make()->success()->title("{$n} taxa(s) publicada(s)")->send();
+                }),
+            Action::make('rascunharTudo')
+                ->label('Voltar tudo para rascunho')
+                ->icon(Heroicon::OutlinedArrowUturnLeft)
+                ->color('gray')
+                ->requiresConfirmation()
+                ->action(function (): void {
+                    $n = TaxaDivulgada::query()
+                        ->where('plano_id', $this->plano->getKey())
+                        ->update(['status' => StatusPublicacao::Rascunho]);
+
+                    Notification::make()->success()->title("{$n} taxa(s) voltaram para rascunho")->send();
+                }),
             Action::make('voltar')
                 ->label('Voltar para a listagem')
                 ->color('gray')
@@ -344,7 +378,8 @@ class TabelaDoPlano extends Page
             [
                 'percentual' => $percentual,
                 'valor_fixo' => 0,
-                'url_fonte' => $state['url_fonte'],
+                'url_fonte' => $state['url_fonte'] ?: null,
+                'fonte_descricao' => $state['fonte_descricao'] ?? null,
                 'fonte_tipo' => $state['fonte_tipo'],
                 'data_verificacao' => $state['data_verificacao'],
                 'verificado_por' => Auth::id(),

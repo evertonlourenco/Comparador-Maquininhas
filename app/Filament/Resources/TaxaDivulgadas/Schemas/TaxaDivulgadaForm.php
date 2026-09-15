@@ -113,14 +113,19 @@ class TaxaDivulgadaForm
                                 .'a condição sai colada no número no comparador, sempre. Vazio = vale sem condição.'),
                     ]),
                 Section::make('Fonte e verificação')
-                    ->description('Regra 8: nenhuma taxa entra sem fonte e data de verificação.')
+                    ->description('Regra 8: nenhuma taxa entra sem fonte e data de verificação — URL ou descrição, ao menos um dos dois.')
                     ->columns(2)
                     ->components([
                         TextInput::make('url_fonte')
                             ->label('URL da fonte')
                             ->url()
-                            ->required()
+                            ->requiredWithout('fonte_descricao')
                             ->maxLength(500),
+                        TextInput::make('fonte_descricao')
+                            ->label('Descrição da fonte (se não houver URL)')
+                            ->requiredWithout('url_fonte')
+                            ->maxLength(255)
+                            ->helperText('Ex.: "PDF enviado por e-mail pelo gerente de contas em 15/09/2026".'),
                         Select::make('fonte_tipo')
                             ->label('Tipo de fonte')
                             ->options(FonteTipo::class)

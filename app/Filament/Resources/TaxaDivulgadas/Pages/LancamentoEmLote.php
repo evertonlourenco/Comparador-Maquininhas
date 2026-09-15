@@ -84,14 +84,19 @@ class LancamentoEmLote extends Page
                             ->required(),
                     ]),
                 Section::make('Fonte e verificação')
-                    ->description('Regra 8: nenhuma taxa entra sem fonte e data de verificação. Aplicada a todas as células preenchidas.')
+                    ->description('Regra 8: nenhuma taxa entra sem fonte e data de verificação — URL ou descrição, ao menos um dos dois. Aplicada a todas as células preenchidas.')
                     ->columns(4)
                     ->components([
                         TextInput::make('url_fonte')
                             ->label('URL da fonte')
                             ->url()
-                            ->required()
+                            ->requiredWithout('fonte_descricao')
                             ->maxLength(500),
+                        TextInput::make('fonte_descricao')
+                            ->label('Descrição da fonte (se não houver URL)')
+                            ->requiredWithout('url_fonte')
+                            ->maxLength(255)
+                            ->helperText('Ex.: "PDF enviado por e-mail pelo gerente de contas".'),
                         Select::make('fonte_tipo')
                             ->label('Tipo de fonte')
                             ->options(FonteTipo::class)
@@ -187,7 +192,8 @@ class LancamentoEmLote extends Page
                         [
                             'percentual' => $percentual,
                             'valor_fixo' => 0,
-                            'url_fonte' => $state['url_fonte'],
+                            'url_fonte' => $state['url_fonte'] ?: null,
+                            'fonte_descricao' => $state['fonte_descricao'] ?? null,
                             'fonte_tipo' => $state['fonte_tipo'],
                             'data_verificacao' => $state['data_verificacao'],
                             'verificado_por' => Auth::id(),

@@ -437,6 +437,23 @@ TabelaDoPlanoTest.php` cobre os três comportamentos (grava só o que mudou, nã
 toca no que não mudou, apaga o que foi limpo) — remover a correção faz 2 dos 6
 testes falharem.
 
+**Dois ajustes pedidos pelo Everton no primeiro uso real da tela:**
+
+- **Publicar o plano inteiro**, sem passar pela listagem selecionando linha por
+  linha: botões "Publicar toda a tabela" / "Voltar tudo para rascunho" no topo,
+  que mudam só o `status` de toda taxa do plano — separado da grade de células
+  (que mexe em número, fonte e data). O motivo de serem ações à parte: misturar
+  os dois no mesmo "Salvar" faria uma edição de status silenciosamente arrastar
+  fonte/data de células que ninguém tocou.
+- **`url_fonte` deixou de ser obrigatório**: "e se eu receber a tabela direto da
+  marca?" (PDF por e-mail, WhatsApp do gerente de contas) — não há URL nesse
+  caso, e forçar uma inventaria a fonte. `taxas_divulgadas` ganhou
+  `fonte_descricao` (texto livre), no mesmo padrão que `faixas_reportadas` já
+  usava desde a etapa 10. O formulário (aqui, no Lançamento em Lote e no
+  cadastro de uma taxa só) exige um dos dois — URL ou descrição —, nunca
+  nenhum: regra 8 continua de pé, só deixou de significar especificamente "uma
+  URL".
+
 **Painel inicial** (`app/Filament/Widgets/PainelInicial.php`) soma três alertas
 operacionais: taxas com `data_verificacao` há mais de 30 dias (um aviso antecipado ao
 selo de frescor de 45 dias da regra 8, não o mesmo limite), cupons vigentes vencendo

@@ -192,4 +192,65 @@ class TabelaDoPlanoTest extends TestCase
 
         $this->assertSame('Nome Novo Que a Marca Deu', $this->plano->fresh()->nome);
     }
+
+    /** Pedido do Everton: publicar o plano inteiro sem passar pela listagem. */
+    public function test_publicar_tudo_muda_o_status_de_todas_as_taxas_do_plano(): void
+    {
+        // Uma segunda taxa, também em rascunho, pra confirmar que a ação
+        // pega todo mundo - não só a primeira linha.
+        TaxaDivulgada::create([
+            'plano_id' => $this->plano->getKey(),
+            'tipo_operacao' => TipoOperacao::CreditoAvista,
+            'grupo_bandeira_id' => $this->demais,
+            'parcelas' => 1,
+            'prazo_recebimento_id' => $this->d1,
+            'percentual' => 3.20,
+            'valor_fixo' => 0,
+            'url_fonte' => 'https://exemplo.com/taxas',
+            'fonte_tipo' => FonteTipo::SiteOficial,
+            'data_verificacao' => now()->toDateString(),
+            'status' => StatusPublicacao::Rascunho,
+        ]);
+
+        Livewire::test(TabelaDoPlano::class, ['plano' => $this->plano])
+            ->callAction('publicarTudo');
+
+        $this->assertSame(
+            0,
+            TaxaDivulgada::where('plano_id', $this->plano->getKey())
+                ->where('status', StatusPublicacao::Rascunho)
+                ->count(),
+        );
+        $this->assertSame(
+            2,
+            TaxaDivulgada::where('plano_id', $this->plano->getKey())
+                ->where('status', StatusPublicacao::Publicado)
+                ->count(),
+        );
+    }
+
+    /** Pedido do Everton: "e se eu receber a tabela direto da marca?" - sem URL pública. */
+    public function test_celula_pode_ser_gravada_so_com_descricao_da_fonte_sem_url(): void
+    {
+        Livewire::test(TabelaDoPlano::class, ['plano' => $this->plano])
+            ->set('data.url_fonte', null)
+            ->set('data.fonte_descricao', 'PDF enviado por e-mail pelo gerente de contas em 15/09/2026')
+            ->set('data.fonte_tipo', FonteTipo::Atendimento->value)
+            ->set('data.data_verificacao', now()->toDateString())
+            ->set('data.status', StatusPublicacao::Rascunho->value)
+            ->set("data.cells.{$this->naHora}.{$this->demais}.debito", '2.10')
+            ->call('salvar')
+            ->assertHasNoErrors();
+
+        $criada = TaxaDivulgada::where([
+            'plano_id' => $this->plano->getKey(),
+            'tipo_operacao' => TipoOperacao::Debito->value,
+            'grupo_bandeira_id' => $this->demais,
+            'prazo_recebimento_id' => $this->naHora,
+        ])->first();
+
+        $this->assertNotNull($criada);
+        $this->assertNull($criada->url_fonte);
+        $this->assertSame('PDF enviado por e-mail pelo gerente de contas em 15/09/2026', $criada->fonte_descricao);
+    }
 }
