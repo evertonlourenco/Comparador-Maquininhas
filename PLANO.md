@@ -264,6 +264,27 @@ Era a 15. Vai para o fim porque é decisão de negócio, não bloqueio técnico.
 `true` para qualquer usuário da tabela, e com cadastro aberto todo cadastrado
 entraria no `/admin`.
 
+### 21 — Cadastro de taxas por imagem (IA de visão)
+
+Pedida pelo Everton em 15/09/2026, na etapa 17: em vez de descrever a tabela
+por texto, subir a captura de tela e a ferramenta ler e propor o
+cadastro sozinha — o que hoje só acontece manualmente, via chat com o
+Claude. Fica para **depois do lançamento** de propósito: enquanto isso, o
+Everton manda print por aqui mesmo, e o cadastro segue manual (Tabela do
+Plano, etapa 17).
+
+- Upload de imagem no admin (mesmo padrão de segurança do `ImagemSeguraWebp`
+  da etapa 15 — valida pelo conteúdo, não pela extensão)
+- Chamada a uma API de visão (a chave e o custo por chamada precisam existir
+  — não é gratuito como a busca de imagem por URL da etapa 15)
+- **Regra 10 não é opcional aqui**: o que a IA leu vai para uma prévia, nunca
+  direto ao banco — o admin confere linha por linha antes de aprovar, no
+  mesmo espírito da busca de imagem por URL (etapa 15): "automatiza o
+  trabalho chato sem automatizar a decisão"
+- Reaproveita a grade da Tabela do Plano (etapa 17) como tela de conferência
+  — a IA pré-preenche as células, a pessoa só corrige o que estiver errado
+  antes de salvar
+
 ---
 
 ## A decisão que reorganizou o plano

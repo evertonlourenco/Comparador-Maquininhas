@@ -2332,6 +2332,7 @@ tinha tamanho fixo, mas o atributo é a declaração explícita que a regra pede
 - [ ] 18 — Manual do administrador
 - [ ] 19 — Lançamento
 - [ ] 20 — Decisão sobre programa de parceiros
+- [ ] 21 — Cadastro de taxas por imagem (IA de visão)
 
 **A ordem da 12 em diante foi refeita em 11/09/2026** (o motivo está em
 `PLANO.md`). Nada até a 11 mudou. O resumo: a identidade visual própria ainda
