@@ -71,6 +71,21 @@ class CuponsTable
                 TextColumn::make('status')
                     ->badge()
                     ->sortable(),
+                TextColumn::make('link_quebrado')
+                    ->label('Link')
+                    ->badge()
+                    ->formatStateUsing(fn (Cupom $record): string => match (true) {
+                        $record->link_verificado_em === null => 'Não verificado',
+                        (bool) $record->link_quebrado => 'Quebrado',
+                        default => 'No ar',
+                    })
+                    ->color(fn (Cupom $record): string => match (true) {
+                        $record->link_verificado_em === null => 'gray',
+                        (bool) $record->link_quebrado => 'danger',
+                        default => 'success',
+                    })
+                    ->description(fn (Cupom $record): ?string => $record->link_verificado_em?->format('d/m/Y H:i'))
+                    ->toggleable(),
                 TextColumn::make('ordem')
                     ->numeric()
                     ->sortable()
@@ -87,6 +102,10 @@ class CuponsTable
                     ->label('Vencidos')
                     ->toggle()
                     ->query(fn ($query) => $query->vencidos()),
+                Filter::make('link_quebrado')
+                    ->label('Link quebrado')
+                    ->toggle()
+                    ->query(fn ($query) => $query->comLinkQuebrado()),
             ])
             ->recordActions([
                 EditAction::make(),

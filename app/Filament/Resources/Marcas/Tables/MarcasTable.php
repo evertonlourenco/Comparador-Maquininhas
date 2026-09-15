@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Marcas\Tables;
 
 use App\Enums\StatusMarca;
 use App\Filament\Actions\BuscarImagemPorUrlAction;
+use App\Models\Marca;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -12,6 +13,7 @@ use Filament\Actions\RestoreBulkAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
@@ -36,6 +38,21 @@ class MarcasTable
                 IconColumn::make('publica_tabela')
                     ->label('Publica tabela')
                     ->boolean(),
+                TextColumn::make('link_quebrado')
+                    ->label('Link')
+                    ->badge()
+                    ->formatStateUsing(fn (Marca $record): string => match (true) {
+                        $record->link_verificado_em === null => 'Não verificado',
+                        (bool) $record->link_quebrado => 'Quebrado',
+                        default => 'No ar',
+                    })
+                    ->color(fn (Marca $record): string => match (true) {
+                        $record->link_verificado_em === null => 'gray',
+                        (bool) $record->link_quebrado => 'danger',
+                        default => 'success',
+                    })
+                    ->description(fn (Marca $record): ?string => $record->link_verificado_em?->format('d/m/Y H:i'))
+                    ->toggleable(),
                 TextColumn::make('taxas_divulgadas_count')
                     ->label('Taxas')
                     ->counts('taxasDivulgadas')
@@ -63,6 +80,10 @@ class MarcasTable
             ->defaultSort('ordem')
             ->filters([
                 SelectFilter::make('status')->options(StatusMarca::class),
+                Filter::make('link_quebrado')
+                    ->label('Link quebrado')
+                    ->toggle()
+                    ->query(fn ($query) => $query->comLinkQuebrado()),
                 TrashedFilter::make(),
             ])
             ->recordActions([

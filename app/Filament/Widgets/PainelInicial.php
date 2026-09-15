@@ -9,6 +9,7 @@ use App\Filament\Resources\Marcas\MarcaResource;
 use App\Filament\Resources\PropostasRecebidas\PropostaRecebidaResource;
 use App\Filament\Resources\RelatosTaxaIncorreta\RelatoTaxaIncorretaResource;
 use App\Filament\Resources\TaxaDivulgadas\TaxaDivulgadaResource;
+use App\Models\Cupom;
 use App\Models\DeteccaoDeMudanca;
 use App\Models\Marca;
 use App\Models\PropostaRecebida;
@@ -19,6 +20,8 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class PainelInicial extends StatsOverviewWidget
 {
+    protected static ?int $sort = 1;
+
     protected function getStats(): array
     {
         $taxasNaoVerificadas = ResumoSemanal::taxasSemVerificacaoHaMaisDe30Dias();
@@ -39,7 +42,19 @@ class PainelInicial extends StatsOverviewWidget
         // propoe aqui — nunca publica sozinho (regra 10).
         $deteccoesPendentes = DeteccaoDeMudanca::query()->pendentes()->count();
 
+        // Etapa 16, prioridade 1: `links:verificar` (cron diário) grava isto.
+        // Link nunca verificado não entra na contagem de quebrado — ele
+        // ainda não teve chance de falhar, e contar como quebrado inventaria
+        // um alerta que o comando ainda não deu.
+        $linksQuebrados = Marca::query()->comLinkQuebrado()->count()
+            + Cupom::query()->comLinkQuebrado()->count();
+
         return [
+            Stat::make('Links de afiliado quebrados', $linksQuebrados)
+                ->description('Site da marca ou link de cupom fora do ar (HEAD diário)')
+                ->color($linksQuebrados > 0 ? 'danger' : 'success')
+                ->url(MarcaResource::getUrl())
+                ->icon('heroicon-o-link-slash'),
             Stat::make('Taxas não verificadas há +30 dias', $taxasNaoVerificadas)
                 ->description('Somando taxas divulgadas e faixas reportadas')
                 ->color($taxasNaoVerificadas > 0 ? 'danger' : 'success')

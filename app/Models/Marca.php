@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Storage;
     'adquirente_id', 'nome', 'slug', 'site_url', 'logo_path', 'descricao', 'youtube_video_id',
     'reclame_aqui_nota', 'reclame_aqui_url', 'reclame_aqui_consultado_em',
     'publica_tabela', 'aceita_relatos', 'status', 'ordem',
+    'link_ultimo_status', 'link_ultima_falha', 'link_quebrado', 'link_verificado_em',
 ])]
 class Marca extends Model
 {
@@ -34,6 +35,8 @@ class Marca extends Model
             'aceita_relatos' => 'boolean',
             'status' => StatusMarca::class,
             'ordem' => 'integer',
+            'link_quebrado' => 'boolean',
+            'link_verificado_em' => 'datetime',
         ];
     }
 
@@ -101,6 +104,13 @@ class Marca extends Model
     protected function aceitamRelatos(Builder $query): void
     {
         $query->where('aceita_relatos', true);
+    }
+
+    /** Etapa 16: link de afiliado (site_url) que o verificador marcou como fora do ar. */
+    #[Scope]
+    protected function comLinkQuebrado(Builder $query): void
+    {
+        $query->where('link_quebrado', true);
     }
 
     public function propostasRecebidas(): HasMany

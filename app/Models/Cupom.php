@@ -25,6 +25,7 @@ use Illuminate\Support\Carbon;
     'marca_id', 'equipamento_id', 'codigo', 'descricao',
     'tipo_desconto', 'incide_sobre', 'valor',
     'valido_de', 'valido_ate', 'link_afiliado', 'termos', 'status', 'ordem',
+    'link_ultimo_status', 'link_ultima_falha', 'link_quebrado', 'link_verificado_em',
 ])]
 class Cupom extends Model
 {
@@ -38,6 +39,8 @@ class Cupom extends Model
             'valido_ate' => 'date',
             'status' => StatusItem::class,
             'ordem' => 'integer',
+            'link_quebrado' => 'boolean',
+            'link_verificado_em' => 'datetime',
         ];
     }
 
@@ -77,5 +80,12 @@ class Cupom extends Model
     protected function vencidos(Builder $query): void
     {
         $query->whereDate('valido_ate', '<', Carbon::today());
+    }
+
+    /** Etapa 16: link de afiliado que o verificador marcou como fora do ar. */
+    #[Scope]
+    protected function comLinkQuebrado(Builder $query): void
+    {
+        $query->where('link_quebrado', true);
     }
 }

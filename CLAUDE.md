@@ -2265,7 +2265,7 @@ tinha tamanho fixo, mas o atributo é a declaração explícita que a regra pede
 - [x] **13** — Monitor de mudanças
 - [x] **14** — Identidade visual e reforma da interface
 - [x] **15** — Imagens: logos de marca, equipamentos e bandeiras
-- [ ] 16 — Painel de saúde e observabilidade do administrador
+- [x] **16** — Painel de saúde e observabilidade do administrador
 - [ ] 17 — Curadoria e validação das taxas
 - [ ] 18 — Manual do administrador
 - [ ] 19 — Lançamento
@@ -2277,6 +2277,155 @@ não existia e levava dias para ficar pronta, então as etapas que não encostam
 em estética passaram na frente, a reforma visual entrou antes do lançamento —
 nunca depois —, e a curadoria das taxas foi para depois dela, por decisão do
 Everton: avaliar taxa e avaliar tela ao mesmo tempo confunde as duas coisas.
+
+## Painel de saúde do administrador (etapa 16)
+
+Um lugar só, no `/admin`, para responder "o site está bem?" sem abrir SSH nem
+hPanel — expandindo `App\Filament\Widgets\PainelInicial` (que já somava três
+alertas) com mais sete widgets, todos descobertos automaticamente por
+`AdminPanelProvider::discoverWidgets()`. Ordem no dashboard por
+`sort`: PainelInicial (1), OperacaoWidget (2), CliquesCupomChart (3),
+CliquesCupomPorMarcaTable/CliquesCupomPorCupomTable (4-5), FrescorWidget (6),
+BancoWidget (7), TrafegoWidget (8).
+
+| Prioridade | Widget / arquivo | O que mostra |
+|---|---|---|
+| 1 | `links:verificar` + cartão em `PainelInicial` | Link de afiliado quebrado |
+| 2 | `CliquesCupomChart`, `CliquesCupomPorMarcaTable`, `CliquesCupomPorCupomTable` | `eventos_cupom`, 30 dias |
+| 3 | `OperacaoWidget` (`App\Support\Saude\StatusDeOperacao`) | Backup, fila, SSL, `APP_DEBUG`, `.env`, 2FA |
+| 4 | `BancoWidget` | Tamanho por tabela, contagem por entidade |
+| 5 | `FrescorWidget` (`App\Support\Saude\FaixasDeFrescor`) | Faixa de idade da verificação |
+| 6 | `TrafegoWidget` (`App\Support\Saude\ClienteAnalyticsCloudflare`) | Acessos diários, se configurado |
+
+**Regra do painel inteiro, aplicada com mais rigor que em qualquer outra
+tela:** cartão sem dado mostra "Sem dado" e o motivo — nunca zero, nunca
+"ok" adivinhado. É a regra 6 do domínio ("nada sem fonte") virada do avesso
+contra o próprio painel.
+
+### 1. Verificador de link de afiliado
+
+`App\Console\Commands\VerificarLinksAfiliados` (`php artisan
+links:verificar`) faz HEAD em `marcas.site_url` e `cupons.link_afiliado`,
+com fallback para GET quando o servidor devolve 405 (HEAD não implementado —
+achado testando contra sites reais de afiliado, não suposto). Grava em
+quatro colunas novas nas duas tabelas (migration
+`2026_09_15_090000_add_verificacao_de_link_to_marcas_and_cupons`):
+`link_ultimo_status`, `link_ultima_falha` (mensagem quando nem status HTTP
+saiu — timeout, DNS, TLS), `link_quebrado` e `link_verificado_em`. Link nunca
+verificado (`link_verificado_em` nulo) não conta como quebrado — ele ainda
+não teve chance de falhar.
+
+`PainelInicial` ganhou o cartão "Links de afiliado quebrados" (soma marcas +
+cupons). `MarcasTable` e `CuponsTable` ganharam coluna badge (Não
+verificado/No ar/Quebrado) e filtro, para quem já está editando a marca ou o
+cupom ver o estado sem precisar abrir o dashboard.
+
+**Pendente, e só o Everton pode fazer:** o cron do hPanel. Este servidor não
+tem `php artisan schedule:run` agendado — só o script de backup, direto no
+cron (ver "Deploy, backup e producao"). `routes/console.php` registra
+`Schedule::command('links:verificar')->dailyAt('07:00')` para quem rodar
+`schedule:work` em local, mas em produção o jeito que funciona de fato é um
+**Cron Job novo no hPanel** (Avançado → Cron Jobs), tipo Comando, diário,
+chamando:
+
+```
+/usr/bin/php /home/u835756808/domains/maquinacerta.com.br/comparador/artisan links:verificar
+```
+
+### 2. Cliques em cupom
+
+`eventos_cupom` existe desde a etapa 09 e nunca tinha sido visualizada.
+`CliquesCupomChart` é um gráfico de barras (Filament `ChartWidget`) dos
+últimos 30 dias, uma série por `TipoEventoCupom` (usar cupom / copiar
+código). As duas tabelas de ranking agrupam por Eloquent `Builder` puro —
+`CliquesCupomPorMarcaTable` por `marca_id`, `CliquesCupomPorCupomTable` por
+`marca_id` + **`codigo`**, não por `cupom_id`: `codigo` é a foto do código
+no momento do clique (ver etapa 09), então um cupom editado ou apagado não
+faz o clique de ontem desaparecer do ranking de hoje.
+
+**Achado implementando:** uma query agrupada (`groupBy`) não tem `id` real,
+e o Filament Table usa `$record->getKey()` para o `wire:key` de cada linha.
+As duas tabelas selecionam explicitamente uma coluna `id` derivada
+(`marca_id as id`, ou `CONCAT(marca_id, '_', codigo) as id`) — sem isso as
+linhas do grupo colidiriam.
+
+### 3. Operação
+
+`App\Support\Saude\StatusDeOperacao` concentra as seis contas; o widget só
+escolhe cor e ícone. `config/saude.php` é onde tudo isso é opcional:
+
+- **Backup diário**: lê `BACKUP_LOG_PATH` (vazio por padrão — nunca supõe
+  `$HOME`) e faz o parse do último bloco `--- inicio --- ... --- fim, ok
+  ---`/`FALHOU:` do log que `scripts/backup-comparador.sh` escreve.
+  Verificado contra o log real de produção via `ssh comparador` durante esta
+  etapa. **Falta adicionar `BACKUP_LOG_PATH` ao `.env` de produção** — sem
+  isso o cartão mostra "Sem dado" honestamente, nunca finge ter lido o log.
+- **Fila**: `jobs` e `failed_jobs` — `QUEUE_CONNECTION=database` em produção
+  (não `sync`), então essas tabelas existem e o cartão é real, não decorativo.
+- **Certificado SSL**: `stream_socket_client` direto (sem `exec`, que está
+  desabilitado no PHP web da Hostinger — ver "Fica de fora" no `PLANO.md`),
+  contra o host de `SAUDE_DOMINIO_SSL` ou o host de `APP_URL`. Cacheado 6h
+  (`Cache::remember`) para não abrir uma conexão TLS a cada carregamento do
+  dashboard.
+- **`APP_DEBUG`**, **permissão do `.env`** (`fileperms()`, seguro só em
+  `600` — mesma regra do `backup-comparador.sh`) e **usuários sem 2FA**
+  (`users.app_authentication_secret` nulo) são leitura local direta, sem
+  rede.
+
+**Não tentamos ler disco nem CPU da hospedagem** (pedido explícito do
+Everton) — `exec`/`shell_exec` desabilitados no PHP web e
+`disk_free_space()` numa conta compartilhada reporta o volume inteiro, não a
+cota. Isso continua no hPanel.
+
+### 4. Banco
+
+`BancoWidget` lê `information_schema.tables` para tamanho por tabela — MySQL
+e MariaDB só, os dois motores reais do projeto (local e produção). **Achado
+pelos testes**: a suíte roda em SQLite (`phpunit.xml`), que não tem
+`information_schema`; o widget checa `DB::connection()->getDriverName()` e
+devolve coleção vazia fora de `mysql`/`mariadb` — a view mostra "Sem dado"
+em vez de estourar. `table_rows` do InnoDB é estimativa, não contagem exata;
+a coluna diz isso ("Linhas (aprox.)"). Contagem por entidade é `count()`
+Eloquent direto nos 12 models de domínio + operacionais.
+
+### 5. Frescor
+
+`App\Support\Saude\FaixasDeFrescor` expande o cartão único do
+`PainelInicial` ("+30 dias") em faixas de idade — soma `taxas_divulgadas` e
+`faixas_reportadas`, as duas classes de taxa da regra 4. Os cortes de 30 e
+45 dias são os que o domínio já usa (`ResumoSemanal::DIAS_ALERTA_VERIFICACAO`
+e a constante de `TemFrescor`, regra 8); só o corte de 90 ("muito
+desatualizada") é novo, o dobro do prazo de degradação.
+
+**PHP não deixa acessar constante de trait pelo nome do trait**
+(`TemFrescor::DIAS_ATE_DEGRADAR` não compila) — só por uma classe que o usa;
+`FaixasDeFrescor` referencia `TaxaDivulgada::DIAS_ATE_DEGRADAR`.
+
+### 6. Tráfego
+
+`App\Support\Saude\ClienteAnalyticsCloudflare` consulta a GraphQL Analytics
+API da Cloudflare (`httpRequests1dGroups`, server-side — conta o que o
+servidor viu, não depende de consentimento de cookie, diferente do GA4 da
+etapa 12). A etapa 12 deixou DNS, SSL e regras da Cloudflare prontos, **mas
+não gerou o token da Analytics API** — conferido direto no `.env` de
+produção via SSH nesta etapa (`CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ZONE_ID`
+ausentes). Sem os dois, `TrafegoWidget` mostra o cartão vazio com o motivo à
+vista, nunca um número de visita inventado — exatamente o que o Everton
+pediu. Resposta cacheada 1h quando configurado.
+
+### Testando um widget lazy
+
+Todo `Filament\Widgets\Widget` é lazy por padrão (`CanBeLazy::$isLazy =
+true`): o dashboard renderiza um placeholder de carregamento no primeiro
+HTML, e o conteúdo real vem de um segundo request que o navegador dispara
+sozinho. `Livewire::test(Dashboard::class)` não dispara esse segundo
+request — só prova que o dashboard monta sem exceção de descoberta/registro.
+Para testar o **conteúdo** de um widget (`assertSee(...)`), o jeito que
+funciona é testar o widget diretamente como componente raiz —
+`Livewire::test(OperacaoWidget::class)` —, o que pula o wrapper lazy do
+schema da página. `tests/Feature/Admin/PainelDeSaudeTest.php` faz as duas
+coisas: um smoke test no dashboard inteiro, e um teste de conteúdo por
+widget.
 
 ## Pendente ao fim da etapa 05
 

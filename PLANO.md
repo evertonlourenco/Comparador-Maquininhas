@@ -61,6 +61,7 @@ por ele que o trabalho de dados acontece enquanto o site espera.
 - [x] **13** — Monitor de mudanças (pasta `monitor/`, projeto Node à parte; ver CLAUDE.md)
 - [x] **14** — Identidade visual e reforma da interface (Máquina Certa, 14/09/2026; ver CLAUDE.md)
 - [x] **15** — Imagens: logos de marca, equipamentos e bandeiras (14/09/2026; ver CLAUDE.md)
+- [x] **16** — Painel de saúde e observabilidade do administrador (15/09/2026; ver CLAUDE.md)
 
 ---
 
@@ -165,6 +166,14 @@ Também nesta etapa:
   próprio domínio (regra 9)
 
 ### 16 — Painel de saúde e observabilidade do administrador
+
+> **Concluída em 15/09/2026.** O registro do que foi feito e decidido está no
+> `CLAUDE.md`, seção "Painel de saúde do administrador (etapa 16)". O texto
+> abaixo fica como o planejamento que a orientou. Uma pendência real ficou:
+> o cron do `links:verificar` precisa ser criado no hPanel à mão (mesmo
+> motivo do cron do backup — não há `crontab` na linha de comando neste
+> servidor), e `BACKUP_LOG_PATH` precisa entrar no `.env` de produção para o
+> cartão de backup deixar de mostrar "sem dado".
 
 Um lugar só, no `/admin`, para responder "o site está bem?" sem abrir SSH nem
 hPanel. Parte disso já existe (`PainelInicial` soma três alertas operacionais);
