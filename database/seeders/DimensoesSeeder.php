@@ -63,6 +63,20 @@ class DimensoesSeeder extends Seeder
             [GrupoBandeira::PIX, 'Pix',
                 'Grupo técnico: o Pix não passa por bandeira. Existe para a taxa de Pix ter '
                 .'onde entrar sem tornar a coluna de grupo nula. Não agrupa bandeira nenhuma.'],
+            // Etapa 17: Yelly, SidePay e FacilityPay publicam Elo com percentual
+            // proprio, diferente de "demais bandeiras" - as duas series nao sao
+            // identicas nessas marcas, ao contrario de Ton/PagBank/InfinitePay/
+            // SumUp, onde Elo e Amex sempre saem iguais. Grupo novo, nao migration:
+            // e exatamente o caso que motivou grupo ser tabela.
+            ['elo', 'Elo',
+                'Usado só pelas marcas que publicam a Elo com percentual próprio, separado de '
+                .'"demais bandeiras" - a maioria agrupa as duas juntas.'],
+            // Etapa 17: Mercado Pago declara "a mesma taxa para todas as
+            // bandeiras" - nenhum dos grupos existentes serve porque nenhum
+            // representa "todas", so subconjuntos.
+            ['geral', 'Todas as bandeiras',
+                'Marca que publica um único percentual para qualquer bandeira aceita - não há '
+                .'tabela separada por grupo.'],
         ];
 
         foreach ($grupos as $ordem => [$codigo, $nome, $descricao]) {

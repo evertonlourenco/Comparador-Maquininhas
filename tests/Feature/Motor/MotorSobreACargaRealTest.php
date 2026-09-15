@@ -118,23 +118,23 @@ class MotorSobreACargaRealTest extends TestCase
     }
 
     /**
-     * A carga da etapa 04 nao registrou mensalidade de Ton nem de PagBank, e
-     * nao vinculou aparelho a plano em SumUp. O motor precisa dizer isso, e
-     * nao completar com zero - e esta e a lista que o painel tem de fechar
-     * antes de o comparador ir ao ar.
+     * Etapa 17 fechou a mensalidade de Ton/PagBank e o preco dos aparelhos da
+     * SumUp - mas o PagBank ainda tem um buraco real: o equipamento so esta
+     * vinculado ao plano "Super Max", nunca ao "Taxas iniciais", que e quem
+     * carrega as 74 taxas. O motor precisa dizer isso, e nao completar com
+     * zero.
      */
     public function test_o_que_falta_na_carga_aparece_como_falta_e_nao_como_zero(): void
     {
         $resultado = $this->calcular(10000.0);
 
-        $ton = collect($resultado['itens'])
-            ->where('marca.nome', 'Ton')
-            ->firstWhere('plano.tipo_enquadramento', 'automatico');
+        $pagbank = collect($resultado['itens'])
+            ->firstWhere('plano.nome', 'Taxas iniciais');
 
-        $this->assertSame(EstadoDoResultado::Incompleto->value, $ton['estado']);
-        $this->assertContains('mensalidade do plano', $ton['faltando']);
-        $this->assertArrayNotHasKey('total_mensal', $ton['custos']);
-        $this->assertArrayHasKey('total_mensal_parcial', $ton['custos']);
+        $this->assertSame(EstadoDoResultado::Incompleto->value, $pagbank['estado']);
+        $this->assertContains('equipamento vinculado a este plano', $pagbank['faltando']);
+        $this->assertArrayNotHasKey('total_mensal', $pagbank['custos']);
+        $this->assertArrayHasKey('total_mensal_parcial', $pagbank['custos']);
     }
 
     public function test_a_infinitepay_fecha_o_cenario_com_a_carga_atual(): void
@@ -190,7 +190,12 @@ class MotorSobreACargaRealTest extends TestCase
      */
     public function test_a_promocao_nao_ocupa_as_colunas_de_faixa_de_faturamento(): void
     {
-        $promocao = Plano::promocionais()->sole();
+        // Etapa 17: o Mercado Pago tambem ganhou plano promocional, entao
+        // "promocional" deixou de ser exclusividade do Ton - escopar por
+        // marca em vez de sole() sobre a tabela inteira.
+        $promocao = Plano::promocionais()
+            ->whereHas('marca', fn ($q) => $q->where('slug', 'ton'))
+            ->sole();
 
         $this->assertNull($promocao->faturamento_min);
         $this->assertNull($promocao->faturamento_max);
@@ -215,14 +220,6 @@ class MotorSobreACargaRealTest extends TestCase
 
         $this->assertSame(12, $item['adesao']['parcelas_oferecidas']);
         $this->assertSame('12x de R$ 16,58', $item['formatado']['adesao']['parcela_da_marca']);
-
-        // Ton nao declarou parcelamento: o campo fica nulo, nunca "à vista".
-        $ton = collect($this->calcular(10000.0)['itens'])
-            ->where('marca.nome', 'Ton')
-            ->firstWhere('plano.tipo_enquadramento', 'automatico');
-
-        $this->assertNull($ton['adesao']['parcelas_oferecidas']);
-        $this->assertNull($ton['formatado']['adesao']['parcela_da_marca']);
     }
 
     private function calcular(float $faturamento, ?string $hoje = null): array

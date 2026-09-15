@@ -46,6 +46,9 @@ class TonSeeder extends SeederDeMarca
                 'compromisso' => $dados['compromisso'] ?? null,
                 'promocional_dias' => $dados['promocional_dias'] ?? null,
                 'promocional_valor_processado' => $dados['promocional_valor_processado'] ?? null,
+                // Etapa 17, dito pelo Everton: o Ton nao cobra mensalidade -
+                // nao e campo nao lido (etapa 04), e zero confirmado.
+                'mensalidade' => 0,
                 'status' => StatusItem::Ativo,
                 'ordem' => $dados['ordem'],
             ]);
@@ -58,6 +61,22 @@ class TonSeeder extends SeederDeMarca
                     $this->serieDeCredito($planos[$slug], $grupo, $prazo, $credito, $fonte);
                 }
             }
+        }
+
+        // Etapa 17, dito pelo Everton (dono do domínio): o Pix do Ton é
+        // gratuito só quando o lojista cadastra a chave Pix no aplicativo -
+        // sem isso, cobra 0,49%. Regra do Everton para o par real/condição:
+        // o número que aparece na tela é o real (0,49%), e o 0% condicional
+        // vai na nota, colada nele (campo `condicao`, nunca `observacao`).
+        // Vale para todas as faixas, igual à leitura da InfinitePay na etapa 05.
+        $fontePix = $this->fonte(
+            self::URL,
+            condicao: 'Grátis (0%) quando o lojista cadastra a chave Pix no aplicativo Ton.',
+            dataVerificacao: '2026-09-15',
+        );
+
+        foreach ($planos as $plano) {
+            $this->pix($plano, PrazoRecebimento::NA_HORA, 0.49, $fontePix);
         }
 
         $this->equipamentos($marca->getKey(), $planos);
@@ -210,6 +229,9 @@ class TonSeeder extends SeederDeMarca
                         'preco_adesao' => $adesao,
                         'preco_adesao_promocional' => $promocional,
                         'aluguel_mensal' => null,
+                        // Etapa 17, dito pelo Everton: a adesao parcela em 12x
+                        // sem juros sobre o preco a vista, em todas as marcas.
+                        'parcelas_adesao' => 12,
                         'observacao' => 'Sem aluguel: o aparelho e comprado. Preco promocional vigente '
                             .'no site em 08/09/2026, com frete gratis.',
                         'status' => StatusItem::Ativo->value,

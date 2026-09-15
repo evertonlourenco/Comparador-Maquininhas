@@ -74,12 +74,19 @@ class MarcasSeeder extends Seeder
             [
                 'nome' => 'Mercado Pago', 'slug' => 'mercado-pago', 'adquirente' => 'mercado-pago',
                 'site' => 'https://www.mercadopago.com.br/ferramentas-para-vender/maquininhas-point',
-                'publica_tabela' => false, 'ordem' => 5,
-                'descricao' => 'A pagina publica traz apenas a taxa promocional dos primeiros 30 '
-                    .'dias. A tabela padrao varia por faturamento e so aparece no simulador dentro '
-                    .'da conta, atras de login - nao ha tabela publica para citar como fonte. '
-                    .'Aceita parcelamento em ate 18x e declara a mesma taxa para todas as bandeiras.',
-                'bandeiras' => [],
+                // Etapa 17: a tabela permanente continua so no simulador logado, mas a
+                // pagina publica da oferta de entrada (link de afiliado do Everton) tem
+                // taxa, prazo e validade declarados abertamente - da pra carregar como
+                // plano promocional (regra revisitada desde a etapa 05).
+                'publica_tabela' => true, 'ordem' => 5,
+                'descricao' => 'A tabela padrao varia por faturamento e so aparece no simulador '
+                    .'dentro da conta, atras de login - nao ha tabela permanente publica para citar '
+                    .'como fonte. A oferta de entrada, por outro lado, e publica: 30 dias ou R$ 5 mil '
+                    .'processados, o que vier antes. Aceita parcelamento em ate 18x e declara a mesma '
+                    .'taxa para todas as bandeiras.',
+                'bandeiras' => [
+                    ['geral', ['visa', 'mastercard', 'elo', 'american-express', 'vr', 'cabal', 'alelo', 'hiper']],
+                ],
             ],
             [
                 'nome' => 'Stone', 'slug' => 'stone', 'adquirente' => 'stone',

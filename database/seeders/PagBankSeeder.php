@@ -45,6 +45,8 @@ class PagBankSeeder extends SeederDeMarca
             'tipo_enquadramento' => TipoEnquadramento::Automatico,
             'compromisso' => 'Tabela de entrada, aplicada a quem ainda nao negociou condicao '
                 .'comercial. A propria pagina avisa que as taxas podem variar por negociacao.',
+            // Etapa 17, dito pelo Everton: o PagBank nao cobra mensalidade.
+            'mensalidade' => 0,
             'status' => StatusItem::Ativo,
             'ordem' => 0,
         ]);
@@ -109,6 +111,7 @@ class PagBankSeeder extends SeederDeMarca
         $this->plano($marca, 'Essencial', [
             'tipo_enquadramento' => TipoEnquadramento::Escolhido,
             'compromisso' => 'Sem minimo de vendas.',
+            'mensalidade' => 0,
             'status' => StatusItem::Ativo,
             'ordem' => 1,
         ]);
@@ -117,6 +120,7 @@ class PagBankSeeder extends SeederDeMarca
             'tipo_enquadramento' => TipoEnquadramento::Escolhido,
             'faturamento_min' => 2000,
             'compromisso' => 'Exige vendas acima de R$ 2.000 por mes.',
+            'mensalidade' => 0,
             'status' => StatusItem::Ativo,
             'ordem' => 2,
         ]);
@@ -160,6 +164,9 @@ class PagBankSeeder extends SeederDeMarca
                     'preco_adesao' => $adesao,
                     'preco_adesao_promocional' => $promocional,
                     'aluguel_mensal' => null,
+                    // Etapa 17, dito pelo Everton: adesao parcela em 12x sem
+                    // juros sobre o preco a vista, em todas as marcas.
+                    'parcelas_adesao' => 12,
                     'observacao' => 'Preco promocional vigente no site em 08/09/2026, com entrega '
                         .'gratis e 5 anos de garantia. Aparelho comprado, sem aluguel.',
                     'status' => StatusItem::Ativo->value,

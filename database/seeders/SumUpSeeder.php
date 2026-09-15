@@ -7,6 +7,7 @@ use App\Enums\TipoEnquadramento;
 use App\Enums\TipoEquipamento;
 use App\Models\Equipamento;
 use App\Models\GrupoBandeira;
+use App\Models\Plano;
 use App\Models\PrazoRecebimento;
 use Illuminate\Support\Str;
 
@@ -69,7 +70,21 @@ class SumUpSeeder extends SeederDeMarca
             }
         }
 
-        $this->equipamentos($marca->getKey());
+        // Etapa 17, dito pelo Everton: o Pix da SumUp é gratuito só quando
+        // recebido direto na conta SumUp Bank - fora dela, cobra 0,9%. Mesma
+        // regra da Ton: o número na tela é o real (0,9%), o 0% condicional
+        // vai colado em `condicao`.
+        $fontePix = $this->fonte(
+            self::URL,
+            condicao: 'Grátis (0%) quando recebido diretamente na conta SumUp Bank.',
+            dataVerificacao: '2026-09-15',
+        );
+
+        foreach ($planos as $plano) {
+            $this->pix($plano, PrazoRecebimento::NA_HORA, 0.9, $fontePix);
+        }
+
+        $this->equipamentos($marca->getKey(), $planos);
     }
 
     private function planos(): array
@@ -94,25 +109,29 @@ class SumUpSeeder extends SeederDeMarca
     }
 
     /**
-     * Sem linha em equipamento_plano: a pagina de maquininhas so publica o
-     * valor da parcela, sem preco a vista, e um deles aparece com dois valores
-     * de parcela sem dizer qual e o vigente. Multiplicar parcela por 12 daria
-     * um numero que a marca nao publicou. Regra 6: preco fica em branco ate
-     * alguem conferir - o painel permite completar sem mexer em codigo.
+     * Etapa 17: o Everton confirmou os precos a vista (Smart R$ 190,80, Solo
+     * R$ 58,80, Top R$ 46,80) e que a adesao parcela em 12x sem juros, iguais
+     * nos tres planos - a pagina de maquininhas so publicava a parcela, as
+     * vezes ambigua entre dois valores, e por isso a etapa 04 deixou o preco
+     * em branco. Sem URL publica para citar como fonte (info passada
+     * diretamente pelo Everton, dono do afiliado); regra 6 vale para taxa, e
+     * preco de aparelho nao tem coluna de fonte no schema (equipamento_plano).
+     *
+     * @param  array<string, Plano>  $planos
      */
-    private function equipamentos(int $marcaId): void
+    private function equipamentos(int $marcaId, array $planos): void
     {
         $aparelhos = [
             ['Top', TipoEquipamento::PinPad, 'Conecta ao celular por Bluetooth. Pagamento por aproximacao e comprovante digital.',
-                ['chip' => false, 'imprime' => false, 'nfc' => true, 'celular' => true], 0],
+                ['chip' => false, 'imprime' => false, 'nfc' => true, 'celular' => true], 46.80, 0],
             ['Solo', TipoEquipamento::Pos, 'Wi-Fi e chip 4G ilimitado, base carregadora, Pix por QR Code e comprovante digital.',
-                ['chip' => true, 'imprime' => false, 'nfc' => true, 'celular' => false], 1],
+                ['chip' => true, 'imprime' => false, 'nfc' => true, 'celular' => false], 58.80, 1],
             ['SumUp Smart', TipoEquipamento::Smart, 'Wi-Fi e chip 4G ilimitado, impressao de comprovantes e relatorios, catalogo e estoque.',
-                ['chip' => true, 'imprime' => true, 'nfc' => true, 'celular' => false], 2],
+                ['chip' => true, 'imprime' => true, 'nfc' => true, 'celular' => false], 190.80, 2],
         ];
 
-        foreach ($aparelhos as [$nome, $tipo, $descricao, $flags, $ordem]) {
-            Equipamento::updateOrCreate(
+        foreach ($aparelhos as [$nome, $tipo, $descricao, $flags, $adesao, $ordem]) {
+            $equipamento = Equipamento::updateOrCreate(
                 ['marca_id' => $marcaId, 'slug' => Str::slug($nome)],
                 [
                     'nome' => $nome,
@@ -126,6 +145,20 @@ class SumUpSeeder extends SeederDeMarca
                     'ordem' => $ordem,
                 ],
             );
+
+            foreach ($planos as $plano) {
+                $equipamento->planos()->syncWithoutDetaching([
+                    $plano->getKey() => [
+                        'preco_adesao' => $adesao,
+                        'preco_adesao_promocional' => null,
+                        'aluguel_mensal' => null,
+                        'parcelas_adesao' => 12,
+                        'observacao' => 'Preco confirmado pelo Everton em 15/09/2026 (etapa 17): sem '
+                            .'aluguel, aparelho comprado, mesmo preco nos tres planos.',
+                        'status' => StatusItem::Ativo->value,
+                    ],
+                ]);
+            }
         }
     }
 }

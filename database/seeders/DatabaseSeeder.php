@@ -31,6 +31,8 @@ class DatabaseSeeder extends Seeder
             InfinitePaySeeder::class,
             TonSeeder::class,
             SumUpSeeder::class,
+            MercadoPagoSeeder::class,
+            CuponsAfiliadoSeeder::class,
         ]);
 
         $this->usuarioLocal();

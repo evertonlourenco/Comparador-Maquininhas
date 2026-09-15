@@ -57,11 +57,12 @@ abstract class SeederDeMarca extends Seeder
         ?string $observacao = null,
         FonteTipo $tipo = FonteTipo::SiteOficial,
         ?string $condicao = null,
+        ?string $dataVerificacao = null,
     ): array {
         return [
             'url_fonte' => $url,
             'fonte_tipo' => $tipo,
-            'data_verificacao' => self::VERIFICADO_EM,
+            'data_verificacao' => $dataVerificacao ?? self::VERIFICADO_EM,
             'status' => StatusPublicacao::Rascunho,
             'observacao' => $observacao,
             'condicao' => $condicao,
