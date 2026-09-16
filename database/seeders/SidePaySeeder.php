@@ -10,7 +10,6 @@ use App\Models\GrupoBandeira;
 use App\Models\Marca;
 use App\Models\Plano;
 use App\Models\PrazoRecebimento;
-use App\Models\TaxaDivulgada;
 use App\Support\Uploads\ImagemSeguraWebp;
 use Illuminate\Support\Str;
 
@@ -19,15 +18,26 @@ use Illuminate\Support\Str;
  * Completada com screenshots do Everton no mesmo dia, cobrindo o toggle
  * "Receba na hora" que a primeira leitura (scrape de texto) não capturou.
  *
- * Correção sobre a primeira leitura desta mesma etapa: a SidePay tem só
- * DOIS grupos de bandeira, não três - a segunda coluna da tabela dela é
- * "Elo + Outros" (rótulo literal na tela), não "Elo" isolada como a Yelly
+ * Correção sobre a primeira leitura desta mesma etapa (15/09/2026): a SidePay
+ * tem só DOIS grupos de bandeira, não três - a segunda coluna da tabela dela
+ * é "Elo + Outros" (rótulo literal na tela), não "Elo" isolada como a Yelly
  * publica. A primeira leitura tinha gravado no grupo `elo`, o que mostraria
  * ao lojista "essa taxa vale só pra Elo" quando na verdade vale pra Elo E
  * qualquer outra bandeira fora Visa/Master - achado pelo Everton batendo o
- * olho no formulário do admin. Por isso os dois planos entram gravados do
- * zero: qualquer taxa antiga gravada sob o grupo errado (`elo`) é apagada
- * antes.
+ * olho no formulário do admin.
+ *
+ * **Achado real em produção em 16/09/2026:** a correção original limpava as
+ * taxas erradas com um `DELETE` incondicional no início deste `run()` - até
+ * aqui certo, porque era limpeza de um bug pontual daquele dia. O problema é
+ * que o `DELETE` ficou incondicional para SEMPRE, então qualquer reseed
+ * seguinte (como o que trouxe o catálogo de equipamentos, nesta mesma sessão)
+ * apagava as 78 taxas já aprovadas no painel e recriava tudo do zero como
+ * `rascunho` (padrão de `fonte()`, regra 10) - derrubando a SidePay do JSON
+ * público (`comparador:gerar-json` some com a marca sem taxa publicada) sem
+ * nenhum aviso. Confirmado sem taxa nenhuma da SidePay sobrando no grupo
+ * `elo` antes de remover o bloco - a limpeza já não tem mais nada para
+ * limpar, então sai daqui. Se precisar limpar de novo por outro motivo,
+ * fazer manualmente uma vez, nunca de volta para o `run()`.
  *
  * Mesma adquirente da Yelly e da FacilityPay (o PagSeguro/PagBank, dito
  * pelo Everton) - os números do plano D+1 batem idênticos aos da Yelly
@@ -40,13 +50,6 @@ class SidePaySeeder extends SeederDeMarca
     public function run(): void
     {
         $marca = $this->marca('sidepay');
-
-        // Limpa qualquer taxa gravada na primeira leitura desta etapa, que
-        // usou o grupo `elo` errado para a segunda coluna (ver comentário
-        // da classe) - evita deixar lixo de taxa órfã sob o grupo errado.
-        TaxaDivulgada::query()
-            ->whereHas('plano', fn ($q) => $q->where('marca_id', $marca->getKey()))
-            ->delete();
 
         $fonte = $this->fonte(
             self::URL,
