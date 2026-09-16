@@ -380,6 +380,22 @@ valor da parcela, e num dos modelos com dois valores sem dizer qual vigora.
   do ajuste: 6 planos, 209 taxas, sem duplicar — e uma taxa marcada
   "publicado" à mão continuou "publicado" depois do reseed (a proteção da
   etapa 17 contra reseed desfazendo aprovação, conferida de novo aqui).
+
+  **Aconteceu na prática, em produção, no mesmo dia:** o ajuste de slug
+  acima só foi aplicado no banco local antes de rodar o seeder — production
+  tem banco próprio, separado, e o `deploy.sh` nunca roda `db:seed` (carga
+  é sempre manual, de propósito). Rodar o seeder em produção sem primeiro
+  corrigir o slug lá criou um "Super Max — até R$ 2.000" **duplicado**
+  (plano novo com as 27 taxas certas, o antigo "Super Max" órfão do lado).
+  Corrigir isso pediu `forceDelete()`, não `delete()`: `Plano` usa
+  `SoftDeletes`, então um `delete()` comum só marca `deleted_at` e a linha
+  continua ocupando o índice único `(marca_id, slug)` — a primeira tentativa
+  de corrigir bateu de frente nisso (`Duplicate entry` no slug que a linha
+  soft-deletada ainda segurava), mas como estava dentro de `DB::transaction`
+  o rollback foi automático e limpo, sem sujar nada pela metade. **Lição:**
+  ajuste de dado que um seeder depende (slug, principalmente) precisa ser
+  replicado em todo banco onde o seeder vai rodar, produção incluída - e
+  apagar um `Plano` de verdade (não só soft-delete) exige `forceDelete()`.
 - **Voucher: nenhuma taxa.** Ton e SumUp aceitam vale-refeição (vinculados no
   pivot, no grupo `voucher`), mas nenhuma das duas publica o percentual. O
   PagBank diz explicitamente que voucher é negociado com a bandeira.
