@@ -2741,6 +2741,18 @@ antes de recarregar, pra não deixar lixo órfão.
 dele lá nem abriu ainda, e o campo virou opcional nesta etapa exatamente por
 isso.
 
+**O mesmo vale para o aparelho, não só o adquirente** (confirmado pelo
+Everton em 16/09/2026): FacilityPay, SidePay e Yelly vendem maquininha
+fornecida pela PagBank por trás — fisicamente o mesmo hardware, com marca
+própria de cada revendedora na carcaça e na tela. Isso não significa que o
+catálogo de equipamentos daqui deva copiar o nome/ficha técnica do PagBank:
+cada marca publica o próprio nome comercial (ex.: "Facility Pro" da
+FacilityPay é, na prática, o mesmo aparelho de uma das Moderninhas do
+catálogo do PagBank) e a própria ficha técnica, que é o que vai no
+catálogo — mas **quando faltar detalhe técnico que a página da revendedora
+não deixa claro, a página de equipamentos do PagBank é uma fonte legítima
+para tirar a dúvida**, exatamente por ser o mesmo hardware.
+
 **Cupons reais cadastrados**, todos incidindo sobre a adesão de qualquer
 maquininha da marca (nunca um equipamento específico — dito pelo Everton
 "assim como de todas as demais"), sem `equipamento_id`:
