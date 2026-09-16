@@ -2109,6 +2109,64 @@ repositório do monitor — só falta confirmar quais fontes precisam disso.
   também ganhou uma segunda tentativa em HTTP 503/429, que apareceu de
   verdade no teste (sobrecarga passageira do modelo gratuito do Google).
 
+### Duas falhas reais em produção, achadas em 16/09/2026 — nenhuma delas era o link da Yelly
+
+O `monitor-diario.yml` (categoria `equipamento_cupom`) falhou nas suas duas
+primeiras execuções agendadas (15/09 e 16/09). O diagnóstico inicial, feito
+só pelos "Annotations" da tela de resumo da Action (sem login no GitHub,
+que não mostra o log completo pra quem não está autenticado), apontou o
+link de cupom da Yelly como fora do ar (`HTTP 404`) — **errado**: o Everton
+confirmou abrindo a URL no próprio navegador que ela funciona normalmente,
+e insistir nisso sem o log de verdade quase virou correção do problema
+errado. **Lição que vale além deste bug: antes de diagnosticar uma falha de
+CI só pelas annotations, pedir pra quem tem acesso ao repositório abrir o
+log completo do passo que falhou** — o resumo trunca exatamente o tipo de
+informação (a mensagem de erro real, o passo específico) que muda o
+diagnóstico.
+
+**Causa real, achada só depois que o Everton colou o log expandido:** os
+quatro workflows (`monitor-diario`, `monitor-bissemanal`, `monitor-semanal`,
+`monitor-resumo-semanal`) liam `secrets.MONITOR_API_URL`/
+`secrets.MONITOR_API_TOKEN`, mas os secrets no repositório do GitHub existem
+com outro nome — `PORTAL_API_URL` e `COLETA_TOKEN` (visto direto na tela
+Settings → Secrets and variables → Actions). **Isso contradiz o que este
+mesmo arquivo registrava desde 14/09/2026** (bloco logo acima, "Todos os
+cinco secrets já foram gerados e conferidos") — o "conferido" da etapa 13
+validou que o *valor* do token batia dos dois lados (o `POST` respondeu
+200), mas aparentemente nunca conferiu o *nome literal* do secret no
+GitHub contra o nome que `src/config.mjs` exige. Resultado: desde que esses
+workflows foram criados, `carregarConfig()` falhava direto em
+`obrigatoria('MONITOR_API_URL')`, **antes de checar qualquer fonte** — a
+"falha" da Yelly nunca chegou a acontecer de verdade nessas duas execuções,
+porque o script morria antes de chegar nela. Corrigido trocando só o lado
+direito do `env:` nos quatro `.yml` (`secrets.PORTAL_API_URL`,
+`secrets.COLETA_TOKEN`), sem tocar no nome da variável que o script recebe
+— então `src/config.mjs` não mudou. **Não renomeie os secrets no GitHub sem
+atualizar os quatro workflows junto**, e vice-versa.
+
+**A causa real da Yelly, uma vez que o script passou a rodar de verdade:**
+o checkout dela virou um app React renderizado no cliente, e o CloudFront/S3
+que serve o site devolve HTTP 404 pra essa URL mesmo entregando o HTML/JS
+reais, que funcionam certinho no navegador (confirmado batendo o coletor
+via Playwright contra a mesma URL — texto renderizado idêntico ao que o
+Everton viu, status 404 nos dois). É config malfeita do lado da Yelly
+(erro customizado do CloudFront sem sobrescrever o status pra 200, como o
+padrão de SPA pede), fora do nosso controle. `yelly-equipamento-cupom` em
+`fontes.json` ganhou `requer_navegador: true` (um fetch simples só pegava a
+casca vazia da SPA) e a flag nova `ignora_status_http: true`, que faz
+`src/coletor.mjs` (nas duas vias, fetch e navegador) não tratar esse status
+como falha automática — o sinal de bloqueio por conteúdo (`pareceBloqueado`)
+continua valendo como rede de segurança. Documentado com mais detalhe em
+`monitor/README.md`.
+
+**Verificado de ponta a ponta, não só na teoria:** depois das duas
+correções, uma execução manual (`workflow_dispatch`) do `monitor-diario`
+terminou em `Success` (1m14s) e gerou o **primeiro commit `estado(monitor):
+...` que esse mecanismo já produziu** (`3fceebc`, 8 arquivos novos em
+`monitor/estado/`) — a persistência de estado entre execuções, desenhada na
+etapa 13, nunca tinha rodado de verdade em produção até este dia, porque
+todas as execuções anteriores morriam antes de escrever qualquer arquivo.
+
 ## Identidade visual Máquina Certa (etapa 14)
 
 A fonte é o manual de marca, versionado em `id_visual/`:
