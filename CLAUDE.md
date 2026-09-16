@@ -2820,6 +2820,52 @@ prazo `d_30`/`parcela_a_parcela`): PagBank "Taxas iniciais", InfinitePay
 - Faixas reportadas de Cielo/Rede/GetNet/Stone: zero relatos captados até
   agora (0 propostas, 0 relatos pendentes no painel).
 
+### Catálogo de equipamentos da SidePay, e um bug real de reseed achado em 16/09/2026
+
+Sessão fora da numeração do plano, a pedido do Everton: catálogo de
+equipamentos (Mini, Pro, Smart) lido em `sidepay.com.br/maquininhas`, mesmo
+padrão do `FacilityPaySeeder` — fotos PNG originais baixadas do próprio site
+(`Mini-Plus-SidePay-Transparente.png`, `Pro-SidePay-Transp.png`,
+`Smart-SidePay-Transp.png`, todas em `wp-content/uploads/2025/12/`), não os
+prints que o Everton anexou. Confirmado que as fotos baixadas batem
+pixel a pixel com os anexos dele.
+
+O `De:`/`por` de cada aparelho é igual nos dois toggles de taxa
+("Receba em 1 dia" / "Receba na hora"): `preco_adesao` (o cheio riscado)
+não muda, só `preco_adesao_promocional` — mais barato em "Receba na hora"
+(Mini R$ 97, Pro R$ 197, Smart R$ 297) do que em "Receba em 1 dia" (Mini
+R$ 147, Pro R$ 247, Smart R$ 347), o mesmo trade-off adesão × taxa mensal
+já visto na FacilityPay. `parcelas_adesao = 12` (parcela sem juros, como
+toda marca já cadastrada).
+
+**Achado real em produção, ao rodar o `SidePaySeeder` de novo para trazer
+esse catálogo:** a correção da etapa 17 (grupo de bandeira `elo` → `demais`)
+tinha deixado um `TaxaDivulgada::query()->...->delete()` **incondicional**
+no início do `run()` — certo para aquele dia, mas ele nunca foi removido, e
+qualquer reseed seguinte da SidePay apaga as taxas já aprovadas no painel e
+recria tudo do zero como `rascunho` (regra 10). Isso derrubou a marca do
+JSON público em produção sem aviso nenhum — só notado porque
+`comparador:gerar-json` passou a listar "SidePay" em "sem taxa nem faixa" e
+o total caiu de 1.025 para 947. Confirmado que não sobrava nenhuma taxa da
+SidePay no grupo `elo` (a correção original já estava plenamente
+persistida), então a limpeza não tinha mais função nenhuma — só risco.
+Removido o bloco, as 78 taxas restauradas para `publicado` manualmente
+(local e produção, mesmos valores de antes, sem dado novo aprovado às
+pressas) e o JSON gerado de novo confirmando 1.025 taxas.
+
+**Why:** todo `SeederDeMarca::taxa()`/`plano()` já preserva status numa chave
+que já existe — a armadilha era o `DELETE` prévio apagar a chave antes desse
+`updateOrCreate` rodar, então a proteção normal nunca chegava a entrar em
+ação. Um `DELETE` de limpeza pontual dentro de um seeder que roda de novo a
+cada carga futura é, por definição, permanente — se algum dia precisar
+limpar de novo por outro motivo, fazer uma vez só, fora do `run()`.
+
+**How to apply:** antes de rodar qualquer seeder de marca já existente em
+produção (para trazer equipamento novo, corrigir taxa etc.), ler o `run()`
+inteiro em busca de `delete()`/`query()->delete()` sem guarda — se existir,
+confirmar que ainda tem função (taxa órfã real) antes de rodar, e considerar
+remover se a correção que ele fazia já está persistida há tempo.
+
 ## Pendente ao fim da etapa 05
 
 O motor está pronto e testado, mas ele é honesto sobre o que não sabe — e isso
