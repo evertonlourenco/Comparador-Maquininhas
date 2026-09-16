@@ -337,11 +337,49 @@ valor da parcela, e num dos modelos com dois valores sem dizer qual vigora.
   nos campos de tarifa do plano. Ton e SumUp continuam sem linha de Pix porque
   a etapa 04 não registrou percentual verificado para elas — agora é um clique
   no painel, não mais um bloqueio.
-- **PagBank: os planos Essencial e Super Max entraram sem taxa.** A página que
-  os publica dá percentual sem dizer prazo de recebimento nem grupo de
-  bandeiras — faltam duas das cinco dimensões da chave da regra 1. As taxas do
-  PagBank vêm todas da página Taxas e Tarifas, que é dimensional, e ficam no
-  plano "Taxas iniciais", nome que é o que a própria página usa.
+- ~~**PagBank: os planos Essencial e Super Max entraram sem taxa.**~~
+  **Resolvido em 16/09/2026:** a página "Taxas e Planos" (`URL_PLANOS`) só dá
+  percentual solto, sem prazo nem grupo de bandeiras — mas o simulador de
+  taxas na própria home da PagBank (`pagbank.com.br`) abre a tabela
+  dimensional completa por plano, com alternador "período promocional" /
+  "após o período promocional" (e, no Super Max, mais um alternador por
+  faixa de faturamento). O Everton mandou os prints desse simulador; daí
+  veio a carga real. As taxas do PagBank continuam vindo em dois lugares:
+  a página Taxas e Tarifas alimenta o plano "Taxas iniciais" (automático,
+  dimensional desde a carga original), e o simulador da home alimenta
+  Essencial e Super Max (`PagBankSeeder::planosComerciais()`).
+
+  **Cada plano comercial virou dois ou três planos**, seguindo a regra 3 (a
+  oferta de entrada nunca é coluna a mais no plano permanente, é um `Plano`
+  `promocional` à parte):
+  - `Essencial` (permanente, `escolhido`) + `Essencial — período
+    promocional` (`promocional`, 30 dias ou R$ 1.500 processados,
+    `promocional_sucessor_id` apontando de volta pro Essencial permanente —
+    aqui dá pra declarar um sucessor único porque não há faixa de
+    faturamento envolvida).
+  - `Super Max — até R$ 2.000` e `Super Max — acima de R$ 2.000`
+    (permanentes, `automático`, faixas de faturamento — o antigo plano
+    único "Super Max", `escolhido`, foi renomeado/reclassificado pra virar
+    a faixa "até R$ 2.000") + `Super Max — período promocional`
+    (`promocional`, 30 dias ou R$ 5.000 processados, **sem**
+    `promocional_sucessor_id` — depois da promoção o lojista cai na faixa
+    automática que bater com o faturamento dele, não num plano único).
+  - Só o prazo "na hora" é publicado nessas telas — nenhum D+1/D+30
+    declarado pra Essencial/Super Max.
+  - Preço de aparelho (`equipamento_plano`) segue vinculado às duas faixas
+    permanentes do Super Max (`até` e `acima de R$ 2.000`) — é a mesma
+    compra de hardware, só a taxa pós-promoção muda com o faturamento.
+
+  **Achado no processo, cuidado pra próxima vez que um `nome` de plano
+  mudar num seeder:** a chave do `updateOrCreate` em `SeederDeMarca::plano()`
+  é `[marca_id, slug]`, e o `slug` é derivado do `nome` via `Str::slug()` —
+  então trocar o `nome` passado ao seeder sem também corrigir o `slug` já
+  gravado no banco (se o registro tiver sido criado por fora, como aconteceu
+  aqui) faz o próximo `db:seed` criar um plano **duplicado** em vez de
+  atualizar o existente. Testado rodando o seeder duas vezes seguidas depois
+  do ajuste: 6 planos, 209 taxas, sem duplicar — e uma taxa marcada
+  "publicado" à mão continuou "publicado" depois do reseed (a proteção da
+  etapa 17 contra reseed desfazendo aprovação, conferida de novo aqui).
 - **Voucher: nenhuma taxa.** Ton e SumUp aceitam vale-refeição (vinculados no
   pivot, no grupo `voucher`), mas nenhuma das duas publica o percentual. O
   PagBank diz explicitamente que voucher é negociado com a bandeira.
