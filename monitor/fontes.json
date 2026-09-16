@@ -162,10 +162,11 @@
     "categoria": "equipamento_cupom",
     "url": "https://checkout.yelly.com.br/monetizando/?cupom=AFILIADOS10",
     "tipo_conteudo": "html",
-    "requer_navegador": false,
+    "requer_navegador": true,
+    "ignora_status_http": true,
     "roda_no_mac": false,
     "ativo": true,
-    "observacao": "Ativado em 15/09/2026 (etapa 17): a marca ja existe na tabela marcas."
+    "observacao": "Ativado em 15/09/2026 (etapa 17). Corrigido em 16/09/2026: a Yelly redesenhou o checkout para um app React renderizado no cliente - um fetch simples so pega a casca vazia (<div id=\"root\">), por isso requer_navegador passou a true. Alem disso, o CloudFront/S3 da Yelly devolve HTTP 404 (x-amz-error-code: NoSuchKey em 'monetizando/index.html') mesmo servindo o HTML real do app, que roda e mostra os planos normalmente no navegador - confirmado batendo o Everton acessando a URL de verdade contra o coletor via Playwright (mesmo texto renderizado, status 404 nos dois). Isso e config da Yelly, fora do nosso controle; ignora_status_http avisa o coletor para nao tratar esse 404 especifico como falha, mantendo o sinal de bloqueio por conteudo (pareceBloqueado) como rede de seguranca."
   },
   {
     "id": "sidepay-equipamento-cupom",

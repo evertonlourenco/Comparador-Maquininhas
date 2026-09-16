@@ -23,7 +23,7 @@ function pareceBloqueado(texto, status) {
   return SINAIS_DE_BLOQUEIO.some((sinal) => amostra.includes(sinal));
 }
 
-async function coletarViaFetch(url) {
+async function coletarViaFetch(url, { ignoraStatusHttp = false } = {}) {
   const controle = new AbortController();
   const timeout = setTimeout(() => controle.abort(), TIMEOUT_MS);
 
@@ -40,7 +40,7 @@ async function coletarViaFetch(url) {
     clearTimeout(timeout);
   }
 
-  if (!resposta.ok && resposta.status !== 304) {
+  if (!resposta.ok && resposta.status !== 304 && !ignoraStatusHttp) {
     throw new ErroDeColeta(`HTTP ${resposta.status} ao buscar ${url}`);
   }
 
@@ -65,7 +65,7 @@ async function coletarViaFetch(url) {
   });
 }
 
-async function coletarViaNavegador(url) {
+async function coletarViaNavegador(url, { ignoraStatusHttp = false } = {}) {
   // Import tardio: so paga o custo de carregar o Playwright quando alguma
   // fonte realmente precisa de JavaScript renderizado.
   const { chromium } = await import('playwright');
@@ -91,7 +91,7 @@ async function coletarViaNavegador(url) {
       );
     }
 
-    if (status >= 400) {
+    if (status >= 400 && !ignoraStatusHttp) {
       throw new ErroDeColeta(`HTTP ${status} ao renderizar ${url}`);
     }
 
@@ -136,17 +136,28 @@ async function coletarPdf(url) {
  * ErroDeColeta em qualquer falha — inclusive quando o conteudo parece um
  * desafio de Cloudflare/Akamai em vez da pagina de verdade, porque isso e
  * exatamente o tipo de falha que nao pode passar em silencio.
+ *
+ * `fonte.ignora_status_http` e a excecao a essa regra, para um caso real
+ * (Yelly, achado em 16/09/2026): o CloudFront/S3 dela devolve HTTP 404
+ * (custom error response sem sobrescrever o status, comum em SPA mal
+ * configurada) mesmo servindo a pagina real, que roda e mostra os planos
+ * normalmente no navegador. Com a flag, o status HTTP e ignorado e so o
+ * sinal de bloqueio por conteudo (pareceBloqueado) continua valendo como
+ * rede de seguranca - nao deve ser usada por padrao, so quando um caso
+ * assim for confirmado batendo o coletor contra o navegador de verdade.
  */
 export async function coletar(fonte) {
+  const opcoes = { ignoraStatusHttp: fonte.ignora_status_http === true };
+
   if (fonte.tipo_conteudo === 'pdf') {
     return coletarPdf(fonte.url);
   }
 
   if (fonte.requer_navegador) {
-    return coletarViaNavegador(fonte.url);
+    return coletarViaNavegador(fonte.url, opcoes);
   }
 
-  return coletarViaFetch(fonte.url);
+  return coletarViaFetch(fonte.url, opcoes);
 }
 
 export { ErroDeColeta };

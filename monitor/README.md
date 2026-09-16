@@ -127,6 +127,30 @@ rodar-fontes-bloqueadas.sh` — ver instruções no próprio script para
 agendar no `crontab` do Mac. O mecanismo já está pronto neste repositório;
 só falta confirmar, na prática, quais fontes precisam dele.
 
+### `ignora_status_http` — quando o status HTTP mente
+
+Achado em 16/09/2026: o `yelly-equipamento-cupom` começou a falhar todo dia
+(`HTTP 404 ao buscar/renderizar`), mas o Everton confirmou abrindo a URL no
+próprio navegador que a página funciona normalmente. A causa: a Yelly
+redesenhou o checkout como um app React renderizado no cliente (por isso
+`requer_navegador` também virou `true` nessa fonte — um fetch simples só
+pega a casca `<div id="root">` vazia), **e** o CloudFront/S3 dela devolve
+HTTP 404 (`x-amz-error-code: NoSuchKey` para `monetizando/index.html`) mesmo
+servindo o HTML/JS reais, que rodam e mostram os planos certinho no
+navegador — uma SPA mal configurada, sem status sobrescrito na resposta de
+erro customizada do CloudFront. Confirmado batendo o coletor via Playwright
+contra a mesma URL: texto renderizado idêntico ao que o navegador mostra,
+status 404 nos dois.
+
+Isso é do lado da Yelly, fora do nosso controle — não é uma fonte quebrada
+de verdade. `fonte.ignora_status_http: true` avisa `src/coletor.mjs` (nas
+duas vias, fetch simples e via navegador) para não tratar esse status como
+falha automática; o sinal de bloqueio por conteúdo (`pareceBloqueado`, que
+olha o texto da resposta, não o status) continua valendo como rede de
+segurança contra desafio de verdade. **Não é o padrão** — só ligue para uma
+fonte específica depois de confirmar, como aqui, que o navegador de verdade
+mostra a página funcionando apesar do status.
+
 ## Configuração necessária (secrets)
 
 No **mesmo** repositório do GitHub do app Laravel (Settings → Secrets and
