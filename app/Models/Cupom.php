@@ -26,6 +26,7 @@ use Illuminate\Support\Carbon;
     'tipo_desconto', 'incide_sobre', 'valor',
     'valido_de', 'valido_ate', 'link_afiliado', 'termos', 'status', 'ordem',
     'link_ultimo_status', 'link_ultima_falha', 'link_quebrado', 'link_verificado_em',
+    'link_confirmado_manualmente',
 ])]
 class Cupom extends Model
 {
@@ -41,6 +42,7 @@ class Cupom extends Model
             'ordem' => 'integer',
             'link_quebrado' => 'boolean',
             'link_verificado_em' => 'datetime',
+            'link_confirmado_manualmente' => 'boolean',
         ];
     }
 

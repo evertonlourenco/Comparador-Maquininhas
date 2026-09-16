@@ -61,7 +61,18 @@ class VerificarLinksAfiliados extends Command
 
         [$status, $falha] = $this->checar($url);
 
-        $quebrado = $falha !== null || $status === null || $status >= 400;
+        $pareceQuebrado = $falha !== null || $status === null || $status >= 400;
+
+        // Achado em 16/09/2026 (Yelly): alguns sites devolvem status HTTP de
+        // erro mesmo funcionando de verdade no navegador (SPA com resposta
+        // de erro customizada mal configurada, sem sobrescrever o status
+        // para 200). Este comando só enxerga o status HTTP - sem o "sinal de
+        // bloqueio por conteúdo" que o monitor de mudanças tem - então não
+        // tem como distinguir isso sozinho. `link_confirmado_manualmente` é
+        // a confirmação de um humano que já abriu o link. O status HTTP real
+        // continua gravado normalmente; só o alerta de "quebrado" é que para
+        // de disparar para esse registro.
+        $quebrado = $pareceQuebrado && ! $registro->link_confirmado_manualmente;
 
         $registro->forceFill([
             'link_ultimo_status' => $status,
@@ -72,6 +83,8 @@ class VerificarLinksAfiliados extends Command
 
         if ($quebrado) {
             $this->warn("QUEBRADO [{$registro->getTable()}#{$registro->id}] {$url} — ".($falha ?? "HTTP {$status}"));
+        } elseif ($pareceQuebrado) {
+            $this->line("<comment>CONFIRMADO MANUALMENTE apesar do status</comment> [{$registro->getTable()}#{$registro->id}] {$url} — ".($falha ?? "HTTP {$status}"));
         }
 
         return $quebrado;

@@ -102,6 +102,69 @@ class VerificarLinksAfiliadosTest extends TestCase
         $this->assertSame(500, $cupom->link_ultimo_status);
     }
 
+    /**
+     * Achado em 16/09/2026 (Yelly): o CloudFront/S3 dela devolve HTTP 404
+     * pra URL do cupom mesmo servindo a página real, que funciona no
+     * navegador. `link_confirmado_manualmente` é a válvula de escape - o
+     * comando continua gravando o status HTTP real, só para de reportar
+     * "quebrado".
+     */
+    public function test_link_confirmado_manualmente_nao_fica_marcado_como_quebrado_mesmo_com_404(): void
+    {
+        Http::fake(['https://confirmado.test/cupom' => Http::response('', 404)]);
+
+        $marca = Marca::create([
+            'adquirente_id' => $this->criarAdquirente()->id,
+            'nome' => 'Marca Confirmada',
+            'slug' => 'marca-confirmada',
+            'publica_tabela' => true,
+            'status' => StatusMarca::Ativa,
+        ]);
+
+        $cupom = Cupom::create([
+            'marca_id' => $marca->id,
+            'codigo' => 'CONFIRMADO',
+            'tipo_desconto' => TipoDesconto::Valor,
+            'incide_sobre' => IncideSobre::Adesao,
+            'valor' => 10,
+            'valido_de' => Carbon::today()->subDay(),
+            'valido_ate' => Carbon::today()->addDays(10),
+            'link_afiliado' => 'https://confirmado.test/cupom',
+            'link_confirmado_manualmente' => true,
+            'status' => StatusItem::Ativo,
+        ]);
+
+        $this->artisan('links:verificar')->assertExitCode(0);
+
+        $cupom->refresh();
+
+        $this->assertFalse($cupom->link_quebrado);
+        $this->assertSame(404, $cupom->link_ultimo_status, 'o status real continua gravado, só o alerta de quebrado para');
+    }
+
+    /** A mesma válvula de escape vale para o site_url da marca. */
+    public function test_marca_com_link_confirmado_manualmente_nao_fica_marcada_como_quebrada(): void
+    {
+        Http::fake(['https://confirmado.test/marca' => Http::response('', 404)]);
+
+        $marca = Marca::create([
+            'adquirente_id' => $this->criarAdquirente()->id,
+            'nome' => 'Marca Confirmada Site',
+            'slug' => 'marca-confirmada-site',
+            'site_url' => 'https://confirmado.test/marca',
+            'link_confirmado_manualmente' => true,
+            'publica_tabela' => true,
+            'status' => StatusMarca::Ativa,
+        ]);
+
+        $this->artisan('links:verificar')->assertExitCode(0);
+
+        $marca->refresh();
+
+        $this->assertFalse($marca->link_quebrado);
+        $this->assertSame(404, $marca->link_ultimo_status);
+    }
+
     /** HEAD sem suporte (405) tem que cair para GET antes de decidir. */
     public function test_405_em_head_tenta_get_antes_de_marcar_quebrado(): void
     {

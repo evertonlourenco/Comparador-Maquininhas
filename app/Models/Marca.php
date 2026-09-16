@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Storage;
     'reclame_aqui_nota', 'reclame_aqui_url', 'reclame_aqui_consultado_em',
     'publica_tabela', 'aceita_relatos', 'status', 'ordem',
     'link_ultimo_status', 'link_ultima_falha', 'link_quebrado', 'link_verificado_em',
+    'link_confirmado_manualmente',
 ])]
 class Marca extends Model
 {
@@ -37,6 +38,7 @@ class Marca extends Model
             'ordem' => 'integer',
             'link_quebrado' => 'boolean',
             'link_verificado_em' => 'datetime',
+            'link_confirmado_manualmente' => 'boolean',
         ];
     }
 

@@ -10,6 +10,7 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
@@ -104,6 +105,11 @@ class CupomForm
                         ->required()
                         ->maxLength(500)
                         ->helperText('Regra 5: a taxa é a mesma do site oficial — a vantagem do link é este cupom.'),
+                    Toggle::make('link_confirmado_manualmente')
+                        ->label('Confirmado manualmente')
+                        ->helperText('Marque só se você mesmo abriu o link e viu que funciona, mesmo que o '
+                            .'verificador automático (php artisan links:verificar) marque como quebrado. Alguns '
+                            .'sites devolvem um status HTTP de erro mesmo funcionando de verdade no navegador.'),
                     Textarea::make('termos')
                         ->rows(2),
                 ]),

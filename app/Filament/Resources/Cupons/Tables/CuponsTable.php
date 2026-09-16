@@ -90,11 +90,13 @@ class CuponsTable
                     ->formatStateUsing(fn (Cupom $record): string => match (true) {
                         $record->link_verificado_em === null => 'Não verificado',
                         (bool) $record->link_quebrado => 'Quebrado',
+                        (bool) $record->link_confirmado_manualmente && (int) $record->link_ultimo_status >= 400 => 'Confirmado manualmente',
                         default => 'No ar',
                     })
                     ->color(fn (Cupom $record): string => match (true) {
                         $record->link_verificado_em === null => 'gray',
                         (bool) $record->link_quebrado => 'danger',
+                        (bool) $record->link_confirmado_manualmente && (int) $record->link_ultimo_status >= 400 => 'warning',
                         default => 'success',
                     })
                     ->description(fn (Cupom $record): ?string => $record->link_verificado_em?->format('d/m/Y H:i'))

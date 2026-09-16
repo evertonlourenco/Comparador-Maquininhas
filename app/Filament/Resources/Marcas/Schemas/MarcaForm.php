@@ -51,6 +51,13 @@ class MarcaForm
                             ->label('Site oficial')
                             ->url()
                             ->maxLength(255),
+                        Toggle::make('link_confirmado_manualmente')
+                            ->label('Link confirmado manualmente')
+                            ->helperText('Marque só se você mesmo abriu o site e viu que funciona, mesmo que o '
+                                .'verificador automático (php artisan links:verificar) marque como quebrado. '
+                                .'Alguns sites devolvem um status HTTP de erro mesmo funcionando de verdade no '
+                                .'navegador.')
+                            ->inline(false),
                         Toggle::make('publica_tabela')
                             ->label('Publica tabela de taxas')
                             ->helperText('Se desligado, a marca só admite faixas reportadas (regra 4) — Cielo, Rede, GetNet e Stone, por exemplo.')
