@@ -158,13 +158,32 @@ variables → Actions — os workflows deste monitor, em
 `.github/workflows/monitor-*.yml`, leem esses secrets normalmente mesmo
 rodando só o código de `monitor/`):
 
-| Secret | Onde conseguir |
-|---|---|
-| `MONITOR_API_URL` | `https://maquinacerta.com.br` (produção) |
-| `MONITOR_API_TOKEN` | Gerado com `php artisan tinker --execute="echo Str::random(48);"` na raiz do repositório — precisa ser **o mesmo valor** salvo em `MONITOR_API_TOKEN` no `.env` de produção do app |
-| `TELEGRAM_BOT_TOKEN` | Criar um bot com [@BotFather](https://t.me/BotFather) no Telegram |
-| `TELEGRAM_CHAT_ID` | Mandar uma mensagem para o bot e consultar `https://api.telegram.org/bot<TOKEN>/getUpdates` |
-| `GEMINI_API_KEY` | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) — camada gratuita |
+| Secret no GitHub (nome real) | Env var que o script recebe | Onde conseguir o valor |
+|---|---|---|
+| `PORTAL_API_URL` | `MONITOR_API_URL` | `https://maquinacerta.com.br` (produção) |
+| `COLETA_TOKEN` | `MONITOR_API_TOKEN` | Gerado com `php artisan tinker --execute="echo Str::random(48);"` na raiz do repositório — precisa ser **o mesmo valor** salvo em `MONITOR_API_TOKEN` no `.env` de produção do app |
+| `TELEGRAM_BOT_TOKEN` | `TELEGRAM_BOT_TOKEN` | Criar um bot com [@BotFather](https://t.me/BotFather) no Telegram |
+| `TELEGRAM_CHAT_ID` | `TELEGRAM_CHAT_ID` | Mandar uma mensagem para o bot e consultar `https://api.telegram.org/bot<TOKEN>/getUpdates` |
+| `GEMINI_API_KEY` | `GEMINI_API_KEY` | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) — camada gratuita |
+
+**Achado em 16/09/2026: os dois primeiros secrets existem no GitHub com
+nomes diferentes do que `src/config.mjs` espera** (`PORTAL_API_URL` e
+`COLETA_TOKEN`, não `MONITOR_API_URL`/`MONITOR_API_TOKEN`) — provavelmente
+um nome de rascunho da etapa 13 que nunca foi alinhado com o código. Os
+quatro workflows (`monitor-diario`, `monitor-bissemanal`, `monitor-semanal`,
+`monitor-resumo-semanal`) rodavam o `Roda o monitor`/`Envia o resumo
+semanal` sem nenhuma das duas variáveis — `carregarConfig()` falhava direto
+em `obrigatoria('MONITOR_API_URL')`, e a Action nunca chegava a checar fonte
+nenhuma, desde que o secret foi criado (**não é fonte quebrada nenhuma que
+causou isso** — a falha era 100% antes de qualquer coleta, achado só depois
+que o Everton conseguiu ver o log completo logado no GitHub). O `env:` de
+cada workflow foi corrigido para ler `secrets.PORTAL_API_URL` /
+`secrets.COLETA_TOKEN` do lado direito, mantendo `MONITOR_API_URL`/
+`MONITOR_API_TOKEN` como nome da variável que o script recebe — assim
+`src/config.mjs` não precisou mudar. **Não renomeie os secrets no GitHub**
+sem também atualizar os quatro `.yml`; o caminho mais simples pra manter
+isso alinhado é sempre editar o lado direito do `env:`, nunca o nome da
+variável à esquerda.
 
 Nenhum destes eu (Claude) tenho ou posso gerar sozinho — precisam ser
 criados/copiados pelo Everton.

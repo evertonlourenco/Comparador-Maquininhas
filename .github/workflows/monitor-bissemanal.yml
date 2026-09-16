@@ -37,8 +37,8 @@ jobs:
 
       - name: Roda o monitor
         env:
-          MONITOR_API_URL: ${{ secrets.MONITOR_API_URL }}
-          MONITOR_API_TOKEN: ${{ secrets.MONITOR_API_TOKEN }}
+          MONITOR_API_URL: ${{ secrets.PORTAL_API_URL }}
+          MONITOR_API_TOKEN: ${{ secrets.COLETA_TOKEN }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
