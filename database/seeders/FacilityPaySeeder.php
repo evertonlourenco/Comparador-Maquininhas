@@ -116,30 +116,38 @@ class FacilityPaySeeder extends SeederDeMarca
      * ficha técnica que a própria FacilityPay publica, não o nome PagBank
      * correspondente.
      *
-     * **Preço de adesão, completado em 16/09/2026** com
-     * `https://app.facilitypay.com.br/indicacao/EVERTON10` - o link de
-     * indicação/cupom do próprio Everton, que ele mandou de propósito para
-     * isso. Essa página lista cada aparelho sob dois rótulos de plano,
-     * "D1PLUS" e "EXPRESS", com o **mesmo preço nos dois** (R$ 55,50 /
-     * R$ 119,90 / R$ 221,90) - "Light" não aparece nela, e "D1PLUS" não é
-     * nome de nenhum dos três planos que `facilitypay.com.br/planos` usa
-     * (Express/Profit/Light). Como o preço não varia entre os dois rótulos
-     * mostrados, a mesma linha foi aplicada aos três planos do catálogo -
-     * mas vale confirmar com o Everton se "D1PLUS" é o Profit, o Light, ou
-     * nem um nem outro.
+     * **Preço de adesão, corrigido em 16/09/2026** com
+     * `facilitypay.com.br/maquininhas` - a página tem uma aba por plano
+     * (Profit/Express/Light) e cada aba muda o preço do aparelho, não só a
+     * taxa. Primeira leitura (mesmo dia) só capturou a aba Express, porque
+     * era a aba ativa por padrão e o scrape de texto não trocava aba
+     * sozinho - o Everton conferiu as três abas manualmente e mandou os
+     * nove valores. `preco_adesao` (o preço "cheio", riscado no site) só
+     * foi verificado no contexto da aba Express (R$ 359,90/649,90/749,90);
+     * sem dado de um "cheio" diferente por aba, o mesmo valor foi mantido
+     * nos três planos - romper essa suposição pede nova verificação.
      *
-     * **Isto não é "preço cheio menos os 10% do cupom EVERTON10" - é um
-     * preço de indicação/influenciador à parte, mais baixo que os 10% do
-     * cupom explicariam sozinhos.** `preco_adesao` continua sendo o preço
-     * cheio de `facilitypay.com.br/maquininhas` (R$ 359,90/649,90/749,90);
-     * `preco_adesao_promocional` é o preço desta página de indicação, não
-     * "preco_adesao com desconto do cupom aplicado". Isso significa que
-     * `EconomiaDoCupom` (etapa 08), que aplica o percentual do cupom sobre
-     * `preco_adesao`/`preco_adesao_promocional` para calcular a economia
-     * exibida ao lojista, **subestima a economia real** para estes três
-     * aparelhos - o cupom de 10% da FacilityPay não é só um percentual
-     * genérico, é o que destrava este preço de indicação específico.
-     * Registrado como pendência no CLAUDE.md; não é bug desta carga.
+     * Preço "cheio" mais alto, adesão mais barata no Profit (o plano de
+     * taxa mais baixa) e mais cara no Light (taxa mais alta) é o trade-off
+     * real: adesão mais cara se paga com taxa melhor no longo prazo. É
+     * exatamente esse tipo de conta que o motor de cálculo já resolve
+     * (custo inicial vs. custo mensal recorrente, etapa 05) - por isso a
+     * decisão com o Everton foi manter os três planos com preço próprio,
+     * não simplificar para um preço único "da parceria".
+     *
+     * **O link de indicação do Everton
+     * (`https://app.facilitypay.com.br/indicacao/EVERTON10`) mostrou um
+     * terceiro preço, ainda mais baixo** (R$ 55,50/119,90/221,90, sob os
+     * rótulos "D1PLUS"/"EXPRESS" - nenhum dos dois nome de plano do
+     * catálogo) - não usado aqui porque não bate com nenhuma das colunas
+     * Profit/Express/Light confirmadas depois, e continua sem mapeamento
+     * claro para um plano do catálogo. Isso não é preço cheio menos os 10%
+     * do cupom `EVERTON10`: é bem mais barato do que 10% explicariam. A
+     * pendência sobre `EconomiaDoCupom` (que aplica o percentual do cupom
+     * sobre `preco_adesao`/`preco_adesao_promocional` e por isso
+     * **subestima** a economia real de usar o link do Everton) continua
+     * registrada no CLAUDE.md - não é bug desta carga, é decisão de
+     * produto pendente.
      */
     private function equipamentos(Marca $marca, Plano $express, Plano $profit, Plano $light): void
     {
@@ -156,7 +164,7 @@ class FacilityPaySeeder extends SeederDeMarca
                 'arquivo' => 'facility-mini.png',
                 'ordem' => 0,
                 'precoCheio' => 359.90,
-                'precoIndicacao' => 55.50,
+                'precoPorPlano' => ['express' => 104.90, 'profit' => 194.90, 'light' => 64.90],
             ],
             [
                 'nome' => 'Facility Pro',
@@ -168,7 +176,7 @@ class FacilityPaySeeder extends SeederDeMarca
                 'arquivo' => 'facility-pro.png',
                 'ordem' => 1,
                 'precoCheio' => 649.90,
-                'precoIndicacao' => 119.90,
+                'precoPorPlano' => ['express' => 198.90, 'profit' => 299.90, 'light' => 119.90],
             ],
             [
                 'nome' => 'Facility Smart',
@@ -180,11 +188,11 @@ class FacilityPaySeeder extends SeederDeMarca
                 'arquivo' => 'facility-smart.png',
                 'ordem' => 2,
                 'precoCheio' => 749.90,
-                'precoIndicacao' => 221.90,
+                'precoPorPlano' => ['express' => 319.90, 'profit' => 469.90, 'light' => 209.90],
             ],
         ];
 
-        $planos = [$express, $profit, $light];
+        $planos = ['express' => $express, 'profit' => $profit, 'light' => $light];
 
         foreach ($aparelhos as $dados) {
             $equipamento = $this->equipamento($marca, $dados['nome'], [
@@ -210,24 +218,23 @@ class FacilityPaySeeder extends SeederDeMarca
                 }
             }
 
-            $pivot = [
-                'preco_adesao' => $dados['precoCheio'],
-                'preco_adesao_promocional' => $dados['precoIndicacao'],
-                'aluguel_mensal' => null,
-                // Etapa 17, dito pelo Everton: adesão parcela em 12x sem
-                // juros sobre o preço à vista, em todas as marcas.
-                'parcelas_adesao' => 12,
-                'observacao' => 'Preço de indicação/cupom (app.facilitypay.com.br/indicacao/EVERTON10, '
-                    .'verificado em 16/09/2026) - não é o preço cheio com os 10% do cupom EVERTON10 '
-                    .'aplicados, é um valor de indicação à parte, mais baixo. O mesmo preço apareceu sob '
-                    .'os rótulos "D1PLUS" e "EXPRESS" nessa página (nenhum dos dois é o nome de um plano '
-                    .'do catálogo, e "Light" não aparece lá) - por isso o mesmo valor foi aplicado aos '
-                    .'três planos.',
-                'status' => StatusItem::Ativo->value,
-            ];
-
-            foreach ($planos as $plano) {
-                $equipamento->planos()->syncWithoutDetaching([$plano->getKey() => $pivot]);
+            foreach ($planos as $codigoPlano => $plano) {
+                $equipamento->planos()->syncWithoutDetaching([
+                    $plano->getKey() => [
+                        'preco_adesao' => $dados['precoCheio'],
+                        'preco_adesao_promocional' => $dados['precoPorPlano'][$codigoPlano],
+                        'aluguel_mensal' => null,
+                        // Etapa 17, dito pelo Everton: adesão parcela em 12x sem
+                        // juros sobre o preço à vista, em todas as marcas.
+                        'parcelas_adesao' => 12,
+                        'observacao' => 'Preço da aba "'.ucfirst($codigoPlano).'" em '
+                            .'facilitypay.com.br/maquininhas, verificado em 16/09/2026 pelo Everton - '
+                            .'cada plano muda o preço do aparelho, não só a taxa. "Cheio" (preço riscado '
+                            .'no site) só foi conferido no contexto da aba Express; sem dado de um cheio '
+                            .'diferente por aba, o mesmo valor foi mantido nos três.',
+                        'status' => StatusItem::Ativo->value,
+                    ],
+                ]);
             }
         }
     }

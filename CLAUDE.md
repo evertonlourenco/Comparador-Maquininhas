@@ -2771,29 +2771,39 @@ maquininha da marca (nunca um equipamento específico — dito pelo Everton
 abrir o link, mostra e aplica "CANALMONETIZANDO" (sem hífen) — usado o que
 foi verificado na página real. Vale confirmar.
 
-**Achado em 16/09/2026 nos três equipamentos da FacilityPay, sessão fora da
-numeração do plano: o cupom `EVERTON10` não é "10% de desconto genérico"
-na prática.** `preco_adesao_promocional` de Facility Mini/Pro/Smart veio de
-`app.facilitypay.com.br/indicacao/EVERTON10` — o link de indicação do
-próprio Everton — e é bem mais barato do que aplicar 10% sobre o preço
-cheio explicaria sozinho (ex.: Facility Pro cheio R$ 649,90, indicação
-R$ 119,90 — não R$ 584,91). `EconomiaDoCupom` (etapa 08) calcula a economia
-exibida ao lojista aplicando o percentual do cupom (10%) sobre
-`preco_adesao`/`preco_adesao_promocional` — **para estes três aparelhos,
-isso subestima a economia real**, porque o cupom aqui não é um percentual
-solto, é o que destrava este preço de indicação específico. Revisitar
-`EconomiaDoCupom` (ou o schema de `cupons`, se precisar de um jeito de um
-cupom apontar direto pra um preço fixo em vez de um percentual) fica
-pendente — não mudei a lógica agora porque é decisão de produto, não
-achado de dado.
+**Preço de adesão dos três equipamentos da FacilityPay, corrigido em
+16/09/2026 (sessão fora da numeração do plano).** Primeira leitura só
+capturou o preço da aba Express (a ativa por padrão em
+`facilitypay.com.br/maquininhas`) e, sem perceber que cada aba de plano
+muda o preço do aparelho, chegou a usar por engano o preço de um link de
+indicação (`app.facilitypay.com.br/indicacao/EVERTON10`) aplicado por
+igual aos três planos. O Everton conferiu as três abas manualmente e deu
+os nove valores reais — `Facility Pro`, por exemplo: Express R$ 198,90,
+Profit R$ 299,90 (mais caro — é o plano de taxa mais baixa), Light
+R$ 119,90 (mais barato — é o plano de taxa mais alta). `preco_adesao`
+(o "cheio" riscado no site) só foi verificado no contexto da aba Express;
+sem dado de um cheio diferente por aba, o mesmo valor ficou nos três.
 
-**Também pendente:** essa mesma página de indicação rotula os dois planos
-disponíveis como "D1PLUS" e "EXPRESS" — nenhum dos dois é o nome de um
-plano do catálogo (`Express`, `Profit`, `Light`). Os preços de adesão
-gravados foram aplicados aos três planos por igual, porque não variam
-entre "D1PLUS"/"EXPRESS" na página — mas vale perguntar ao Everton se
-"D1PLUS" corresponde ao Profit, ao Light, ou é um plano à parte que
-FacilityPay ainda não publicou no catálogo principal.
+**Decisão com o Everton: manter os três planos com preço de adesão
+próprio, não simplificar para "só o plano da parceria".** Adesão mais
+cara compensando com taxa melhor no longo prazo (Profit) contra adesão
+barata com taxa pior (Light) é exatamente o tipo de trade-off que o motor
+de cálculo já resolve (custo inicial vs. custo mensal recorrente, etapa
+05) — esconder isso tornaria a comparação menos honesta, não mais simples.
+
+**Ainda pendente, sem mudar a lógica agora:** o preço do link de indicação
+do Everton é um **terceiro** valor, mais baixo que qualquer uma das três
+colunas confirmadas (ex.: Facility Pro indicação R$ 119,90 == a coluna
+Light, mas Facility Mini indicação R$ 55,50 é mais barato que a própria
+coluna Light, R$ 64,90 — não há um mapeamento limpo pra nenhum plano do
+catálogo). Isso não é "preço cheio menos os 10% do cupom `EVERTON10`" —
+é bem mais barato do que 10% explicariam. `EconomiaDoCupom` (etapa 08)
+aplica o percentual do cupom sobre `preco_adesao`/`preco_adesao_promocional`
+pra calcular a economia mostrada ao lojista, e por isso **subestima** a
+economia real de quem usa o link do Everton. Revisitar `EconomiaDoCupom`
+(ou o schema de `cupons`, se precisar de um jeito de o cupom apontar
+direto pra um preço fixo em vez de um percentual) fica pra decisão de
+produto futura.
 
 **`taxa_antecipacao_mensal`: resolvido.** O Everton confirmou que nenhuma marca
 cobra antecipação avulsa à parte — a taxa publicada já é a final, inclusive nos
