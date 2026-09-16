@@ -4,8 +4,13 @@ namespace Database\Seeders;
 
 use App\Enums\StatusItem;
 use App\Enums\TipoEnquadramento;
+use App\Enums\TipoEquipamento;
+use App\Models\Equipamento;
 use App\Models\GrupoBandeira;
+use App\Models\Marca;
 use App\Models\PrazoRecebimento;
+use App\Support\Uploads\ImagemSeguraWebp;
+use Illuminate\Support\Str;
 
 /**
  * FacilityPay, lida em 15/09/2026 (etapa 17) em facilitypay.com.br/planos.
@@ -93,5 +98,98 @@ class FacilityPaySeeder extends SeederDeMarca
         $this->debito($light, $demais, $d1, 2.05, $fonteScreenshots);
         $this->serieDeCredito($light, $demais, $d1, [4.80, 5.76, 6.63, 7.49, 8.35, 9.20, 10.48, 11.31, 12.12, 12.93, 13.73, 14.51, 15.29, 16.05, 16.82, 17.56, 18.30, 19.04], $fonteScreenshots);
         $this->pix($light, $naHora, 0.50, $fonteScreenshots);
+
+        $this->equipamentos($marca);
+    }
+
+    /**
+     * Etapa 17, sessão de 16/09/2026: catálogo lido em
+     * facilitypay.com.br/maquininhas. As fotos são as mesmas que o próprio
+     * site usa (baixadas de lá, convertidas para WebP aqui como qualquer
+     * upload) — o Everton mandou capturas de tela da Facility Pro, e batendo
+     * com o site percebi que o mesmo endereço tem o PNG original das três
+     * máquinas, sem marca d'água, em resolução melhor que a captura.
+     *
+     * A FacilityPay usa aparelho fornecido pela PagBank por trás (junto de
+     * SidePay e Yelly, dito pelo Everton) - mas o catálogo aqui é o nome e a
+     * ficha técnica que a própria FacilityPay publica, não o nome PagBank
+     * correspondente. Preço de adesão por plano ficou de fora de propósito:
+     * a página mostra um preço por aparelho atrelado a uma aba de plano
+     * (Profit/Express/Light) que muda via JavaScript, e o scrape de texto
+     * não capturou com segurança qual preço é de qual aba - mesma limitação
+     * que já valia para as taxas do Profit/Light antes das capturas de tela
+     * do Everton completarem. Fica pendente até ele confirmar preço por
+     * aparelho e por plano.
+     */
+    private function equipamentos(Marca $marca): void
+    {
+        $diretorioAssets = __DIR__.'/assets/facilitypay';
+
+        $aparelhos = [
+            [
+                'nome' => 'Facility Mini',
+                'tipo' => TipoEquipamento::PinPad,
+                'descricao' => 'Prática, portátil e econômica - indicada principalmente para delivery. '
+                    .'Não precisa de celular para vender.',
+                'imprime' => false,
+                'exigeCelular' => false,
+                'arquivo' => 'facility-mini.png',
+                'ordem' => 0,
+            ],
+            [
+                'nome' => 'Facility Pro',
+                'tipo' => TipoEquipamento::Pos,
+                'descricao' => 'A mais vendida, com o melhor custo-benefício segundo a própria marca. '
+                    .'Tela touchscreen e garantia vitalícia.',
+                'imprime' => true,
+                'exigeCelular' => false,
+                'arquivo' => 'facility-pro.png',
+                'ordem' => 1,
+            ],
+            [
+                'nome' => 'Facility Smart',
+                'tipo' => TipoEquipamento::Smart,
+                'descricao' => 'A mais completa: sistema Android, tela touch, gestão de produtos e '
+                    .'estoque, e acompanhamento de vendas em tempo real.',
+                'imprime' => true,
+                'exigeCelular' => false,
+                'arquivo' => 'facility-smart.png',
+                'ordem' => 2,
+            ],
+        ];
+
+        foreach ($aparelhos as $dados) {
+            $equipamento = $this->equipamento($marca, $dados['nome'], [
+                'tipo' => $dados['tipo'],
+                'descricao' => $dados['descricao'],
+                'tem_chip_gratis' => true,
+                'imprime_comprovante' => $dados['imprime'],
+                'aceita_nfc' => true,
+                'exige_celular' => $dados['exigeCelular'],
+                'status' => StatusItem::Ativo,
+                'ordem' => $dados['ordem'],
+            ]);
+
+            // Só grava a foto na criação - se o admin trocar depois pelo
+            // painel (upload manual ou "buscar por URL"), o reseed não pode
+            // reverter a escolha dele (mesmo espírito da regra do etapa 17
+            // sobre nome/status de plano nunca serem sobrescritos).
+            if ($equipamento->wasRecentlyCreated && $equipamento->imagem_path === null) {
+                $caminho = ImagemSeguraWebp::salvar("{$diretorioAssets}/{$dados['arquivo']}", 'equipamentos');
+
+                if ($caminho !== null) {
+                    $equipamento->update(['imagem_path' => $caminho]);
+                }
+            }
+        }
+    }
+
+    /** @param  array<string, mixed>  $atributos */
+    private function equipamento(Marca $marca, string $nome, array $atributos): Equipamento
+    {
+        return Equipamento::updateOrCreate(
+            ['marca_id' => $marca->getKey(), 'slug' => Str::slug($nome)],
+            ['nome' => $nome, ...$atributos],
+        );
     }
 }
