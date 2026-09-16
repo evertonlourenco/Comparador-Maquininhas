@@ -31,7 +31,6 @@ class MarcaForm
                             ->relationship('adquirente', 'nome')
                             ->searchable()
                             ->preload()
-                            ->required()
                             ->createOptionForm([
                                 TextInput::make('nome')->required()->maxLength(80),
                                 TextInput::make('slug')->required()->maxLength(80)->unique(Adquirente::class, 'slug'),
