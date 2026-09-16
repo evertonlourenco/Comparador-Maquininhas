@@ -1948,6 +1948,25 @@ Dois monitores, e-mail como contato de alerta:
   funciona antes e depois de abrir o site, sem precisar trocar nada** — e
   ainda pega o caso de a página responder 200 em branco, que um monitor de
   status não pegaria.
+
+  **Essa premissa não se sustentou na prática — achado em 16/09/2026.** O
+  monitor está "Down" desde a própria criação (14/09/2026), com "Root
+  Cause: 503 Service Unavailable" — mesmo a palavra `Máquina Certa`
+  aparecendo várias vezes no corpo da página "em breve" (conferido com
+  `curl` na hora: status 503, `<title>Máquina Certa — em breve</title>`,
+  a palavra 3+ vezes no HTML). O monitor **Keyword** da UptimeRobot
+  reprova no status HTTP não-2xx antes de sequer chegar a checar a
+  palavra — não é só "existe a palavra ou não", como o texto acima supôs
+  sem testar. Enquanto `SITE_EM_BREVE=true` (503 de propósito, ver seção
+  "O site público está fechado"), **este monitor vai ficar "Down" o tempo
+  todo, e isso é esperado, não uma queda de verdade** — o e-mail de alerta
+  pode ser ignorado até a etapa 19. Vale mutar/pausar o monitor até lá, ou
+  conferir nas configurações da UptimeRobot se existe opção de aceitar
+  status não-2xx num monitor Keyword; se não existir, o desenho certo teria
+  sido monitor de Keyword **sem** exigir 2xx, ou dois monitores separados
+  (um antes, um depois do lançamento). Reconferir isso na etapa 19, depois
+  de `SITE_EM_BREVE=false`: o monitor precisa voltar a "Up" sozinho quando
+  a home responder 200 de verdade.
 - **Admin** (`https://maquinacerta.com.br/admin/login`): tipo **HTTP(s)**
   comum — essa rota sempre responde 200, site aberto ou fechado.
 
