@@ -4,9 +4,15 @@ namespace Database\Seeders;
 
 use App\Enums\StatusItem;
 use App\Enums\TipoEnquadramento;
+use App\Enums\TipoEquipamento;
+use App\Models\Equipamento;
 use App\Models\GrupoBandeira;
+use App\Models\Marca;
+use App\Models\Plano;
 use App\Models\PrazoRecebimento;
 use App\Models\TaxaDivulgada;
+use App\Support\Uploads\ImagemSeguraWebp;
+use Illuminate\Support\Str;
 
 /**
  * SidePay, lida em 15/09/2026 (etapa 17) em sidepay.com.br/planos-taxas.
@@ -84,5 +90,122 @@ class SidePaySeeder extends SeederDeMarca
 
         $this->debito($naHoraPlano, $demais, $naHora, 1.51, $fonte);
         $this->serieDeCredito($naHoraPlano, $demais, $naHora, [3.50, 5.21, 5.87, 6.54, 7.20, 7.85, 9.20, 9.84, 10.47, 11.10, 11.72, 12.34, 12.95, 13.56, 14.16, 14.75, 15.34, 15.92], $fonte);
+
+        $this->equipamentos($marca, $emUmDia, $naHoraPlano);
+    }
+
+    /**
+     * Etapa 17, sessão de 16/09/2026: catálogo lido em sidepay.com.br/maquininhas.
+     * As fotos são as mesmas que o próprio site usa (baixadas de lá, convertidas
+     * para WebP aqui como qualquer upload) - mesmo padrão do FacilityPaySeeder.
+     *
+     * Diferente da FacilityPay (que muda de aba por plano com nome próprio), a
+     * SidePay usa o mesmo toggle "Receba em 1 dia" / "Receba na hora" da tabela
+     * de taxas para também trocar o preço do aparelho: `preco_adesao` ("De:",
+     * o cheio riscado) é igual nos dois toggles para cada aparelho, só o
+     * promocional ("por") muda - mais barato em "Receba na hora", assim como a
+     * taxa de "Receba na hora" é mais alta (o mesmo trade-off adesão x taxa
+     * mensal que o motor de cálculo já resolve, etapa 05).
+     *
+     * A SidePay usa aparelho fornecido pela PagBank por trás (junto de
+     * FacilityPay e Yelly, dito pelo Everton) - mas o catálogo aqui é o nome e
+     * a ficha técnica que a própria SidePay publica, não o nome PagBank
+     * correspondente.
+     */
+    private function equipamentos(Marca $marca, Plano $emUmDia, Plano $naHoraPlano): void
+    {
+        $diretorioAssets = __DIR__.'/assets/sidepay';
+
+        $aparelhos = [
+            [
+                'nome' => 'Mini',
+                'tipo' => TipoEquipamento::PinPad,
+                'descricao' => 'A maquininha mais acessível que oferece tudo o que o seu negócio precisa. '
+                    .'Com conectividade 3G, tela colorida e design compacto, ela é pequena no tamanho, mas '
+                    .'gigante na performance.',
+                'imprime' => false,
+                'arquivo' => 'sidepay-mini.png',
+                'ordem' => 0,
+                'precoCheio' => 247.00,
+                'precoPorPlano' => ['em_um_dia' => 147.00, 'na_hora' => 97.00],
+            ],
+            [
+                'nome' => 'Pro',
+                'tipo' => TipoEquipamento::Pos,
+                'descricao' => 'Custo-benefício: tela touchscreen, imprime comprovante na hora e garantia '
+                    .'vitalícia.',
+                'imprime' => true,
+                'arquivo' => 'sidepay-pro.png',
+                'ordem' => 1,
+                'precoCheio' => 397.00,
+                'precoPorPlano' => ['em_um_dia' => 247.00, 'na_hora' => 197.00],
+            ],
+            [
+                'nome' => 'Smart',
+                'tipo' => TipoEquipamento::Smart,
+                'descricao' => 'Tecnologia de ponta: sistema Android, tela touchscreen e comprovante '
+                    .'impresso ou por SMS.',
+                'imprime' => true,
+                'arquivo' => 'sidepay-smart.png',
+                'ordem' => 2,
+                'precoCheio' => 497.00,
+                'precoPorPlano' => ['em_um_dia' => 347.00, 'na_hora' => 297.00],
+            ],
+        ];
+
+        $planos = ['em_um_dia' => $emUmDia, 'na_hora' => $naHoraPlano];
+        $nomePlano = ['em_um_dia' => 'Receba em 1 dia', 'na_hora' => 'Receba na hora'];
+
+        foreach ($aparelhos as $dados) {
+            $equipamento = $this->equipamento($marca, $dados['nome'], [
+                'tipo' => $dados['tipo'],
+                'descricao' => $dados['descricao'],
+                'tem_chip_gratis' => true,
+                'imprime_comprovante' => $dados['imprime'],
+                'aceita_nfc' => true,
+                'exige_celular' => false,
+                'status' => StatusItem::Ativo,
+                'ordem' => $dados['ordem'],
+            ]);
+
+            // Só grava a foto na criação - se o admin trocar depois pelo painel
+            // (upload manual ou "buscar por URL"), o reseed não pode reverter a
+            // escolha dele (mesmo espírito da regra do etapa 17 sobre nome/status
+            // de plano nunca serem sobrescritos).
+            if ($equipamento->wasRecentlyCreated && $equipamento->imagem_path === null) {
+                $caminho = ImagemSeguraWebp::salvar("{$diretorioAssets}/{$dados['arquivo']}", 'equipamentos');
+
+                if ($caminho !== null) {
+                    $equipamento->update(['imagem_path' => $caminho]);
+                }
+            }
+
+            foreach ($planos as $codigoPlano => $plano) {
+                $equipamento->planos()->syncWithoutDetaching([
+                    $plano->getKey() => [
+                        'preco_adesao' => $dados['precoCheio'],
+                        'preco_adesao_promocional' => $dados['precoPorPlano'][$codigoPlano],
+                        'aluguel_mensal' => null,
+                        // Etapa 17, dito pelo Everton: adesão parcela em 12x sem
+                        // juros sobre o preço à vista, em todas as marcas.
+                        'parcelas_adesao' => 12,
+                        'observacao' => 'Preço no toggle "'.$nomePlano[$codigoPlano].'" em '
+                            .'sidepay.com.br/maquininhas, verificado em 16/09/2026 - o toggle muda o preço '
+                            .'do aparelho junto com a taxa, não só a taxa. "Cheio" (preço riscado no site) é '
+                            .'igual nos dois toggles para o mesmo aparelho.',
+                        'status' => StatusItem::Ativo->value,
+                    ],
+                ]);
+            }
+        }
+    }
+
+    /** @param  array<string, mixed>  $atributos */
+    private function equipamento(Marca $marca, string $nome, array $atributos): Equipamento
+    {
+        return Equipamento::updateOrCreate(
+            ['marca_id' => $marca->getKey(), 'slug' => Str::slug($nome)],
+            ['nome' => $nome, ...$atributos],
+        );
     }
 }
