@@ -73,11 +73,50 @@ class TabelaDoPlano extends Page
 
         $this->form->fill([
             'nome' => $plano->nome,
-            'fonte_tipo' => FonteTipo::SiteOficial->value,
-            'data_verificacao' => now()->toDateString(),
-            'status' => StatusPublicacao::Rascunho->value,
+            ...$this->metadadosAtuais(),
             'cells' => $this->paraArvore($this->celulasAtuais()),
         ]);
+    }
+
+    /**
+     * Achado no relato do Everton: o bloco "Fonte e verificação" sempre
+     * abria com URL/descrição em branco e status "Rascunho", mesmo com o
+     * plano inteiro publicado - porque o mount() antigo nunca lia o banco
+     * aqui, só chutava um padrão fixo toda vez. Como cada célula pode ter
+     * sua própria fonte/data/status (regra 1), não existe um valor "certo"
+     * único para representar a tabela inteira - a melhor aproximação é a
+     * célula verificada mais recentemente, que é também a que reflete o
+     * status real depois de "Publicar toda a tabela"/"Voltar tudo para
+     * rascunho" (as duas mudam o status de toda taxa de uma vez, então a
+     * mais recente carrega o mesmo status que todas as outras).
+     *
+     * @return array<string, mixed>
+     */
+    private function metadadosAtuais(): array
+    {
+        $referencia = TaxaDivulgada::query()
+            ->where('plano_id', $this->plano->getKey())
+            ->orderByDesc('data_verificacao')
+            ->orderByDesc('updated_at')
+            ->first();
+
+        if ($referencia === null) {
+            return [
+                'url_fonte' => null,
+                'fonte_descricao' => null,
+                'fonte_tipo' => FonteTipo::SiteOficial->value,
+                'data_verificacao' => now()->toDateString(),
+                'status' => StatusPublicacao::Rascunho->value,
+            ];
+        }
+
+        return [
+            'url_fonte' => $referencia->url_fonte,
+            'fonte_descricao' => $referencia->fonte_descricao,
+            'fonte_tipo' => $referencia->fonte_tipo->value,
+            'data_verificacao' => $referencia->data_verificacao->toDateString(),
+            'status' => $referencia->status->value,
+        ];
     }
 
     /**
@@ -240,6 +279,8 @@ class TabelaDoPlano extends Page
                         ->where('plano_id', $this->plano->getKey())
                         ->update(['status' => StatusPublicacao::Publicado]);
 
+                    $this->data['status'] = StatusPublicacao::Publicado->value;
+
                     Notification::make()->success()->title("{$n} taxa(s) publicada(s)")->send();
                 }),
             Action::make('rascunharTudo')
@@ -251,6 +292,8 @@ class TabelaDoPlano extends Page
                     $n = TaxaDivulgada::query()
                         ->where('plano_id', $this->plano->getKey())
                         ->update(['status' => StatusPublicacao::Rascunho]);
+
+                    $this->data['status'] = StatusPublicacao::Rascunho->value;
 
                     Notification::make()->success()->title("{$n} taxa(s) voltaram para rascunho")->send();
                 }),

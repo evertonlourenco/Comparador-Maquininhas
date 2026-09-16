@@ -253,4 +253,69 @@ class TabelaDoPlanoTest extends TestCase
         $this->assertNull($criada->url_fonte);
         $this->assertSame('PDF enviado por e-mail pelo gerente de contas em 15/09/2026', $criada->fonte_descricao);
     }
+
+    /**
+     * Bug relatado pelo Everton: o bloco "Fonte e verificação" sempre abria
+     * vazio e em "Rascunho", mesmo com dado real gravado - porque o mount()
+     * antigo nunca lia o banco, só chutava um padrão fixo toda vez.
+     */
+    public function test_mount_preenche_fonte_e_status_a_partir_da_celula_mais_recente(): void
+    {
+        $test = Livewire::test(TabelaDoPlano::class, ['plano' => $this->plano])
+            ->assertSet('data.url_fonte', 'https://exemplo.com/taxas')
+            ->assertSet('data.fonte_tipo', FonteTipo::SiteOficial->value)
+            ->assertSet('data.status', StatusPublicacao::Rascunho->value);
+
+        // O DatePicker com native(false) guarda o estado interno sempre como
+        // "Y-m-d H:i:s" (DateTimeStateCast::getInternalFormat()), com a hora
+        // sendo a do instante em que o valor foi convertido - não a hora do
+        // dado gravado. Comparar a data crua evita acoplar o teste a esse
+        // detalhe interno do Filament, que já vale para todo DatePicker
+        // desta tela (e das outras telas de taxa).
+        $this->assertSame(
+            now()->subDays(10)->toDateString(),
+            \Illuminate\Support\Carbon::parse($test->get('data.data_verificacao'))->toDateString(),
+        );
+    }
+
+    public function test_mount_sem_taxa_nenhuma_abre_com_padrao_honesto(): void
+    {
+        $planoVazio = Plano::create([
+            'marca_id' => $this->plano->marca_id,
+            'nome' => 'Plano Vazio',
+            'slug' => 'plano-vazio',
+            'tipo_enquadramento' => TipoEnquadramento::Automatico,
+            'status' => 'ativo',
+        ]);
+
+        Livewire::test(TabelaDoPlano::class, ['plano' => $planoVazio])
+            ->assertSet('data.url_fonte', null)
+            ->assertSet('data.fonte_tipo', FonteTipo::SiteOficial->value)
+            ->assertSet('data.status', StatusPublicacao::Rascunho->value);
+    }
+
+    /**
+     * Bug relatado pelo Everton: depois de "Publicar toda a tabela", o
+     * select de status na tela continuava mostrando "Rascunho" até a
+     * página ser recarregada do zero.
+     */
+    public function test_publicar_tudo_atualiza_o_status_exibido_no_formulario(): void
+    {
+        Livewire::test(TabelaDoPlano::class, ['plano' => $this->plano])
+            ->assertSet('data.status', StatusPublicacao::Rascunho->value)
+            ->callAction('publicarTudo')
+            ->assertSet('data.status', StatusPublicacao::Publicado->value);
+    }
+
+    public function test_voltar_tudo_para_rascunho_atualiza_o_status_exibido_no_formulario(): void
+    {
+        TaxaDivulgada::query()->where('plano_id', $this->plano->getKey())->update([
+            'status' => StatusPublicacao::Publicado,
+        ]);
+
+        Livewire::test(TabelaDoPlano::class, ['plano' => $this->plano])
+            ->assertSet('data.status', StatusPublicacao::Publicado->value)
+            ->callAction('rascunharTudo')
+            ->assertSet('data.status', StatusPublicacao::Rascunho->value);
+    }
 }

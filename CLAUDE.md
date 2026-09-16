@@ -474,6 +474,39 @@ testes falharem.
   nenhum: regra 8 continua de pé, só deixou de significar especificamente "uma
   URL".
 
+**Bug relatado pelo Everton em 16/09/2026, corrigido na mesma sessão: o bloco
+"Fonte e verificação" sempre abria vazio e em "Rascunho", mesmo com dado real
+gravado.** O `mount()` original nunca lia o banco para esses cinco campos —
+só chutava um padrão fixo toda vez (`site_oficial`, hoje, rascunho, URL e
+descrição em branco), mesmo depois de "Publicar toda a tabela" já ter
+publicado as 44 taxas do plano. `metadadosAtuais()` agora lê a
+`TaxaDivulgada` mais recentemente verificada do plano (`orderByDesc
+('data_verificacao')`, com `updated_at` como desempate) e usa ela como
+referência do bloco. Como cada célula pode ter sua própria fonte/data/status
+(regra 1), não existe um valor "certo" único para a tabela inteira — mas essa
+referência é também a que reflete o status real depois de "Publicar toda a
+tabela"/"Voltar tudo para rascunho", porque as duas mudam o status de toda
+taxa do plano de uma vez, então a mais recente carrega o mesmo status que
+todas as outras. As duas ações de publicar/rascunhar em massa também
+passaram a atualizar `$this->data['status']` na hora, para o select da tela
+não continuar mostrando o valor antigo até a próxima navegação. Sem taxa
+nenhuma no plano, o bloco abre com o padrão honesto de antes.
+`tests/Feature/Admin/TabelaDoPlanoTest.php` ganhou quatro testes cobrindo
+esses cenários (com e sem taxa, e os dois botões de massa atualizando o
+select em tempo real).
+
+**Pedido do Everton na mesma sessão: um jeito fácil de ver o status de
+publicação de todos os planos, de todas as marcas.** A listagem de Planos
+(`PlanosTable`) ganhou a coluna "Situação das taxas" — `withCount` conta
+taxas totais e publicadas por plano, e o badge mostra "X/Y publicadas"
+(verde se todas publicadas, laranja se parcial, vermelho se nenhuma, cinza
+para "Sem taxa cadastrada"). Ganhou também agrupamento por marca
+(`->groups([Group::make('marca.nome')])`, disponível no seletor "Agrupar
+por") e dois filtros novos — "Com taxas em rascunho" e "Sem taxa
+cadastrada" — para achar rápido o que falta revisar sem abrir plano por
+plano. `tests/Feature/Admin/PlanosTableTest.php` cobre os estados do badge
+e os dois filtros novos.
+
 **Painel inicial** (`app/Filament/Widgets/PainelInicial.php`) soma três alertas
 operacionais: taxas com `data_verificacao` há mais de 30 dias (um aviso antecipado ao
 selo de frescor de 45 dias da regra 8, não o mesmo limite), cupons vigentes vencendo
