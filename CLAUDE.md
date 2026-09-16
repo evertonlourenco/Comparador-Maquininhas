@@ -2771,6 +2771,30 @@ maquininha da marca (nunca um equipamento específico — dito pelo Everton
 abrir o link, mostra e aplica "CANALMONETIZANDO" (sem hífen) — usado o que
 foi verificado na página real. Vale confirmar.
 
+**Achado em 16/09/2026 nos três equipamentos da FacilityPay, sessão fora da
+numeração do plano: o cupom `EVERTON10` não é "10% de desconto genérico"
+na prática.** `preco_adesao_promocional` de Facility Mini/Pro/Smart veio de
+`app.facilitypay.com.br/indicacao/EVERTON10` — o link de indicação do
+próprio Everton — e é bem mais barato do que aplicar 10% sobre o preço
+cheio explicaria sozinho (ex.: Facility Pro cheio R$ 649,90, indicação
+R$ 119,90 — não R$ 584,91). `EconomiaDoCupom` (etapa 08) calcula a economia
+exibida ao lojista aplicando o percentual do cupom (10%) sobre
+`preco_adesao`/`preco_adesao_promocional` — **para estes três aparelhos,
+isso subestima a economia real**, porque o cupom aqui não é um percentual
+solto, é o que destrava este preço de indicação específico. Revisitar
+`EconomiaDoCupom` (ou o schema de `cupons`, se precisar de um jeito de um
+cupom apontar direto pra um preço fixo em vez de um percentual) fica
+pendente — não mudei a lógica agora porque é decisão de produto, não
+achado de dado.
+
+**Também pendente:** essa mesma página de indicação rotula os dois planos
+disponíveis como "D1PLUS" e "EXPRESS" — nenhum dos dois é o nome de um
+plano do catálogo (`Express`, `Profit`, `Light`). Os preços de adesão
+gravados foram aplicados aos três planos por igual, porque não variam
+entre "D1PLUS"/"EXPRESS" na página — mas vale perguntar ao Everton se
+"D1PLUS" corresponde ao Profit, ao Light, ou é um plano à parte que
+FacilityPay ainda não publicou no catálogo principal.
+
 **`taxa_antecipacao_mensal`: resolvido.** O Everton confirmou que nenhuma marca
 cobra antecipação avulsa à parte — a taxa publicada já é a final, inclusive nos
 planos que usam prazo sem antecipação embutida. `0`, não mais ausente, nos
