@@ -44,10 +44,39 @@ abstract class SeederDeMarca extends Seeder
      * nunca uma releitura da fonte. Os demais atributos (mensalidade, taxa de
      * antecipação etc.) continuam vindo do seeder sempre: são fato de
      * domínio, não decisão administrativa.
+     *
+     * Etapa 17, achado em produção em 17/09/2026: catálogo de marca muda com
+     * o tempo - um plano real pode deixar de existir (o Everton citou a Ton,
+     * que já teve 5, depois 3, depois 4 planos), e o jeito de aposentar um
+     * plano é excluí-lo no painel (soft-delete). Sem este `withTrashed()`,
+     * `Plano::where($chave)->exists()` não via essa linha - `updateOrCreate`
+     * tentava um INSERT que colidia com `planos_marca_id_slug_unique` (que
+     * não filtra `deleted_at`), e o seeder inteiro daquela marca quebrava com
+     * um `Duplicate entry` do MySQL, sem dizer o motivo. Aconteceu com o
+     * PagBank ("Taxas iniciais", retirado em 16/09/2026, com a chamada só
+     * removida do `PagBankSeeder` no dia seguinte) - qualquer seeder que
+     * ainda referencie um plano excluído cai aqui, não só aquele.
+     *
+     * Não restaura sozinho: se o plano foi de fato aposentado, a chamada dele
+     * deveria ter saído do seeder (regra 10 - exclusão no painel também é
+     * decisão humana, o reseed não desfaz). A exceção clara poupa quem for
+     * debugar de reconstruir esse raciocínio a partir de um erro de SQL puro.
      */
     protected function plano(Marca $marca, string $nome, array $atributos = []): Plano
     {
         $chave = ['marca_id' => $marca->getKey(), 'slug' => Str::slug($nome)];
+
+        $trashed = Plano::onlyTrashed()->where($chave)->first();
+
+        if ($trashed !== null) {
+            throw new \RuntimeException(
+                "O plano \"{$nome}\" ({$marca->nome}) foi excluído no painel em {$trashed->deleted_at} "
+                .'e este seeder ainda tenta recriá-lo. Se a exclusão foi definitiva, remova esta chamada '
+                .'do seeder; se foi engano, restaure o registro (Plano::onlyTrashed()->find('
+                ."{$trashed->id})->restore()) antes de rodar de novo.",
+            );
+        }
+
         $valores = ['nome' => $nome, ...$atributos];
 
         if (Plano::where($chave)->exists()) {
