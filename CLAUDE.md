@@ -1040,6 +1040,91 @@ cada arrasto de slider viraria ruído.
   A pergunta de tratá-los como maquininha ficou para quando houver página de
   marca onde eles caibam.
 
+### Revisão do comparador (etapa 19, 17/09/2026): valor na maquininha, mix sempre 100%
+
+Pedido do Everton durante a etapa 19 (lançamento), depois de testar a tela com
+dado real: a pergunta 1 media "faturamento", mas o motor só cobra taxa do que
+passa na maquininha, e a tela deixava implícito que dinheiro/boleto/etc. eram
+descontados de algum jeito. Mudanças, todas em `resources/js/comparador.js`,
+`resources/js/comparador/{segmentos,estado}.mjs` e `comparador.blade.php` —
+**nenhuma tocou `motor.mjs`/`resumo.mjs` nem o PHP gêmeo**, os dois testes de
+paridade continuam passando sem alteração:
+
+- **Passo 1 pergunta "Quanto você vende (ou venderá) por mês na maquininha?"**
+  em vez de "fatura por mês". O campo passou a significar literalmente o que
+  o motor usa: 100% dele é volume vendido na maquininha (cartão + Pix), sem
+  supor parcela em dinheiro. As duas linhas "Passa na maquininha" / "Em
+  dinheiro, sem taxa nenhuma" saíram — ficariam sempre redundantes com o
+  próprio campo.
+- **Passo 2: os quatro percentuais (débito, crédito à vista, crédito
+  parcelado, Pix) somam sempre 100.** Não existe mais "o que sobra é
+  dinheiro". `ajustarMix()` foi reescrito: mexer numa faixa redistribui as
+  outras três **proporcionalmente entre si** no espaço que sobrou (a última
+  absorve o resto do arredondamento, para a soma nunca escapar de 100). Os
+  oito presets de segmento em `segmentos.mjs` foram renormalizados
+  proporcionalmente para somar 100 (antes somavam entre 75 e 97, com o resto
+  sendo "dinheiro").
+- **A caixa "Ajustar o mix..." não fecha mais sozinha ao trocar de segmento.**
+  Antes `x-bind:open` era amarrado a `! mixIgualAoSegmento`, que vira `true`
+  assim que um preset é aplicado — abrir a mao e trocar de botão fechava a
+  caixa sem pedir. Agora é um estado próprio (`detalhesMixAbertos`), só muda
+  no clique do `<summary>` (`x-on:toggle`).
+- **Passo 3: o seletor de prazo só lista prazos que alguma marca de fato
+  oferece hoje.** `listaDePrazos` varre `catalogo.marcas[].planos[].taxas[]`
+  coletando os `prazo` usados e filtra a lista fixa de dimensões da regra 1 por
+  esse conjunto — hoje, em produção, é só `na_hora` e `d_1`; `d_30` e
+  `parcela_a_parcela` existem como dimensão da chave mas nenhum plano
+  publicado os usa, e uma opção que nunca muda nada só confundia.
+- **Passo 4: nenhuma marca vem marcada de fábrica** (`marcas: []`, antes era
+  `TODAS_AS_MARCAS`). Só "Escolha por mim" marca todas. As marcas parceiras
+  aparecem primeiro, nesta ordem fixa: Ton, Mercado Pago, FacilityPay,
+  SidePay, TrincaPay, Yelly, PagBank — depois as demais, na ordem que o
+  catálogo já trouxer (`ORDEM_PARCEIROS` em `comparador.js`). Cada marca
+  mostra o **logo** em vez do nome; o nome só aparece se não houver
+  `logo_url` ou se a imagem falhar ao carregar (`x-on:error`) — o `<img alt>`
+  mantém o nome para leitor de tela nos dois casos. O seletor "Considerar
+  cupons de desconto" saiu do "Detalhes da conta" e mora agora no passo 4,
+  junto da lista de marcas.
+- **"Detalhes da conta" (saques, TEDs, Pix enviados, antecipação e horizonte
+  de diluição) saiu da tela inteira.** Nenhuma marca cadastrada cobra
+  antecipação extra hoje, e saques/TEDs/Pix enviados nunca foram um dado que
+  o projeto registra. `Cenario::deArray` (PHP e JS) já assume os padrões
+  certos (zero, zero, zero, `false`) quando esses campos não vêm no cenário —
+  a tela só parou de perguntar, a capacidade continua no motor para quando
+  fizer sentido de novo. O horizonte de diluição da adesão ficou **fixo em 12
+  meses** (`HORIZONTE_PADRAO` nos dois motores, não mudou), e a adesão passou
+  a mostrar sempre as duas pontas — **à vista** (`custo_inicial.com_cupom`) e
+  **12x** (`item.formatado.adesao.por_mes`, que com o horizonte fixo em 12 já
+  É o valor da parcela) — no card do resultado e no bloco de faixa reportada.
+- **Corrigido: "Copiar link deste resultado" não fazia nada em contexto sem
+  HTTPS.** `navigator.clipboard` só existe em contexto seguro (HTTPS, ou
+  `localhost` exato — um `*.test` do Herd em HTTP não conta), e o catch
+  silencioso deixava o botão clicável sem efeito visível nenhum, parecendo
+  quebrado. `copiarLink()` agora tenta a Clipboard API e, se não existir ou
+  falhar, cai num fallback com `<textarea>` oculto + `document.execCommand
+  ('copy')` (descontinuado, mas ainda funciona nos navegadores atuais); se os
+  dois falharem, a tela avisa ("Não deu para copiar sozinho...") em vez de
+  ficar muda.
+- **A URL de compartilhamento ganhou um segundo sinal para "nenhuma marca".**
+  Com o padrão agora sendo `marcas: []`, `m=` vazio na URL não podia mais
+  significar "parâmetro ausente, use o padrão" (que também é nenhuma marca
+  hoje, mas nem sempre foi) — `estado.mjs` usa `m=0` para "nenhuma marca"
+  explicitamente, para o link continuar reconstruindo a tela certa mesmo se o
+  padrão de fábrica mudar de novo no futuro.
+
+**Conferido:** `php artisan test tests/Feature/Comparador tests/Feature/Motor`
+passa (26/27 — o único que falha, `MotorSobreACargaRealTest::
+test_o_que_falta_na_carga_aparece_como_falta_e_nao_como_zero`, já falhava
+igual antes desta revisão, em `main` sem nenhuma das mudanças acima; não
+investigado, fora do escopo). `npm run build` sem erro. Testado no navegador
+local (`http://comparador-maquininhas.test`, Herd) com dado real: mix
+redistribuindo proporcionalmente, caixa do mix permanecendo aberta ao trocar
+de segmento, "0 de 13 marcas selecionadas" de largada, ordem de parceiros
+correta, prazo filtrado (confirmado contra o JSON de produção: só `na_hora` e
+`d_1` em uso — o `d_30`/`parcela_a_parcela` só apareciam no JSON local, que
+tem rascunho divergente de produção), "Copiar link" funcionando via fallback
+em HTTP, e custo inicial mostrando à vista e 12x.
+
 ## Páginas de marca e listagem (etapa 08)
 
 `/maquininhas` (grade) e `/maquininha/{slug}` (página individual), servidas do

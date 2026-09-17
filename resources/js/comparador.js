@@ -20,13 +20,7 @@ import { doUsuario, numero as formatarNumero, percentual, real } from './compara
 import { calcular } from './comparador/motor.mjs';
 import { resumir } from './comparador/resumo.mjs';
 import { daUrl, paraUrl, TODAS_AS_MARCAS } from './comparador/estado.mjs';
-import {
-  LISTA_DE_SEGMENTOS,
-  percentualEmDinheiro as calcularDinheiroEmEspecie,
-  SEGMENTOS,
-  SEGMENTO_PADRAO,
-  vendasDoMix,
-} from './comparador/segmentos.mjs';
+import { LISTA_DE_SEGMENTOS, SEGMENTOS, SEGMENTO_PADRAO, vendasDoMix } from './comparador/segmentos.mjs';
 
 /** Faturamento de partida: o meio da faixa que o publico do canal declara. */
 const FATURAMENTO_PADRAO = 10000;
@@ -42,6 +36,14 @@ const FATURAMENTO_PADRAO = 10000;
  * controle fino - com o aviso do lado explicando o que muda.
  */
 const VISA_MASTER_PADRAO = 100;
+
+/**
+ * Marcas parceiras primeiro, na ordem pedida pelo Everto em 17/09/2026 - as
+ * demais mantem a ordem que o catalogo ja trouxer. `indexOf` devolve -1 para
+ * quem nao esta na lista, e -1 fica depois de qualquer indice real porque o
+ * comparador substitui por um numero maior que o tamanho da lista.
+ */
+const ORDEM_PARCEIROS = ['ton', 'mercado-pago', 'facilitypay', 'sidepay', 'trincapay', 'yelly', 'pagbank'];
 
 function estadoInicial() {
   const segmento = SEGMENTOS[SEGMENTO_PADRAO];
@@ -59,12 +61,10 @@ function estadoInicial() {
     ticket: segmento.ticket,
     visaMaster: VISA_MASTER_PADRAO,
     prazo: '',
-    marcas: TODAS_AS_MARCAS,
-    horizonte: 12,
-    antecipacao: false,
-    saques: 0,
-    teds: 0,
-    pixEnvios: 0,
+    // Nenhuma marca marcada de fabrica (decisao do Everton, 17/09/2026): quem
+    // nao quer escolher usa o botao "Escolha por mim", que e que leva a
+    // TODAS_AS_MARCAS.
+    marcas: [],
     aplicarCupom: true,
   };
 }
@@ -102,6 +102,11 @@ function comparador(caminhoDoJson) {
     erroDeCarga: null,
     avancado: false,
     copiado: false,
+    erroAoCopiar: false,
+    // Independente do preset do segmento: uma vez aberto a mao, so fecha se a
+    // pessoa clicar de novo no "Ajustar o mix..." (pedido do Everton,
+    // 17/09/2026) - trocar de segmento nao pode fechar a caixa sozinho.
+    detalhesMixAbertos: false,
     temporizador: null,
     // Etapa 12: debounce proprio para o evento de uso do GA4, separado do
     // debounce do calculo (120ms — pensado para o motor, nao para analytics).
@@ -165,11 +170,6 @@ function comparador(caminhoDoJson) {
         this.visaMaster,
         this.prazo,
         this.marcas,
-        this.horizonte,
-        this.antecipacao,
-        this.saques,
-        this.teds,
-        this.pixEnvios,
         this.aplicarCupom,
       ]);
     },
@@ -207,30 +207,44 @@ function comparador(caminhoDoJson) {
     /**
      * Ajustar um controle fino tira a tela do preset - e o rotulo tem de dizer.
      *
-     * A faixa para no espaco que sobrou, em vez de deixar a soma passar de
-     * 100%. As duas alternativas eram piores: somar mais de 100 apaga o
-     * resultado inteiro num arrasto de slider, e reequilibrar as outras faixas
-     * sozinho mexeria em numeros que a pessoa nao pediu para mexer. Assim,
-     * para subir uma faixa e preciso baixar outra - que e a verdade do
-     * problema.
+     * Os quatro juntos somam sempre 100 (decisao do Everton, 17/09/2026: a
+     * pergunta 1 ja e so o que passa na maquininha, entao nao ha mais
+     * "dinheiro que sobra" para segurar a soma abaixo de 100). Por isso mexer
+     * numa faixa redistribui as outras tres na mesma proporcao entre si -
+     * "as mesmas proporcoes, no espaco que sobrou" - em vez de so travar no
+     * teto como antes. Quando as outras tres estao todas zeradas (arrastar a
+     * unica faixa com valor direto para baixo), reparte o espaco em partes
+     * iguais entre elas, que e o unico ponto de partida que nao inventa um
+     * favorito.
      */
     ajustarMix(chave, valor) {
-      const outras = Object.entries(this.mix)
-        .filter(([outra]) => outra !== chave)
-        .reduce((soma, [, percentual]) => soma + percentual, 0);
+      const pedido = Math.min(100, Math.max(0, Number(valor) || 0));
+      const outras = Object.keys(this.mix).filter((outra) => outra !== chave);
+      const somaOutras = outras.reduce((soma, outra) => soma + this.mix[outra], 0);
+      const disponivel = 100 - pedido;
 
-      const teto = Math.max(0, 100 - outras);
-      const pedido = Math.max(0, Number(valor) || 0);
+      const mix = { ...this.mix, [chave]: pedido };
+      let somaAjustada = 0;
 
-      this.mix = { ...this.mix, [chave]: Math.min(teto, pedido) };
-    },
+      outras.forEach((outra, indice) => {
+        if (indice === outras.length - 1) {
+          // A ultima absorve o resto do arredondamento, para a soma nunca
+          // escapar de 100 por causa de decimais perdidos nas anteriores.
+          mix[outra] = disponivel - somaAjustada;
 
-    get percentualEmDinheiro() {
-      return calcularDinheiroEmEspecie(this.mix);
-    },
+          return;
+        }
 
-    get mixExcedido() {
-      return this.percentualEmDinheiro < 0;
+        const fatia =
+          somaOutras === 0
+            ? Math.round(disponivel / outras.length)
+            : Math.round((this.mix[outra] * disponivel) / somaOutras);
+
+        mix[outra] = fatia;
+        somaAjustada += fatia;
+      });
+
+      this.mix = mix;
     },
 
     get mixIgualAoSegmento() {
@@ -254,8 +268,19 @@ function comparador(caminhoDoJson) {
     // Marcas
     // -----------------------------------------------------------------
 
+    /** Parceiras primeiro, na ordem da lista acima; as demais mantem a ordem do catalogo. */
     get todasAsMarcas() {
-      return this.catalogo === null ? [] : this.catalogo.marcas;
+      if (this.catalogo === null) {
+        return [];
+      }
+
+      const posicao = (marca) => {
+        const indice = ORDEM_PARCEIROS.indexOf(marca.slug);
+
+        return indice === -1 ? ORDEM_PARCEIROS.length : indice;
+      };
+
+      return [...this.catalogo.marcas].sort((a, b) => posicao(a) - posicao(b));
     },
 
     marcaEscolhida(slug) {
@@ -291,7 +316,16 @@ function comparador(caminhoDoJson) {
     // Calculo
     // -----------------------------------------------------------------
 
-    /** O cenario no formato de App\Motor\Cenario::deArray. */
+    /**
+     * O cenario no formato de App\Motor\Cenario::deArray.
+     *
+     * Antecipacao, saques, TEDs, Pix enviados e o horizonte de diluicao da
+     * adesao nao tem mais controle na tela (decisao do Everton, 17/09/2026:
+     * nenhuma marca cadastrada cobra antecipacao extra hoje, e a adesao passou
+     * a mostrar sempre a vista e em 12x, sem selecao de horizonte). Ficam de
+     * fora daqui de proposito - Cenario::deArray ja assume o padrao certo
+     * (zero, zero, zero, false e 12 meses) para cada um.
+     */
     get cenario() {
       return {
         faturamento_mensal: this.faturamento,
@@ -303,11 +337,6 @@ function comparador(caminhoDoJson) {
           visaMaster: this.visaMaster,
         }),
         prazo: this.prazo === '' ? null : this.prazo,
-        antecipacao_avulsa: this.antecipacao,
-        horizonte_meses: this.horizonte,
-        saques_mensais: this.saques,
-        teds_mensais: this.teds,
-        pix_envios_mensais: this.pixEnvios,
         aplicar_cupom: this.aplicarCupom,
         hoje: new Date().toISOString().slice(0, 10),
       };
@@ -369,7 +398,7 @@ function comparador(caminhoDoJson) {
 
       // Sem nenhuma linha de venda nao ha o que comparar, e o motor recusa a
       // entrada de proposito. Aqui isso e estado de tela, nao excecao.
-      if (cenario.vendas.length === 0 || this.mixExcedido) {
+      if (cenario.vendas.length === 0) {
         this.resultado = null;
 
         return;
@@ -394,16 +423,53 @@ function comparador(caminhoDoJson) {
 
       window.history.replaceState(null, '', paraUrl(this, padrao));
       this.copiado = false;
+      this.erroAoCopiar = false;
     },
 
+    /**
+     * A Clipboard API so existe em contexto seguro (HTTPS, ou `localhost`
+     * exatamente - um `.test` do Herd em HTTP nao conta). Sem ela o botao
+     * ficava clicavel e nao fazia nada visivel, o que parece defeito. O
+     * fallback com `<textarea>` selecionado + `execCommand('copy')`
+     * (descontinuado, mas ainda funciona nos navegadores atuais) cobre esse
+     * caso; se os dois falharem, a tela avisa em vez de ficar muda.
+     */
     async copiarLink() {
+      const link = window.location.href;
+
+      if (navigator.clipboard?.writeText) {
+        try {
+          await navigator.clipboard.writeText(link);
+          this.copiado = true;
+          this.erroAoCopiar = false;
+
+          return;
+        } catch (e) {
+          // Cai no fallback abaixo.
+        }
+      }
+
+      const copiou = this.copiarComFallback(link);
+      this.copiado = copiou;
+      this.erroAoCopiar = !copiou;
+    },
+
+    copiarComFallback(texto) {
       try {
-        await navigator.clipboard.writeText(window.location.href);
-        this.copiado = true;
+        const campo = document.createElement('textarea');
+        campo.value = texto;
+        campo.style.position = 'fixed';
+        campo.style.opacity = '0';
+        document.body.appendChild(campo);
+        campo.focus();
+        campo.select();
+
+        const copiou = document.execCommand('copy');
+        document.body.removeChild(campo);
+
+        return copiou;
       } catch (e) {
-        // Sem permissao de area de transferencia (ou sem HTTPS): o link esta
-        // na barra de enderecos, entao da para copiar a mao.
-        this.copiado = false;
+        return false;
       }
     },
 
@@ -499,10 +565,29 @@ function comparador(caminhoDoJson) {
       return this.catalogo?.grupos?.[codigo]?.nome ?? codigo;
     },
 
+    /**
+     * So os prazos que alguma marca de fato oferece hoje (pedido do Everton,
+     * 17/09/2026) — "Em 30 dias" e "Conforme as parcelas" existem como
+     * dimensao da chave (regra 1), mas nenhum plano publicado usa nenhum dos
+     * dois ainda, e uma opcao no seletor que nunca muda nada e so confunde.
+     */
     get listaDePrazos() {
       const prazos = this.catalogo?.prazos ?? {};
+      const usados = new Set();
 
-      return Object.values(prazos).sort((a, b) => a.ordem - b.ordem);
+      for (const marca of this.catalogo?.marcas ?? []) {
+        for (const plano of marca.planos ?? []) {
+          for (const taxa of plano.taxas ?? []) {
+            if (taxa.prazo) {
+              usados.add(taxa.prazo);
+            }
+          }
+        }
+      }
+
+      return Object.values(prazos)
+        .filter((prazo) => usados.has(prazo.codigo))
+        .sort((a, b) => a.ordem - b.ordem);
     },
 
     /** A linha de venda pelo nome que o lojista reconhece. */

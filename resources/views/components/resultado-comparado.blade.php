@@ -122,7 +122,14 @@
                             <dt class="text-etiqueta font-semibold uppercase text-tinta-suave">Custo inicial</dt>
                             <template x-if="item.comparacao && item.comparacao.custo_inicial">
                                 <div>
-                                    <dd class="numero-destaque mt-1 text-numero" x-text="item.comparacao.custo_inicial.formatado.com_cupom"></dd>
+                                    {{-- Etapa 19: sempre a vista e em 12x, nunca so um dos dois
+                                         (pedido do Everton, 17/09/2026) — o horizonte de diluicao
+                                         da adesao e fixo em 12 meses agora, entao
+                                         item.formatado.adesao.por_mes ja E o valor da parcela. --}}
+                                    <dd class="numero-destaque mt-1 text-numero" x-text="item.comparacao.custo_inicial.formatado.com_cupom + ' à vista'"></dd>
+                                    <p class="mt-1 text-miudo text-tinta-suave">
+                                        ou 12x de <span class="numero" x-text="item.formatado.adesao.por_mes"></span>
+                                    </p>
                                     <p class="mt-1 text-miudo text-tinta-suave">
                                         <template x-if="item.comparacao.custo_inicial.tem_cupom">
                                             {{-- Regra 5: o preco de onde o desconto saiu anda junto. --}}
@@ -142,12 +149,6 @@
                                             <span>Sem cupom disponível hoje.</span>
                                         </template>
                                     </p>
-                                    <template x-if="item.comparacao.custo_inicial.formatado.parcela_da_marca">
-                                        <p class="text-miudo text-tinta-suave">
-                                            A marca parcela em
-                                            <span class="numero" x-text="item.comparacao.custo_inicial.formatado.parcela_da_marca"></span>.
-                                        </p>
-                                    </template>
                                 </div>
                             </template>
                             <template x-if="! (item.comparacao && item.comparacao.custo_inicial)">

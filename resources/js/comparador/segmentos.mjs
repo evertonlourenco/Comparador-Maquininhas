@@ -22,9 +22,12 @@
 // a taxa errada e risco de CDC; o mix errado e o usuario descrevendo mal a
 // propria loja, e o unico remedio possivel e deixar os controles a mao.
 //
-// A soma dos quatro percentuais e menor que 100 de proposito: o resto e
-// dinheiro, que nao passa na maquininha e nao custa taxa nenhuma. Uma padaria
-// que passasse 100% no cartao seria a padaria errada.
+// A soma dos quatro percentuais e sempre 100 (decisao do Everton, 17/09/2026).
+// A pergunta 1 pede o valor que ja passa na maquininha - cartao e Pix -, nunca
+// o faturamento total do negocio, entao nao ha mais "dinheiro que sobra" fora
+// da maquininha para subtrair aqui. Mexer numa faixa redistribui as outras tres
+// proporcionalmente, para a soma nunca sair de 100 (ver ajustarMix em
+// comparador.js).
 
 /**
  * @typedef {object} Segmento
@@ -42,73 +45,73 @@
 export const SEGMENTOS = {
   padaria: {
     rotulo: 'Padaria',
-    debito: 34,
-    creditoAvista: 20,
-    creditoParcelado: 2,
-    pix: 19,
+    debito: 45,
+    creditoAvista: 27,
+    creditoParcelado: 3,
+    pix: 25,
     parcelas: 2,
     ticket: 22,
   },
   salao: {
     rotulo: 'Salão de beleza',
-    debito: 22,
-    creditoAvista: 26,
-    creditoParcelado: 14,
-    pix: 28,
+    debito: 24,
+    creditoAvista: 29,
+    creditoParcelado: 16,
+    pix: 31,
     parcelas: 3,
     ticket: 90,
   },
   roupas: {
     rotulo: 'Loja de roupas',
-    debito: 15,
-    creditoAvista: 20,
-    creditoParcelado: 40,
-    pix: 18,
+    debito: 16,
+    creditoAvista: 22,
+    creditoParcelado: 43,
+    pix: 19,
     parcelas: 4,
     ticket: 180,
   },
   food_truck: {
     rotulo: 'Food truck',
-    debito: 30,
-    creditoAvista: 22,
+    debito: 34,
+    creditoAvista: 25,
     creditoParcelado: 3,
-    pix: 33,
+    pix: 38,
     parcelas: 2,
     ticket: 35,
   },
   feira: {
     rotulo: 'Feira',
-    debito: 26,
-    creditoAvista: 12,
-    creditoParcelado: 2,
-    pix: 40,
+    debito: 33,
+    creditoAvista: 15,
+    creditoParcelado: 3,
+    pix: 49,
     parcelas: 2,
     ticket: 28,
   },
   delivery: {
     rotulo: 'Delivery',
-    debito: 20,
-    creditoAvista: 25,
+    debito: 21,
+    creditoAvista: 26,
     creditoParcelado: 5,
-    pix: 45,
+    pix: 48,
     parcelas: 2,
     ticket: 55,
   },
   oficina: {
     rotulo: 'Oficina',
     debito: 12,
-    creditoAvista: 18,
-    creditoParcelado: 45,
-    pix: 22,
+    creditoAvista: 19,
+    creditoParcelado: 46,
+    pix: 23,
     parcelas: 6,
     ticket: 350,
   },
   outro: {
     rotulo: 'Outro',
-    debito: 25,
-    creditoAvista: 25,
-    creditoParcelado: 15,
-    pix: 25,
+    debito: 28,
+    creditoAvista: 28,
+    creditoParcelado: 17,
+    pix: 27,
     parcelas: 3,
     ticket: 60,
   },
@@ -127,9 +130,9 @@ export const LISTA_DE_SEGMENTOS = Object.entries(SEGMENTOS).map(([chave, dados])
  *
  * Duas conversoes acontecem aqui, e as duas sao do lojista para o motor:
  *
- * 1. Percentual do faturamento -> reais no mes. O que sobrar dos quatro
- *    percentuais e dinheiro em especie, e nao vira linha nenhuma: dinheiro nao
- *    passa na maquininha.
+ * 1. Percentual do valor vendido na maquininha -> reais no mes. Os quatro
+ *    percentuais somam 100: nao ha mais parcela "fora da maquininha" a
+ *    descontar, porque a pergunta 1 ja pede so o que passa nela.
  * 2. Ticket medio -> quantidade de transacoes. O motor precisa dela quando a
  *    taxa cobra valor fixo por venda, e sem ela ele nao estima: declara que
  *    falta. Com ticket zerado a quantidade sai nula de proposito, que e o
@@ -191,13 +194,6 @@ export function vendasDoMix({ faturamento, mix, parcelas, ticket, visaMaster }) 
   }
 
   return vendas;
-}
-
-/** Quanto do faturamento nao passa na maquininha, em pontos percentuais. */
-export function percentualEmDinheiro(mix) {
-  const soma = mix.debito + mix.credito_avista + mix.credito_parcelado + mix.pix;
-
-  return Math.round((100 - soma) * 100) / 100;
 }
 
 function quantidade(valor, ticket) {

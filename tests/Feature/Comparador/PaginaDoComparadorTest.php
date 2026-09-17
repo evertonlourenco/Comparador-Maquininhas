@@ -37,7 +37,7 @@ class PaginaDoComparadorTest extends TestCase
         $posicoes = [];
 
         foreach ([
-            'Quanto você fatura por mês',
+            'Quanto você vende (ou venderá) por mês na maquininha?',
             'Como seus clientes pagam',
             'Quando você quer o dinheiro',
             'Quais marcas comparar',

@@ -4,11 +4,16 @@
     A tela faz quatro perguntas, nesta ordem, e a ordem e a decisao mais
     importante do arquivo:
 
-      1. Faturamento mensal — o unico numero que todo lojista sabe de cabeca.
+      1. Valor vendido na maquininha por mes — o total que passa no cartao e
+         no Pix. Desde 17/09/2026 (decisao do Everton) e sempre 100% desse
+         valor: nao se supoe mais dinheiro, boleto ou qualquer coisa fora da
+         maquininha.
       2. Mix de vendas — o que de fato decide o resultado, entregue por botao
-         de segmento para nao virar um formulario de quatro percentuais.
+         de segmento para nao virar um formulario de quatro percentuais. Os
+         quatro juntos sempre somam 100 do valor do passo 1.
       3. Prazo de recebimento — a quinta dimensao da chave da regra 1.
-      4. Marcas, ou "Escolha por mim" para quem nao quer escolher.
+      4. Marcas, ou "Escolha por mim" para quem nao quer escolher. Nenhuma vem
+         marcada de fabrica.
 
     Regra 9: nada disto consulta o banco. O catalogo e o JSON estatico servido
     de /dados/comparador.json e a conta roda no navegador, nos gemeos em
@@ -51,32 +56,21 @@
             <section aria-labelledby="passo-faturamento" class="rounded-bloco border border-regua bg-papel">
                 <div class="border-b border-regua px-4 py-3">
                     <h2 id="passo-faturamento" class="flex items-center gap-3 text-cartao sm:text-2xl">
-                        <span class="numero-destaque inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-marca text-base text-sobre-marca">1</span> Quanto você fatura por mês
+                        <span class="numero-destaque inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-marca text-base text-sobre-marca">1</span> Quanto você vende (ou venderá) por mês na maquininha?
                     </h2>
                 </div>
 
-                <div class="grid gap-4 px-4 py-4 sm:grid-cols-2">
+                <div class="px-4 py-4">
                     <x-campo
-                        rotulo="Faturamento mensal estimado"
+                        rotulo="Valor vendido na maquininha por mês"
                         nome="faturamento"
                         id="campo-faturamento"
                         prefixo="R$"
                         inputmode="decimal"
-                        ajuda="Tudo que entra no mês, incluindo o que você recebe em dinheiro."
+                        ajuda="O total que os clientes pagam na maquininha — cartão e Pix. Não inclua dinheiro, boleto ou qualquer forma de pagamento fora dela."
                         x-model="faturamentoTexto"
                         x-on:blur="formatarCampos()"
                     />
-
-                    <div class="self-end text-miudo text-tinta-suave">
-                        <p>
-                            Passa na maquininha:
-                            <span class="numero font-medium text-tinta" x-text="resultado ? resultado.resumo.formatado.volume_vendido : '—'"></span>
-                        </p>
-                        <p>
-                            Em dinheiro, sem taxa nenhuma:
-                            <span class="numero font-medium text-tinta" x-text="resultado ? resultado.resumo.formatado.fora_da_maquininha : '—'"></span>
-                        </p>
-                    </div>
                 </div>
             </section>
 
@@ -122,7 +116,16 @@
                         </p>
                     </div>
 
-                    <details class="rounded-bloco border border-regua bg-superficie" x-bind:open="! mixIgualAoSegmento">
+                    {{-- Aberta a mao, so fecha se a pessoa clicar de novo aqui - trocar
+                         de segmento com a caixa aberta nao pode fecha-la sozinho
+                         (pedido do Everton, 17/09/2026). Por isso o :open usa um
+                         estado proprio (detalhesMixAbertos) e nao mixIgualAoSegmento,
+                         que muda toda vez que um preset e escolhido. --}}
+                    <details
+                        class="rounded-bloco border border-regua bg-superficie"
+                        x-bind:open="detalhesMixAbertos"
+                        x-on:toggle="detalhesMixAbertos = $event.target.open"
+                    >
                         <summary class="inline-flex min-h-11 cursor-pointer items-center px-4 text-sm text-link underline underline-offset-4 hover:no-underline">
                             Ajustar o mix, o ticket médio e as bandeiras
                         </summary>
@@ -152,17 +155,12 @@
                                 </div>
                             @endforeach
 
-                            <p class="border-t border-regua pt-3 text-miudo" :class="mixExcedido ? 'text-vencido' : 'text-tinta-suave'">
-                                <template x-if="! mixExcedido">
-                                    <span>
-                                        O que sobra —
-                                        <span class="numero font-medium" x-text="percentualEmDinheiro + '%'"></span>
-                                        — é dinheiro em espécie, e não passa na maquininha.
-                                    </span>
-                                </template>
-                                <template x-if="mixExcedido">
-                                    <span>A soma passou de 100%. Reduza alguma faixa para o resultado voltar.</span>
-                                </template>
+                            {{-- Os quatro sempre somam 100 (ajustarMix redistribui as outras
+                                 faixas sozinho); nao ha mais estado de "passou de 100%" para
+                                 avisar aqui. --}}
+                            <p class="border-t border-regua pt-3 text-miudo text-tinta-suave">
+                                Os quatro juntos somam sempre 100% do valor vendido na maquininha.
+                                Subir uma faixa reduz as outras na mesma proporção.
                             </p>
 
                             <div class="grid gap-4 border-t border-regua pt-4 sm:grid-cols-2">
@@ -270,11 +268,21 @@
                         “Escolha por mim” compara todas e aponta a mais barata.
                     </p>
 
+                    <div class="mb-4 flex items-start gap-2 border-b border-regua pb-4">
+                        <input type="checkbox" id="campo-cupom" class="mt-1 size-5 shrink-0 accent-[var(--cor-tinta)]" x-model="aplicarCupom">
+                        <label for="campo-cupom" class="text-sm text-tinta">
+                            Considerar cupons de desconto
+                            <span class="block text-miudo text-tinta-suave">
+                                O cupom desconta a adesão. A taxa pelo nosso link é a mesma do site oficial.
+                            </span>
+                        </label>
+                    </div>
+
                     <fieldset>
                         <legend class="sr-only">Marcas a comparar</legend>
-                        <div class="grid gap-x-6 gap-y-2 sm:grid-cols-2 md:grid-cols-3">
+                        <div class="grid gap-x-6 gap-y-3 sm:grid-cols-2 md:grid-cols-3">
                             <template x-for="marca in todasAsMarcas" :key="marca.slug">
-                                <div class="flex min-h-11 items-center gap-2">
+                                <div class="flex min-h-11 items-center gap-2" x-data="{ logoComErro: false }">
                                     <input
                                         type="checkbox"
                                         :id="'marca-' + marca.slug"
@@ -282,12 +290,31 @@
                                         :checked="marcaEscolhida(marca.slug)"
                                         x-on:change="alternarMarca(marca.slug)"
                                     >
-                                    <label :for="'marca-' + marca.slug" class="text-sm text-tinta">
-                                        <span x-text="marca.nome"></span>
+                                    {{-- Etapa 19: logo em vez do nome — o nome so aparece se a
+                                         marca nao tiver logo cadastrado ou a imagem falhar ao
+                                         carregar. O <img alt> mantem o nome para leitor de tela
+                                         nos dois casos. --}}
+                                    <label :for="'marca-' + marca.slug" class="flex min-w-0 items-center gap-2 text-sm text-tinta">
+                                        <span class="flex h-9 min-w-0 shrink-0 items-center rounded-botao border border-regua bg-papel px-2">
+                                            <template x-if="marca.logo_url && ! logoComErro">
+                                                <img
+                                                    :src="marca.logo_url"
+                                                    :alt="marca.nome"
+                                                    class="max-h-6 max-w-24 object-contain"
+                                                    height="24"
+                                                    loading="lazy"
+                                                    decoding="async"
+                                                    x-on:error="logoComErro = true"
+                                                >
+                                            </template>
+                                            <template x-if="! marca.logo_url || logoComErro">
+                                                <span class="truncate" x-text="marca.nome"></span>
+                                            </template>
+                                        </span>
                                         {{-- Regra 4 antes do resultado: quem nao publica
                                              tabela nunca vai ter numero exato aqui. --}}
                                         <template x-if="! marca.publica_tabela">
-                                            <span class="block text-miudo text-reportado">não publica tabela</span>
+                                            <span class="text-miudo text-reportado">não publica tabela</span>
                                         </template>
                                     </label>
                                 </div>
@@ -297,72 +324,6 @@
                 </div>
             </section>
 
-            {{-- Controles finos que quase ninguem mexe, mas que mudam a conta
-                 para quem mexe. --}}
-            <details class="rounded-bloco border border-regua bg-papel">
-                <summary class="inline-flex min-h-11 cursor-pointer items-center px-4 text-sm text-link underline underline-offset-4 hover:no-underline">
-                    Detalhes da conta: antecipação, tarifas e horizonte
-                </summary>
-
-                <div class="grid gap-4 border-t border-regua px-4 py-4 sm:grid-cols-2 lg:grid-cols-3">
-                    @foreach ([
-                        ['saques', 'Saques no mês', 'Quantos saques você faz por mês.'],
-                        ['teds', 'TEDs no mês', 'Quantas transferências por TED você faz por mês.'],
-                        ['pixEnvios', 'Pix enviados no mês', 'Quantos Pix você envia por mês.'],
-                    ] as [$modelo, $rotulo, $ajuda])
-                        <div class="space-y-1.5">
-                            <label for="campo-{{ Str::slug($modelo) }}" class="block text-sm font-medium text-tinta">{{ $rotulo }}</label>
-                            <input
-                                id="campo-{{ Str::slug($modelo) }}"
-                                type="text"
-                                inputmode="numeric"
-                                class="block min-h-12 w-full rounded-botao border border-contorno bg-papel px-3 py-2 text-base text-tinta"
-                                aria-describedby="campo-{{ Str::slug($modelo) }}-ajuda"
-                                x-model.number="{{ $modelo }}"
-                            >
-                            <p id="campo-{{ Str::slug($modelo) }}-ajuda" class="text-miudo text-tinta-suave">{{ $ajuda }}</p>
-                        </div>
-                    @endforeach
-
-                    <div class="space-y-1.5">
-                        <label for="campo-horizonte" class="block text-sm font-medium text-tinta">Diluir a adesão em quantos meses</label>
-                        <select
-                            id="campo-horizonte"
-                            class="block min-h-12 w-full rounded-botao border border-contorno bg-papel px-3 py-2 text-base text-tinta"
-                            aria-describedby="campo-horizonte-ajuda"
-                            x-model.number="horizonte"
-                        >
-                            @foreach ([6, 12, 18, 24, 36] as $meses)
-                                <option value="{{ $meses }}">{{ $meses }} meses</option>
-                            @endforeach
-                        </select>
-                        <p id="campo-horizonte-ajuda" class="text-miudo text-tinta-suave">
-                            A adesão é custo único e a comparação é mensal. Doze meses é o parcelamento
-                            que as próprias marcas oferecem.
-                        </p>
-                    </div>
-
-                    <div class="flex items-start gap-2 sm:col-span-2 lg:col-span-1">
-                        <input type="checkbox" id="campo-antecipacao" class="mt-1 size-5 shrink-0 accent-[var(--cor-tinta)]" x-model="antecipacao">
-                        <label for="campo-antecipacao" class="text-sm text-tinta">
-                            Antecipar os recebíveis
-                            <span class="block text-miudo text-tinta-suave">
-                                Só cobra onde o prazo ainda não embute o adiantamento — nunca duas vezes.
-                            </span>
-                        </label>
-                    </div>
-
-                    <div class="flex items-start gap-2 sm:col-span-2 lg:col-span-1">
-                        <input type="checkbox" id="campo-cupom" class="mt-1 size-5 shrink-0 accent-[var(--cor-tinta)]" x-model="aplicarCupom">
-                        <label for="campo-cupom" class="text-sm text-tinta">
-                            Considerar cupons de desconto
-                            <span class="block text-miudo text-tinta-suave">
-                                O cupom desconta a adesão. A taxa pelo nosso link é a mesma do site oficial.
-                            </span>
-                        </label>
-                    </div>
-                </div>
-            </details>
         </form>
 
         {{-- Resultado --------------------------------------------------------- --}}
@@ -372,11 +333,21 @@
 
                 <div class="flex flex-wrap items-center gap-3">
                     <span class="text-miudo text-tinta-suave" x-show="copiado" x-cloak>Link copiado.</span>
+                    <span class="text-miudo text-reportado" x-show="erroAoCopiar" x-cloak>
+                        Não deu para copiar sozinho — o link está na barra de endereços.
+                    </span>
                     <x-botao variante="secundaria" x-on:click="copiarLink()">Copiar link deste resultado</x-botao>
                 </div>
             </div>
 
             <p class="text-sm text-tinta-suave" x-show="carregando">Carregando a tabela de taxas…</p>
+
+            <template x-if="! carregando && ! erroDeCarga && resultado && resultado.itens.length === 0">
+                <p class="rounded-bloco border border-reportado bg-reportado-fundo px-4 py-3 text-sm text-reportado">
+                    Nenhuma marca selecionada ainda. Marque pelo menos uma acima, ou clique em
+                    “Escolha por mim”.
+                </p>
+            </template>
 
             {{-- O anuncio curto para leitor de tela. A tela inteira nao pode ser
                  aria-live: recalcular a cada arrasto de slider viraria ruido. --}}
@@ -510,7 +481,8 @@
                                 <template x-if="item.comparacao.custo_inicial">
                                     <p class="border-b border-dashed border-reportado px-4 py-2 text-miudo text-tinta-suave">
                                         Custo inicial:
-                                        <span class="numero" x-text="item.comparacao.custo_inicial.formatado.com_cupom"></span>
+                                        <span class="numero" x-text="item.comparacao.custo_inicial.formatado.com_cupom + ' à vista'"></span>
+                                        ou 12x de <span class="numero" x-text="item.formatado.adesao.por_mes"></span>
                                         <template x-if="item.comparacao.custo_inicial.tem_cupom">
                                             <span>
                                                 — sem cupom,

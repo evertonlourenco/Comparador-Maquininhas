@@ -20,9 +20,14 @@
 //
 // A lista de marcas usa `*` para "todas", que e o que o botao "Escolha por
 // mim" deixa - assim o link continua valendo quando uma marca nova entrar no
-// catalogo, em vez de congelar as nove de hoje.
+// catalogo, em vez de congelar as nove de hoje. O padrao de fabrica (decisao
+// do Everton, 17/09/2026) e nenhuma marca marcada, e por isso precisa de um
+// segundo sinal `0` para "nenhuma" - sem ele, `m=` vazio na URL nao teria como
+// distinguir "nenhuma marca" de "parametro ausente, use o padrao", que hoje
+// tambem e nenhuma, mas amanha pode nao ser.
 
 export const TODAS_AS_MARCAS = '*';
+const NENHUMA_MARCA = '0';
 
 /**
  * Le a barra de enderecos por cima dos padroes.
@@ -72,19 +77,11 @@ export function daUrl(busca, padrao, presetDoSegmento) {
   numero(p, 'px', (v) => (estado.parcelas = Math.round(v)));
   numero(p, 't', (v) => (estado.ticket = v));
   numero(p, 'vm', (v) => (estado.visaMaster = v));
-  numero(p, 'h', (v) => (estado.horizonte = Math.round(v)));
-  numero(p, 'sq', (v) => (estado.saques = Math.round(v)));
-  numero(p, 'td', (v) => (estado.teds = Math.round(v)));
-  numero(p, 'pe', (v) => (estado.pixEnvios = Math.round(v)));
 
   // Prazo vazio na URL e "o mais barato que cada plano oferecer", que e
   // exatamente o `prazo: null` do cenario.
   if (p.has('pz')) {
     estado.prazo = p.get('pz') ?? '';
-  }
-
-  if (p.has('a')) {
-    estado.antecipacao = p.get('a') === '1';
   }
 
   if (p.has('c')) {
@@ -93,7 +90,14 @@ export function daUrl(busca, padrao, presetDoSegmento) {
 
   if (p.has('m')) {
     const marcas = p.get('m') ?? '';
-    estado.marcas = marcas === TODAS_AS_MARCAS || marcas === '' ? TODAS_AS_MARCAS : marcas.split(',');
+
+    if (marcas === TODAS_AS_MARCAS) {
+      estado.marcas = TODAS_AS_MARCAS;
+    } else if (marcas === '' || marcas === NENHUMA_MARCA) {
+      estado.marcas = [];
+    } else {
+      estado.marcas = marcas.split(',');
+    }
   }
 
   return estado;
@@ -136,25 +140,23 @@ export function paraUrl(estado, padrao, caminho = window.location.pathname) {
   parDiferente(p, 'px', estado.parcelas, padrao.parcelas);
   parDiferente(p, 't', estado.ticket, padrao.ticket);
   parDiferente(p, 'vm', estado.visaMaster, padrao.visaMaster);
-  parDiferente(p, 'h', estado.horizonte, padrao.horizonte);
-  parDiferente(p, 'sq', estado.saques, padrao.saques);
-  parDiferente(p, 'td', estado.teds, padrao.teds);
-  parDiferente(p, 'pe', estado.pixEnvios, padrao.pixEnvios);
 
   if (estado.prazo !== padrao.prazo) {
     p.set('pz', estado.prazo);
-  }
-
-  if (estado.antecipacao !== padrao.antecipacao) {
-    p.set('a', estado.antecipacao ? '1' : '0');
   }
 
   if (estado.aplicarCupom !== padrao.aplicarCupom) {
     p.set('c', estado.aplicarCupom ? '1' : '0');
   }
 
-  if (estado.marcas !== TODAS_AS_MARCAS) {
-    p.set('m', [...estado.marcas].sort().join(','));
+  if (!marcasIguais(estado.marcas, padrao.marcas)) {
+    if (estado.marcas === TODAS_AS_MARCAS) {
+      p.set('m', TODAS_AS_MARCAS);
+    } else if (estado.marcas.length === 0) {
+      p.set('m', NENHUMA_MARCA);
+    } else {
+      p.set('m', [...estado.marcas].sort().join(','));
+    }
   }
 
   const busca = p.toString();
@@ -169,6 +171,17 @@ function mixIgual(a, b) {
     a.credito_parcelado === b.credito_parcelado &&
     a.pix === b.pix
   );
+}
+
+function marcasIguais(a, b) {
+  if (a === TODAS_AS_MARCAS || b === TODAS_AS_MARCAS) {
+    return a === b;
+  }
+
+  const sa = [...a].sort();
+  const sb = [...b].sort();
+
+  return sa.length === sb.length && sa.every((valor, indice) => valor === sb[indice]);
 }
 
 function parDiferente(p, chave, valor, padrao) {
