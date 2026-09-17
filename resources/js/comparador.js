@@ -107,6 +107,8 @@ function comparador(caminhoDoJson) {
     // pessoa clicar de novo no "Ajustar o mix..." (pedido do Everton,
     // 17/09/2026) - trocar de segmento nao pode fechar a caixa sozinho.
     detalhesMixAbertos: false,
+    // Slug da marca cujo modal de promocao esta aberto, ou null.
+    promocaoAberta: null,
     temporizador: null,
     // Etapa 12: debounce proprio para o evento de uso do GA4, separado do
     // debounce do calculo (120ms — pensado para o motor, nao para analytics).
@@ -481,6 +483,41 @@ function comparador(caminhoDoJson) {
       return this.resultado === null
         ? []
         : this.resultado.itens.filter((item) => item.estado === estado);
+    },
+
+    /**
+     * Nunca favorecer o plano promocional (decisao do Everton, 17/09/2026): o
+     * numero que disputa posicao e sempre o do plano permanente, e a promocao
+     * vira selo + modal em cima do cartao dele — nunca um cartao proprio, que
+     * ganharia a comparacao com um preco que dura 30 dias. `find` porque cada
+     * marca tem no maximo um plano promocional elegivel por vez.
+     */
+    promocaoDaMarca(slug) {
+      return this.itensNoEstado('promocional').find((item) => item.marca.slug === slug) ?? null;
+    },
+
+    /**
+     * A excecao: quando a marca NAO tem nenhum plano permanente para o
+     * cenario (so o promocional foi avaliado), ela nao pode sumir do
+     * resultado (regra 4) nem virar um selo sem cartao nenhum por baixo — aí a
+     * promocao aparece como cartao proprio mesmo, no bloco de baixo.
+     */
+    get promocionaisOrfas() {
+      return this.itensNoEstado('promocional').filter(
+        (promo) => ! this.resultado.itens.some((outro) => outro.marca.slug === promo.marca.slug && outro.estado !== 'promocional'),
+      );
+    },
+
+    abrirModalPromocao(slug) {
+      this.promocaoAberta = slug;
+    },
+
+    fecharModalPromocao() {
+      this.promocaoAberta = null;
+    },
+
+    get itemDaPromocaoAberta() {
+      return this.promocaoAberta === null ? null : this.promocaoDaMarca(this.promocaoAberta);
     },
 
     get temAlgumResultado() {

@@ -1125,6 +1125,95 @@ correta, prazo filtrado (confirmado contra o JSON de produção: só `na_hora` e
 tem rascunho divergente de produção), "Copiar link" funcionando via fallback
 em HTTP, e custo inicial mostrando à vista e 12x.
 
+### Plano promocional nunca mais é o cartão principal (etapa 19, 17/09/2026)
+
+Pedido do Everton depois de ver o Ton na tela: o plano "Período Promocional"
+aparecia com destaque próprio (card "Tabela de entrada, por tempo limitado")
+mostrando **R$ 45,54/mês**, enquanto o plano permanente da mesma marca para o
+mesmo faturamento (**R$ 235,82/mês** — mais de 5x mais caro) ficava escondido
+ou nem aparecia. O motivo dele: um comparador que existe para ajudar a
+decisão não pode deixar a marca mais cara parecer a mais barata só porque a
+tabela de entrada é chamativa — contraria o propósito da ferramenta.
+
+**A regra nova: o cartão de uma marca é sempre o plano permanente dela.** O
+plano promocional nunca mais aparece como cartão próprio ao lado dos outros —
+vira um **selo** ("Tem tabela de entrada por tempo limitado") no cartão do
+plano permanente da mesma marca, que abre um **modal** com: o motivo e os
+dois limites da promoção (dias ou valor processado, o que vier primeiro — já
+computado por `motivoDaPromocao()`, sem mudança nenhuma no motor), o plano
+para o qual a conta migra depois, a tabela de taxas da promoção
+(`item.vendas`) e o custo inicial. O aviso de que a taxa promocional **não
+permanece** fica na primeira frase do modal, sempre.
+
+**Exceção, para a regra 4 nunca quebrar:** se a marca não tiver *nenhum*
+plano permanente elegível para o cenário (só o promocional foi avaliado), ele
+não pode virar um selo sem cartão embaixo — nesse caso, e só nesse caso, ele
+continua aparecendo como cartão próprio, na seção "Tabela de entrada... — sem
+plano permanente cadastrado".
+
+**Implementação, só na camada de apresentação — nada mudou no motor:**
+
+- `motor.mjs`/`MotorDeCalculo.php` continuam calculando exatamente os mesmos
+  itens de sempre (um por plano elegível, promocional incluso) — os dois
+  testes de paridade não tiveram nenhuma linha alterada.
+- `resultado-comparado.blade.php` ganhou um prop `expressao` (Alpine, opcional):
+  antes o componente sempre lia `itensNoEstado($estado)`; agora um chamador
+  pode passar uma expressão Alpine própria (`expressao="promocionaisOrfas"`)
+  para o bloco de promocionais órfãs, sem duplicar o Blade inteiro.
+- `comparador.js` ganhou `promocaoDaMarca(slug)` (o item promocional daquela
+  marca, se houver), `promocionaisOrfas` (as que não têm plano permanente
+  algum) e o estado do modal (`promocaoAberta`, `abrirModalPromocao()`,
+  `fecharModalPromocao()`, `itemDaPromocaoAberta`).
+- O selo em si só aparece quando `item.estado !== 'promocional'` — sem essa
+  guarda o próprio cartão órfão (que já É a promoção) ganhava um selo
+  apontando pra si mesmo; achado e corrigido durante o teste manual.
+
+**De quebra, decluttering pedido junto:** o "— parcial" que repetia em três
+`<dt>` do mesmo cartão virou um único selo "Parcial" ao lado do título; e os
+quatro parágrafos empilhados (motivo, sucessor, falta dado, avisos), cada um
+com sua própria borda inferior, viraram um bloco só com espaçamento interno.
+Não mexi nos tokens de tipografia (`--text-miudo` = 13px, `--text-etiqueta` =
+11px) — são do design system da etapa 06/14 e valem no site inteiro; se ainda
+parecer pequeno depois dessa limpeza, é uma decisão de escala de fonte
+maior, não um ajuste pontual desta tela.
+
+### Por que "falta dado" aparece tanto para SidePay e FacilityPay (17/09/2026)
+
+O Everton estranhou ver "falta dado" nessas duas marcas, que o `CLAUDE.md` já
+registra como totalmente curadas (117/117 e 78/78 taxas publicadas) — achou
+que podia ser um problema só do ambiente local. Conferido direto no
+`comparador.json` de produção: **não é.**
+
+- **`mensalidade` é `null` em 100% dos planos das duas marcas, em produção.**
+  `custoDaConta()` (`MotorDeCalculo.php:566`) trata mensalidade nula como
+  "falta dado: mensalidade do plano" sempre — mesmo que a marca não cobre
+  nada, o motor nunca assume zero por conta própria (regra 4: campo em
+  branco é honesto, número chutado é risco). Isso quer dizer que **nenhuma
+  das duas teve a mensalidade confirmada como R$ 0,00** ainda, mesmo com as
+  taxas de venda 100% publicadas — são curadorias diferentes. Seguindo pelo
+  painel: `TaxaDivulgadas → [marca] → editar plano`, confirmar que é
+  R$ 0,00 (não deixar em branco) resolve.
+  `tarifa_pix_recebimento` está na mesma situação nas duas.
+- **`Pix` só tem taxa publicada em `na_hora`, em toda marca do catálogo hoje
+  — nunca em `d_1` ("Em 1 dia útil").** Faz sentido: Pix liquida na hora por
+  natureza, nenhuma adquirente publica "Pix em 1 dia útil". Se o passo 3
+  tiver `Em 1 dia útil` selecionado, **toda** marca vai mostrar "falta dado:
+  taxa de Pix" — não é specífico da SidePay/FacilityPay, é estrutural
+  (registrado aqui como achado, não mexido: mudar o prazo para não afetar
+  Pix é decisão de produto que o Everton ainda não pediu).
+- **"Equipamento vinculado a este plano" é a exceção que PODE ser só local**:
+  em produção as duas marcas têm 3 equipamentos por plano; se isso apareceu
+  na tela do Everton, o mais provável é o banco local não ter os mesmos
+  vínculos de equipamento que produção (mesma divergência já registrada em
+  "Curadoria e validação das taxas", nunca sincronizada de propósito).
+- **O aviso "O aparelho T1 está cadastrado sem aluguel mensal: a comparação
+  considerou o aparelho como compra." não é novo nem é bug** — é o aviso que
+  `custoDoAparelho()` sempre mostrou quando `aluguel_mensal` é nulo; só
+  ficou mais visível porque os cartões promocionais saíram do caminho.
+
+Nada disso foi mexido nesta sessão — são achados de curadoria (etapa 17),
+registrados aqui para não se perderem na conversa.
+
 ## Páginas de marca e listagem (etapa 08)
 
 `/maquininhas` (grade) e `/maquininha/{slug}` (página individual), servidas do

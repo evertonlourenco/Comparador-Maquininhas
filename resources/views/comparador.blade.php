@@ -404,11 +404,16 @@
                 :ranqueado="true"
             />
 
+            {{-- So aparece aqui quando a marca nao tem nenhum plano permanente
+                 para o cenario — o normal e a promocao virar selo no cartao do
+                 plano permanente dela, nunca um cartao proprio (decisao do
+                 Everton, 17/09/2026: nunca favorecer o preco promocional). --}}
             <x-resultado-comparado
                 estado="promocional"
+                expressao="promocionaisOrfas"
                 tom="reportado"
-                titulo="Tabela de entrada, por tempo limitado"
-                descricao="Preço verdadeiro, mas com prazo para acabar. Não disputa posição com preço permanente — inclusive porque quase sempre ganharia."
+                titulo="Tabela de entrada, por tempo limitado — sem plano permanente cadastrado"
+                descricao="Preço verdadeiro, mas com prazo para acabar. Só aparece com destaque porque esta marca ainda não tem nenhum plano permanente cadastrado para este cenário."
             />
 
             {{-- Faixa reportada tem bloco proprio, e nao o cartao dos outros: ela
@@ -533,5 +538,79 @@
                 </p>
             </template>
         </section>
+
+        {{-- O modal da tabela promocional (etapa 19). O selo no cartao do plano
+             permanente abre isto; aqui e onde as taxas de entrada, o prazo de
+             validade e o plano sucessor aparecem — nunca no cartao principal,
+             que e sempre o plano permanente. --}}
+        <template x-if="itemDaPromocaoAberta">
+            <div
+                class="fixed inset-0 z-50 flex items-end justify-center bg-tinta/60 p-0 sm:items-center sm:p-4"
+                x-on:keydown.escape.window="fecharModalPromocao()"
+            >
+                <div
+                    class="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-t-bloco border border-regua bg-papel shadow-xl sm:rounded-bloco"
+                    x-on:click.outside="fecharModalPromocao()"
+                    role="dialog"
+                    aria-modal="true"
+                    :aria-label="'Tabela de entrada da ' + itemDaPromocaoAberta.marca.nome"
+                >
+                    <div class="flex items-start justify-between gap-4 border-b border-regua px-5 py-4">
+                        <div class="min-w-0">
+                            <p class="text-etiqueta font-semibold uppercase text-reportado">Tabela de entrada, por tempo limitado</p>
+                            <h3 class="mt-1 text-cartao" x-text="itemDaPromocaoAberta.marca.nome + ' — ' + itemDaPromocaoAberta.plano.nome"></h3>
+                        </div>
+                        <button
+                            type="button"
+                            class="shrink-0 rounded-botao border border-contorno p-2 text-tinta-suave hover:bg-superficie"
+                            x-on:click="fecharModalPromocao()"
+                        >
+                            <svg class="size-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                                <path d="M3 3l10 10M13 3 3 13" stroke-linecap="round"/>
+                            </svg>
+                            <span class="sr-only">Fechar</span>
+                        </button>
+                    </div>
+
+                    <div class="space-y-4 px-5 py-4">
+                        {{-- O aviso principal: quanto dura e o que vem depois, sempre
+                             junto — nunca so o numero bonito da promocao. --}}
+                        <p class="rounded-bloco border border-reportado bg-reportado-fundo px-4 py-3 text-sm font-medium text-reportado">
+                            <span x-text="itemDaPromocaoAberta.motivo"></span>
+                            <template x-if="itemDaPromocaoAberta.promocao && itemDaPromocaoAberta.promocao.sucessor">
+                                <span>
+                                    Depois, a conta passa para o plano
+                                    <strong x-text="itemDaPromocaoAberta.promocao.sucessor.nome"></strong> — essa é a
+                                    taxa que efetivamente fica.
+                                </span>
+                            </template>
+                        </p>
+
+                        <div>
+                            <p class="text-etiqueta font-semibold uppercase text-tinta-suave">Taxas desta tabela de entrada</p>
+                            <ul class="mt-2 divide-y divide-regua">
+                                <template x-for="(linha, i) in itemDaPromocaoAberta.vendas" :key="i">
+                                    <li class="flex items-center justify-between gap-3 py-2 text-sm">
+                                        <span x-text="rotuloDaVenda(linha.venda)"></span>
+                                        <span class="numero font-medium text-tinta" x-text="linha.percentual_formatado ?? 'não publicada'"></span>
+                                    </li>
+                                </template>
+                            </ul>
+                        </div>
+
+                        <template x-if="itemDaPromocaoAberta.comparacao && itemDaPromocaoAberta.comparacao.custo_inicial">
+                            <p class="text-sm text-tinta-suave">
+                                Custo inicial nesta tabela:
+                                <span class="numero font-medium text-tinta" x-text="itemDaPromocaoAberta.comparacao.custo_inicial.formatado.com_cupom + ' à vista'"></span>.
+                            </p>
+                        </template>
+                    </div>
+
+                    <div class="border-t border-regua px-5 py-4">
+                        <x-botao variante="secundaria" x-on:click="fecharModalPromocao()">Fechar</x-botao>
+                    </div>
+                </div>
+            </div>
+        </template>
     </div>
 </x-layouts.site>

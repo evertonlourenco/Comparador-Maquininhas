@@ -5,6 +5,13 @@
     // porta para a mediana de relatos aparecer no lugar de uma taxa publicada
     // (regra 4). O bloco dela e escrito a parte, com as tres pontas.
     'estado',
+    // Expressao Alpine que devolve a lista a exibir, no lugar do padrao
+    // itensNoEstado($estado). Usado pelo bloco de promocionais orfas (etapa
+    // 19): a maioria dos planos promocionais nao aparece mais como cartao
+    // proprio (vira selo no cartao do plano permanente da marca — ver
+    // promocaoDaMarca() em comparador.js); so quando a marca nao tem nenhum
+    // plano permanente cadastrado a promocao continua aparecendo aqui.
+    'expressao' => null,
     'tom' => 'neutro',
     'titulo',
     'descricao' => null,
@@ -21,13 +28,14 @@
         'neutro' => 'border-regua',
     ];
     $borda = $bordas[$tom] ?? $bordas['neutro'];
+    $itensExpr = $expressao ?? "itensNoEstado('{$estado}')";
 @endphp
 
-<section x-cloak x-show="itensNoEstado('{{ $estado }}').length > 0" class="space-y-4">
+<section x-cloak x-show="{{ $itensExpr }}.length > 0" class="space-y-4">
     <div class="space-y-1">
         <h3 class="text-cartao sm:text-2xl">
             {{ $titulo }}
-            <span class="numero font-normal text-tinta-suave" x-text="'(' + itensNoEstado('{{ $estado }}').length + ')'"></span>
+            <span class="numero font-normal text-tinta-suave" x-text="'(' + {{ $itensExpr }}.length + ')'"></span>
         </h3>
         @if ($descricao)
             <p class="max-w-3xl text-miudo text-tinta-suave">{{ $descricao }}</p>
@@ -35,7 +43,7 @@
     </div>
 
     <ol class="space-y-4">
-        <template x-for="(item, indice) in itensNoEstado('{{ $estado }}')" :key="item.marca.slug + '-' + (item.plano ? item.plano.id : 0)">
+        <template x-for="(item, indice) in {{ $itensExpr }}" :key="item.marca.slug + '-' + (item.plano ? item.plano.id : 0)">
             <li>
                 {{-- Dois canais de cor que nao se misturam (etapa 14). O menor
                      custo ganha a faixa e a borda verdes do cartao destacado do
@@ -90,7 +98,27 @@
                                     <x-etiqueta tom="neutro">Mais caro</x-etiqueta>
                                 </template>
                             @endif
+                            <template x-if="ehParcial(item)">
+                                <x-etiqueta tom="apagado">Parcial</x-etiqueta>
+                            </template>
                             <x-etiqueta :tom="$tom">{{ $titulo }}</x-etiqueta>
+                            {{-- Etapa 19: o plano permanente nunca fica escondido atras do
+                                 promocional — e o inverso: aqui so um selo aponta que a marca
+                                 tambem tem tabela de entrada, e o numero de cima e sempre o
+                                 permanente (pedido do Everton, 17/09/2026: nunca favorecer
+                                 promocao, sempre mostrar a taxa que fica). --}}
+                            {{-- item.estado !== 'promocional': o proprio cartao promocional
+                                 orfao (sem plano permanente) nao ganha selo apontando para
+                                 si mesmo. --}}
+                            <template x-if="item.estado !== 'promocional' && promocaoDaMarca(item.marca.slug)">
+                                <button
+                                    type="button"
+                                    class="inline-flex min-h-8 items-center rounded-full border-[1.5px] border-reportado bg-reportado-fundo px-3 text-etiqueta font-semibold uppercase text-reportado hover:opacity-80"
+                                    x-on:click="abrirModalPromocao(item.marca.slug)"
+                                >
+                                    Tem tabela de entrada por tempo limitado
+                                </button>
+                            </template>
                         </div>
                     </div>
 
@@ -101,7 +129,7 @@
                          ate caber dois lado a lado sem quebrar o rotulo em tres. --}}
                     <dl class="grid grid-cols-1 gap-x-6 gap-y-4 border-b border-regua px-4 py-4 min-[30rem]:grid-cols-2 md:grid-cols-4">
                         <div>
-                            <dt class="text-etiqueta font-semibold uppercase text-tinta-suave">Custo mensal recorrente<template x-if="ehParcial(item)"><span class="text-reportado"> — parcial</span></template></dt>
+                            <dt class="text-etiqueta font-semibold uppercase text-tinta-suave">Custo mensal recorrente</dt>
                             <dd class="numero-destaque mt-1 text-numero" x-text="campoTexto(item, 'custo_mensal_recorrente')"></dd>
                             <p class="mt-1 text-miudo text-tinta-suave">
                                 Sem a adesão. Com ela diluída:
@@ -110,7 +138,7 @@
                         </div>
 
                         <div>
-                            <dt class="text-etiqueta font-semibold uppercase text-tinta-suave">Taxa efetiva combinada<template x-if="ehParcial(item)"><span class="text-reportado"> — parcial</span></template></dt>
+                            <dt class="text-etiqueta font-semibold uppercase text-tinta-suave">Taxa efetiva combinada</dt>
                             <dd class="numero-destaque mt-1 text-numero" x-text="campoTexto(item, 'taxa_efetiva_combinada') ?? '—'"></dd>
                             <p class="mt-1 text-miudo text-tinta-suave">
                                 Só as taxas de venda:
@@ -158,7 +186,7 @@
                         </div>
 
                         <div>
-                            <dt class="text-etiqueta font-semibold uppercase text-tinta-suave">Sobra no mês<template x-if="ehParcial(item)"><span class="text-reportado"> — parcial</span></template></dt>
+                            <dt class="text-etiqueta font-semibold uppercase text-tinta-suave">Sobra no mês</dt>
                             <dd class="numero-destaque mt-1 text-numero" x-text="campoTexto(item, 'sobra_no_mes')"></dd>
                             <p class="mt-1 text-miudo text-tinta-suave">
                                 Do faturamento informado, já descontado tudo acima.
@@ -166,38 +194,44 @@
                         </div>
                     </dl>
 
-                    {{-- Promocao: o motivo com os dois limites e o plano em que o
-                         lojista cai depois andam colados no numero (etapa 05). --}}
-                    <template x-if="item.motivo">
-                        <p class="border-b border-regua bg-superficie px-4 py-3 text-miudo" :class="'{{ $tom }}' === 'reportado' ? 'text-reportado' : 'text-tinta-suave'" x-text="item.motivo"></p>
-                    </template>
-
-                    <template x-if="item.promocao && item.promocao.sucessor">
-                        <p class="border-b border-regua px-4 py-2 text-miudo text-tinta-suave">
-                            Quando acabar, a conta passa para o plano
-                            <span class="font-medium text-tinta" x-text="item.promocao.sucessor.nome"></span>.
-                        </p>
-                    </template>
-
-                    {{-- O que falta para o cenario fechar. O motor nunca estima:
-                         a lista e a diferenca entre um numero e um palpite. --}}
-                    <template x-if="item.faltando.length > 0">
-                        <div class="border-b border-regua px-4 py-3">
-                            <p class="text-miudo font-medium text-tinta">Falta dado para fechar esta conta:</p>
-                            <ul class="mt-1 list-disc space-y-0.5 ps-5 text-miudo text-tinta-suave">
-                                <template x-for="falta in item.faltando" :key="falta">
-                                    <li x-text="falta"></li>
-                                </template>
-                            </ul>
-                        </div>
-                    </template>
-
-                    <template x-if="item.avisos.length > 0">
-                        <ul class="space-y-1 border-b border-regua px-4 py-3 text-miudo text-reportado">
-                            <template x-for="aviso in item.avisos" :key="aviso">
-                                <li x-text="aviso"></li>
+                    {{-- Motivo, sucessor, o que falta e avisos — um bloco so, nao
+                         quatro barras empilhadas (revisao de layout, etapa 19: o
+                         cartao estava denso demais com uma faixa inteira para
+                         cada frase). --}}
+                    <template x-if="item.motivo || (item.promocao && item.promocao.sucessor) || item.faltando.length > 0 || item.avisos.length > 0">
+                        <div class="space-y-3 border-b border-regua bg-superficie px-4 py-3">
+                            <template x-if="item.motivo">
+                                <p class="text-miudo" :class="'{{ $tom }}' === 'reportado' ? 'text-reportado' : 'text-tinta-suave'" x-text="item.motivo"></p>
                             </template>
-                        </ul>
+
+                            <template x-if="item.promocao && item.promocao.sucessor">
+                                <p class="text-miudo text-tinta-suave">
+                                    Quando acabar, a conta passa para o plano
+                                    <span class="font-medium text-tinta" x-text="item.promocao.sucessor.nome"></span>.
+                                </p>
+                            </template>
+
+                            {{-- O que falta para o cenario fechar. O motor nunca estima:
+                                 a lista e a diferenca entre um numero e um palpite. --}}
+                            <template x-if="item.faltando.length > 0">
+                                <div>
+                                    <p class="text-miudo font-medium text-tinta">Falta dado para fechar esta conta:</p>
+                                    <ul class="mt-1 list-disc space-y-0.5 ps-5 text-miudo text-tinta-suave">
+                                        <template x-for="falta in item.faltando" :key="falta">
+                                            <li x-text="falta"></li>
+                                        </template>
+                                    </ul>
+                                </div>
+                            </template>
+
+                            <template x-if="item.avisos.length > 0">
+                                <ul class="space-y-1 text-miudo text-reportado">
+                                    <template x-for="aviso in item.avisos" :key="aviso">
+                                        <li x-text="aviso"></li>
+                                    </template>
+                                </ul>
+                            </template>
+                        </div>
                     </template>
 
                     <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3">
