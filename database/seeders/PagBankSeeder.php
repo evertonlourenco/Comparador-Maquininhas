@@ -10,6 +10,7 @@ use App\Models\GrupoBandeira;
 use App\Models\Marca;
 use App\Models\Plano;
 use App\Models\PrazoRecebimento;
+use App\Support\Uploads\ImagemSeguraWebp;
 use Illuminate\Support\Str;
 
 /**
@@ -213,29 +214,55 @@ class PagBankSeeder extends SeederDeMarca
             $demais => [3.49, 8.28, 8.28, 9.28, 11.28, 12.18, 12.98, 13.78, 14.28, 14.58, 14.78, 15.08],
         ]);
 
+        $diretorioAssets = __DIR__.'/assets/pagbank';
+
+        // Etapa 17 (17/09/2026): fotos adicionadas e dois achados na
+        // releitura de pagbank.com.br/para-seu-negocio/maquininhas/moderninha-plus-2
+        // (a página individual de cada aparelho tem "Ficha técnica" completa
+        // e, no rodapé, um grid comparativo com o tipo de comprovante das
+        // seis - fonte mais granular que a página de listagem usada na
+        // etapa 04).
+        //
+        // - **`imprime` da Moderninha Plus 2 estava `true`, errado.** O
+        //   próprio texto do produto diz "Envio de comprovante por SMS", e o
+        //   grid comparativo confirma "Comprovante por SMS" - sem impressora.
+        //   Corrigido para `false`.
+        // - **`chip` deixou de ser fixo `true` para todas.** A Minizinha
+        //   NFC 2 é a única das seis cuja página nunca diz "(chip grátis)" -
+        //   diz só "Conexão por Bluetooth (precisa de celular)". As outras
+        //   cinco repetem literalmente "Não precisa de celular (chip
+        //   grátis)". Coerente com `exige_celular`: quem depende do celular
+        //   não tem chip de dados próprio.
         $aparelhos = [
-            ['Minizinha NFC 2', TipoEquipamento::PinPad, 'Maquininha compacta que funciona conectada ao celular.',
-                ['imprime' => false, 'celular' => true], 118.80, 15.00, 0],
-            ['Minizinha Chip 3', TipoEquipamento::Pos, 'Maquininha com chip e Wi-Fi, sem precisar de celular.',
-                ['imprime' => false, 'celular' => false], 298.80, 47.88, 1],
-            ['Moderninha Plus 2', TipoEquipamento::Pos, 'Chip e internet gratis, sem aluguel.',
-                ['imprime' => true, 'celular' => false], 346.80, 59.88, 2],
-            ['Moderninha Pro 2', TipoEquipamento::Pos, 'Chip e internet gratis, com pagamento via QR Code.',
-                ['imprime' => true, 'celular' => false], 838.80, 107.88, 3],
-            ['Moderninha Smart 2', TipoEquipamento::Smart, 'Maquininha smart com controle de estoque e gestao.',
-                ['imprime' => true, 'celular' => false], 838.80, 196.08, 4],
-            ['Moderninha ProFit', TipoEquipamento::Smart, 'Pagamento por aproximacao, conexao Wi-Fi e chip.',
-                ['imprime' => true, 'celular' => false], 871.64, 83.88, 5],
+            ['Minizinha NFC 2', TipoEquipamento::PinPad, 'Maquininha compacta que conecta ao celular via '
+                .'Bluetooth - não tem chip de dados próprio, usa a internet do celular pareado. Pagamento '
+                .'por aproximação (NFC) e comprovante por e-mail ou SMS.',
+                ['imprime' => false, 'celular' => true, 'chip' => false], 118.80, 15.00, 'minizinha-nfc2.png', 0],
+            ['Minizinha Chip 3', TipoEquipamento::Pos, 'Maquininha compacta com chip e Wi-Fi próprios, não '
+                .'precisa de celular. Pagamento por aproximação (NFC) e comprovante por SMS.',
+                ['imprime' => false, 'celular' => false, 'chip' => true], 298.80, 47.88, 'minizinha-chip3.png', 1],
+            ['Moderninha Plus 2', TipoEquipamento::Pos, 'Chip e internet grátis (Wi-Fi e Bluetooth), sem '
+                .'precisar de celular. Pagamento por aproximação (NFC) e comprovante por SMS - não imprime.',
+                ['imprime' => false, 'celular' => false, 'chip' => true], 346.80, 59.88, 'moderninha-plus2.png', 2],
+            ['Moderninha Pro 2', TipoEquipamento::Pos, 'Chip e internet 4G grátis, não precisa de celular. '
+                .'Imprime comprovante ou envia gratuitamente por SMS, com bateria de até 12 horas.',
+                ['imprime' => true, 'celular' => false, 'chip' => true], 838.80, 107.88, 'moderninha-pro2.png', 3],
+            ['Moderninha Smart 2', TipoEquipamento::Smart, 'Maquininha Android com controle de estoque e '
+                .'gestão completa, chip e internet grátis, não precisa de celular. Imprime comprovante.',
+                ['imprime' => true, 'celular' => false, 'chip' => true], 838.80, 196.08, 'moderninha-smart2.png', 4],
+            ['Moderninha ProFit', TipoEquipamento::Smart, 'Pagamento por aproximação (NFC), conexão Wi-Fi e '
+                .'chip grátis, não precisa de celular. Imprime comprovante, com reposição de bobina grátis.',
+                ['imprime' => true, 'celular' => false, 'chip' => true], 871.64, 83.88, 'moderninha-profit.png', 5],
         ];
 
-        foreach ($aparelhos as [$nome, $tipo, $descricao, $flags, $adesao, $promocional, $ordem]) {
+        foreach ($aparelhos as [$nome, $tipo, $descricao, $flags, $adesao, $promocional, $arquivo, $ordem]) {
             $equipamento = Equipamento::updateOrCreate(
                 ['marca_id' => $marcaId, 'slug' => Str::slug($nome)],
                 [
                     'nome' => $nome,
                     'tipo' => $tipo,
                     'descricao' => $descricao,
-                    'tem_chip_gratis' => true,
+                    'tem_chip_gratis' => $flags['chip'],
                     'imprime_comprovante' => $flags['imprime'],
                     'aceita_nfc' => true,
                     'exige_celular' => $flags['celular'],
@@ -243,6 +270,14 @@ class PagBankSeeder extends SeederDeMarca
                     'ordem' => $ordem,
                 ],
             );
+
+            if ($equipamento->imagem_path === null) {
+                $caminho = ImagemSeguraWebp::salvar("{$diretorioAssets}/{$arquivo}", 'equipamentos');
+
+                if ($caminho !== null) {
+                    $equipamento->update(['imagem_path' => $caminho]);
+                }
+            }
 
             // A pagina publica esses precos como "Maquininhas do Plano Super
             // Max". Sem preco publicado para os outros planos, so o Super Max
@@ -257,8 +292,8 @@ class PagBankSeeder extends SeederDeMarca
                 // Etapa 17, dito pelo Everton: adesao parcela em 12x sem
                 // juros sobre o preco a vista, em todas as marcas.
                 'parcelas_adesao' => 12,
-                'observacao' => 'Preco promocional vigente no site em 08/09/2026, com entrega '
-                    .'gratis e 5 anos de garantia. Aparelho comprado, sem aluguel.',
+                'observacao' => 'Preço em pagbank.com.br/para-seu-negocio/maquininhas, verificado em '
+                    .'17/09/2026, com entrega grátis e 5 anos de garantia. Aparelho comprado, sem aluguel.',
                 'status' => StatusItem::Ativo->value,
             ];
 
