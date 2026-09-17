@@ -3274,7 +3274,50 @@ vários testes de imagem (nenhum `imagedestroy()` esquecido óbvio encontrado
 numa olhada rápida) — os testes envolvidos passam normalmente sozinhos ou
 em grupos menores (`--filter`). Não investigado a fundo nem corrigido, por
 estar fora do escopo desta etapa; vale revisitar se a suíte completa virar
-rotina de CI.
+rotina de CI. **Achado de novo, mais preciso, no mesmo dia:** roda com
+`--filter=Admin` sozinho também (não precisa da suíte inteira) — reproduz
+com `php artisan test --filter=Admin` puro (memória default de 128M do CLI)
+e passa limpo com `php -d memory_limit=1G artisan test --filter=Admin`. Group
+`Admin` já tem `BuscaDeImagemPorUrlTest` (várias conversões WebP via GD em
+sequência) — segue sendo o suspeito mais provável, ainda não confirmado.
+
+**Achado no mesmo dia, usando o manual pela primeira vez:** o Everton copiou
+o comando de `comparador:gerar-json` do manual e o terminal travou em
+`quote>` — a aspa de fechamento do comando (que é comprido e quebra em duas
+linhas visuais) se perdeu na cópia. Resolvido em duas frentes:
+
+1. **Botão no painel, sem SSH.** `App\Filament\Actions\
+   GerarJsonDoComparadorAction` chama `Artisan::call('comparador:gerar-json')`
+   em processo (mesmo servidor web, sem shell, sem aspa nenhuma) e mostra o
+   total de marcas/taxas do arquivo novo numa notificação. Registrado em
+   quatro lugares — todo ponto onde uma taxa é aprovada, mais o primeiro
+   lugar que se vê ao entrar no painel:
+   - `App\Filament\Pages\Dashboard` (novo — estende `Filament\Pages\
+     Dashboard` só para acrescentar este botão no cabeçalho; `Admin
+     PanelProvider` foi ajustado para registrar esta classe em vez da
+     padrão do pacote — `discoverPages` também a encontraria sozinho, mas
+     `Panel::getPages()` já faz `array_unique`, então registrar nos dois
+     lugares não duplica rota).
+   - `ListTaxaDivulgadas`, `ListFaixaReportadas` (cabeçalho da listagem).
+   - `TabelaDoPlano`, `LancamentoEmLote` (ao lado de "Publicar toda a
+     tabela"/"Lançar tabela").
+
+   O comando SSH continua existindo — pensado para quando o painel estiver
+   fora do ar, não removido — mas o manual agora deixa claro que o botão é
+   o caminho recomendado.
+2. **O comando no manual saiu do `<code>` inline (que quebra linha dentro
+   do parágrafo e é fácil de copiar pela metade) e foi para um `<pre>`
+   sem quebra**, no mesmo padrão que a seção de restaurar backup já usava.
+   O manual também passou a explicar o que `quote>` significa (aspa não
+   fechada) e como sair dali (`'` + Enter, ou `Ctrl+C`), para quem cair
+   nisso de novo antes do deploy chegar.
+
+`tests/Feature/Admin/GerarJsonDoComparadorActionTest.php` cobre o botão: ele
+existe no Dashboard, e clicar nele de fato regenera o arquivo (conferido
+pelo campo `gerado_em`, que o comando real escreve com o timestamp da
+execução) e notifica o admin. O teste restaura o `comparador.json` local ao
+estado de antes no `tearDown()` — o arquivo é gitignored e não devia mudar
+só por rodar a suíte.
 
 ## Pendente ao fim da etapa 05
 

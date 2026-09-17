@@ -5,6 +5,7 @@ namespace App\Filament\Resources\TaxaDivulgadas\Pages;
 use App\Enums\FonteTipo;
 use App\Enums\StatusPublicacao;
 use App\Enums\TipoOperacao;
+use App\Filament\Actions\GerarJsonDoComparadorAction;
 use App\Filament\Resources\TaxaDivulgadas\TaxaDivulgadaResource;
 use App\Models\GrupoBandeira;
 use App\Models\Marca;
@@ -150,6 +151,7 @@ class LancamentoEmLote extends Page
                 ->label('Lançar tabela')
                 ->icon(Heroicon::OutlinedCheck)
                 ->action('lancar'),
+            GerarJsonDoComparadorAction::make(),
         ];
     }
 

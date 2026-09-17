@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\TaxaDivulgadas\Pages;
 
+use App\Filament\Actions\GerarJsonDoComparadorAction;
 use App\Filament\Resources\TaxaDivulgadas\TaxaDivulgadaResource;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
@@ -20,6 +21,7 @@ class ListTaxaDivulgadas extends ListRecords
                 ->icon(Heroicon::OutlinedTableCells)
                 ->color('gray')
                 ->url(fn () => TaxaDivulgadaResource::getUrl('lancamento-em-lote')),
+            GerarJsonDoComparadorAction::make(),
             CreateAction::make(),
         ];
     }

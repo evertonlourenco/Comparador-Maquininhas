@@ -164,29 +164,43 @@
                 para rascunho"</strong>.
             </p>
             <div class="rounded-lg border border-red-200 bg-red-50 p-3 text-red-900 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-200">
-                <p class="font-semibold">O passo que mais gente esquece:</p>
+                <p class="font-semibold">Por que esse passo existe:</p>
                 <p class="mt-1">
-                    Marcar como "Publicado" no painel <strong>não muda o site sozinho</strong>. O comparador não lê o
-                    banco de dados — ele lê um arquivo (<code>comparador.json</code>) que precisa ser regerado toda vez
-                    que você aprova algo novo. Sem esse passo, o site continua mostrando o número antigo, sem avisar que
-                    ficou desatualizado.
+                    Marcar como "Publicado" no painel <strong>não muda o site sozinho</strong>. O comparador é a parte do
+                    site que mais gente usa, e ele não consulta o banco de dados a cada visita — se consultasse, um
+                    vídeo seu levando muita gente de uma vez ao site derrubaria o banco. Em vez disso, ele lê um arquivo
+                    (<code>comparador.json</code>) gerado com antecedência, e esse arquivo só é reescrito quando alguém
+                    manda. Sem isso, o site continua mostrando o número antigo — sem erro, sem aviso, só desatualizado
+                    em silêncio.
                 </p>
             </div>
-            <p>Depois de aprovar, rode um destes dois (peça para eu rodar, se preferir):</p>
-            <ul class="ml-5 list-disc space-y-1">
-                <li>
-                    O <strong>deploy completo</strong> — <code>ssh comparador '~/domains/maquinacerta.com.br/comparador/deploy.sh'</code> —
-                    que já regenera o JSON como parte dele. Use este quando também tiver código novo para subir.
-                </li>
-                <li>
-                    Só o comando, quando não há código novo — <code>ssh comparador '/opt/alt/php84/usr/bin/php ~/domains/maquinacerta.com.br/comparador/artisan comparador:gerar-json'</code>.
-                    Mais rápido, porque pula todo o resto do deploy.
-                </li>
-            </ul>
+
+            <p><strong>O jeito mais fácil: um botão, direto no painel.</strong> Sem terminal, sem SSH, sem nada para
+            copiar errado. Ele aparece em três lugares — logo ao entrar no painel (Dashboard), e nas duas telas onde
+            você aprova taxa (listagem de Taxas Divulgadas e "Tabela do plano”):</p>
+            <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-900/20 dark:text-emerald-200">
+                <p>Clique em <strong>"Gerar JSON do comparador"</strong>, confirme, e pronto — o painel avisa quantas
+                marcas e taxas entraram no arquivo novo. Essa é a forma recomendada; use-a sempre que puder.</p>
+            </div>
+
             <p class="text-gray-500 dark:text-gray-400">
-                Sinal de que funcionou: o comando termina mostrando uma tabela com o total de marcas, planos e taxas do
-                arquivo novo. Se esse número não mudou depois de você aprovar algo, alguma coisa não regenerou — confira
-                de novo antes de avisar o Everton.
+                O botão só existe desde 17/09/2026. Antes disso o único jeito era rodar o comando por SSH — o que
+                travou o terminal na primeira tentativa real (o comando é comprido, quebra em duas linhas na tela, e
+                copiar só a primeira linha perde a aspa de fechamento; o terminal fica esperando você completar a
+                aspa, mostrando <code>quote&gt;</code> em vez de voltar ao prompt normal — digite <code>'</code> e
+                aperte Enter para sair disso, ou <code>Ctrl+C</code> para cancelar). O comando continua funcionando,
+                para quando o painel estiver fora do ar ou você preferir o terminal — desta vez num bloco que não
+                quebra linha, para copiar sem risco:
+            </p>
+<pre class="overflow-x-auto rounded-lg bg-gray-900 p-3 text-xs text-gray-100"><code>ssh comparador '/opt/alt/php84/usr/bin/php ~/domains/maquinacerta.com.br/comparador/artisan comparador:gerar-json'</code></pre>
+            <p class="text-gray-500 dark:text-gray-400">
+                Ou o deploy completo, que regenera o JSON como parte dele — use quando também tiver código novo para subir:
+            </p>
+<pre class="overflow-x-auto rounded-lg bg-gray-900 p-3 text-xs text-gray-100"><code>ssh comparador '~/domains/maquinacerta.com.br/comparador/deploy.sh'</code></pre>
+            <p class="text-gray-500 dark:text-gray-400">
+                Sinal de que funcionou, pelo botão ou pelo terminal: o total de marcas e taxas aparece na notificação
+                (ou na tabela, no terminal). Se esse número não mudou depois de você aprovar algo, alguma coisa não
+                regenerou — confira de novo antes de avisar o Everton.
             </p>
         </section>
 

@@ -5,6 +5,7 @@ namespace App\Filament\Resources\TaxaDivulgadas\Pages;
 use App\Enums\FonteTipo;
 use App\Enums\StatusPublicacao;
 use App\Enums\TipoOperacao;
+use App\Filament\Actions\GerarJsonDoComparadorAction;
 use App\Filament\Resources\TaxaDivulgadas\TaxaDivulgadaResource;
 use App\Models\GrupoBandeira;
 use App\Models\Plano;
@@ -297,6 +298,7 @@ class TabelaDoPlano extends Page
 
                     Notification::make()->success()->title("{$n} taxa(s) voltaram para rascunho")->send();
                 }),
+            GerarJsonDoComparadorAction::make(),
             Action::make('voltar')
                 ->label('Voltar para a listagem')
                 ->color('gray')
