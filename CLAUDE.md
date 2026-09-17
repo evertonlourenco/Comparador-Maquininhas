@@ -1624,12 +1624,13 @@ para `public_html.wordpress-2024`, nao apagado. O `.well-known` que estava
 dentro dele foi copiado para `public/` antes da troca — e por onde o Let's
 Encrypt valida o certificado.
 
-### O site publico esta fechado (`SITE_EM_BREVE`)
+### O site publico esteve fechado (`SITE_EM_BREVE`) — reaberto em 17/09/2026
 
-O portal esta em producao e **fechado ao publico** desde 11/09/2026: toda rota
-de `routes/web.php` responde **503** com `Retry-After` e uma pagina "em breve"
-marcada `noindex`. O `/admin` continua de pe — e por ele que as taxas serao
-aprovadas enquanto o site espera a identidade visual da etapa 14.
+O portal ficou em producao e **fechado ao publico** de 11/09/2026 a
+17/09/2026: toda rota de `routes/web.php` respondia **503** com
+`Retry-After` e uma pagina "em breve" marcada `noindex`. O `/admin` continuou
+de pe o tempo todo — e por ele que as taxas foram aprovadas enquanto o site
+esperava a identidade visual (etapa 14) e a curadoria (etapa 17).
 
 `App\Http\Middleware\SiteEmBreve`, ligado por `SITE_EM_BREVE` no `.env`
 (`config/site.php`). **Nao e `artisan down`**, que derrubaria o painel junto.
@@ -1640,7 +1641,14 @@ O 503 se desfaz sozinho quando a flag sair; nao ha `robots.txt` para lembrar de
 reverter.
 
 **Reabrir o site e trocar `SITE_EM_BREVE` para `false` e rodar o `deploy.sh`.**
-E o unico passo da etapa 19.
+Feito em 17/09/2026, a pedido do Everton, logo depois da trava de aprovacao
+de marca entrar no ar (ver "A trava da marca (etapa 19...)") — a decisao
+consciente foi abrir com **zero marcas aprovadas ainda** (`comparador.json`
+com 0 marcas, 0 taxas) e aprovar direto em producao pelo `/admin/marcas`
+dali em diante, em vez de esperar aprovar tudo antes de abrir. Confirmado no
+ar: `/`, `/maquininhas`, `/cupons`, `/metodologia` e `/sitemap.xml` todos
+`200` (nao mais `503`), tela do comparador renderizando normal (so sem
+marca nenhuma pra comparar ate a primeira aprovacao).
 
 ### Producao e MariaDB, nao MySQL
 

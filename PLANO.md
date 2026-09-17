@@ -29,7 +29,18 @@ vem depois.
 
 ---
 
-## Situação em 11/09/2026
+## Situação em 17/09/2026
+
+> **Atualizado.** O texto abaixo (11/09/2026) é histórico — desde 17/09/2026
+> o site está **aberto ao público** (`SITE_EM_BREVE=false`), com identidade
+> visual própria (etapa 14), imagens (etapa 15) e uma trava nova: nenhuma
+> marca aparece sem aprovação humana explícita no painel (`/admin/marcas`,
+> ver `CLAUDE.md` — "A trava da marca"). Aberto **com zero marcas aprovadas
+> de propósito** — o Everton está aprovando direto em produção, marca a
+> marca, em vez de esperar aprovar tudo antes de abrir.
+
+<details>
+<summary>Situação em 11/09/2026 (histórico)</summary>
 
 O portal está **em produção e fechado ao público**. `SITE_EM_BREVE=true`
 devolve 503 com `noindex` em toda rota pública; o `/admin` continua de pé, e é
@@ -41,6 +52,8 @@ por ele que o trabalho de dados acontece enquanto o site espera.
 - Nenhuma imagem: sem logo de marca, sem foto de equipamento, sem bandeira
 - Identidade visual própria **não existe** — o site usa o design system
   genérico da etapa 06
+
+</details>
 
 ---
 
@@ -254,17 +267,21 @@ numa pasta.
 ### 19 — Lançamento
 
 > **Trava de aprovação da marca, adicionada em 17/09/2026** (ver `CLAUDE.md`,
-> seção "A trava da marca"): nenhuma marca com taxa publicada aparece no site
-> sem um clique em "Aprovar marca" em `/admin/marcas`, condicionado o motor
-> conferir que ela fecha conta nas quatro formas de pagamento. Passo novo
-> antes da conferência final: aprovar Ton, PagBank, SidePay, FacilityPay,
-> Yelly e TrincaPay uma a uma no painel.
+> seção "A trava da marca"): nenhuma marca aparece no site — nem mesmo como
+> "sem dado publicado" — sem um clique em "Aprovar marca" em
+> `/admin/marcas`, condicionado o motor conferir que ela fecha conta nas
+> quatro formas de pagamento. Sem exceção nenhuma (revisão no mesmo dia).
+>
+> **`SITE_EM_BREVE=false` desde 17/09/2026** — o site está aberto, a pedido
+> do Everton, **com zero marcas aprovadas ainda** (decisão dele: aprovar
+> direto em produção, marca a marca, em vez de esperar terminar antes de
+> abrir). O restante desta etapa continua em aberto.
 
-- Aprovar cada marca pronta no painel (`/admin/marcas`, botão "Aprovar
-  marca") — sem isso o JSON sai só com "sem dado publicado"
-- Conferência final das oito páginas com conteúdo real e identidade nova
-- `SITE_EM_BREVE=false` e `deploy.sh` — o único passo que reabre o site
-- Sitemap, indexação e Search Console liberados — a etapa 12 deixou a
+- [x] `SITE_EM_BREVE=false` e `deploy.sh` — feito em 17/09/2026
+- [ ] Aprovar cada marca pronta no painel (`/admin/marcas`, botão "Aprovar
+  marca") — em andamento, direto em produção
+- [ ] Conferência final das oito páginas com conteúdo real e identidade nova
+- [ ] Sitemap, indexação e Search Console liberados — a etapa 12 deixou a
   verificação pronta (registro TXT) mas não enviou `sitemap.xml`; enviar
   agora ao Search Console e reimportar no Bing Webmaster Tools
 - Vídeo do canal apontando para o portal
