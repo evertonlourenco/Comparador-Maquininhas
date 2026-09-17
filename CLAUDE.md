@@ -3026,6 +3026,29 @@ antes de eu errar a foto de novo (ver o episódio da Ton, sessão anterior).
 seguem em `rascunho` (0 publicadas) — pendência de aprovação no painel já
 existente antes desta sessão, sem relação com equipamento/foto.
 
+### Foto, preço cheio e um `tem_chip_gratis` errado desde a etapa 04, na InfinitePay (17/09/2026)
+
+Único aparelho da marca, já cadastrado como "Maquininha Smart" (o nome
+comercial exato que a própria `infinitepay.io` usa — nada a renomear).
+Sem parceria/cupom (dito pelo Everton): preço e specs são os oficiais.
+
+**`tem_chip_gratis` estava `true` desde a etapa 04 — errado, corrigido para
+`false`.** O FAQ da própria página (`infinitepay.io/maquininha`) responde
+"Precisa de chip de dados?" assim: *"A maquininha funciona por Wi-Fi. Dados
+móveis são opcionais para usar fora da rede — o chip é adquirido
+separadamente."* Não é chip grátis incluso — é o oposto: comprado à parte,
+e só necessário fora de uma rede Wi-Fi. Ninguém tinha percebido isso até o
+Everton perguntar diretamente "vocês estão pegando os detalhes técnicos
+(bobina, chip, wifi)?" nesta sessão — vale lembrar de sempre confirmar
+essas três coisas contra o FAQ/specs da própria marca, não só contra as
+fotos ou o texto de vendas do topo da página.
+
+**Preço cheio, que não estava capturado (mesmo padrão do achado da
+SumUp).** Só o vigente (R$ 199,00) tinha sido gravado na etapa 04. A home
+mostra "De: 12x de R$ 79,90 por: 12x de R$ 16,58 ou apenas R$ 199" — cheio
+= 79,90 × 12 = R$ 958,80, gravado agora. `199,00 / 12 = 16,58` bate exato
+com a parcela publicada.
+
 ## Pendente ao fim da etapa 05
 
 O motor está pronto e testado, mas ele é honesto sobre o que não sabe — e isso
