@@ -52,12 +52,21 @@
     "src": "_saira-700-normal-CWqLIJDh.woff"
   },
   "resources/css/app.css": {
-    "file": "assets/app-CEwBjx1_.css",
+    "file": "assets/app-Dk25KNLw.css",
     "name": "app",
     "names": [
       "app.css"
     ],
     "src": "resources/css/app.css",
+    "isEntry": true
+  },
+  "resources/css/filament/admin/theme.css": {
+    "file": "assets/theme-DgRsEk3z.css",
+    "name": "theme",
+    "names": [
+      "theme.css"
+    ],
+    "src": "resources/css/filament/admin/theme.css",
     "isEntry": true
   },
   "resources/js/app.js": {
@@ -67,7 +76,7 @@
     "isEntry": true
   },
   "resources/js/comparador.js": {
-    "file": "assets/comparador-DJ1bWObF.js",
+    "file": "assets/comparador-wFXKEo9o.js",
     "name": "comparador",
     "src": "resources/js/comparador.js",
     "isEntry": true

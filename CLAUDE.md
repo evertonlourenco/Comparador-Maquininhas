@@ -3396,6 +3396,87 @@ ganhou dois testes novos: um confere o glossário (título e três termos), o
 outro confere que `APP_DEBUG`, "Permissão do .env" e o valor `600` aparecem
 explicados na seção do painel de saúde.
 
+### Achado real depois do deploy: o painel nunca teve build próprio de CSS
+
+O Everton mandou print de produção e o manual saiu **sem estilo nenhum** —
+texto corrido, sem caixas, sem cor, sem espaçamento. A verificação visual
+que eu tinha feito antes de publicar (Tailwind via CDN, ver acima) não
+pegou isso porque escondia exatamente o problema real: eu estava conferindo
+layout com um Tailwind genérico completo, nunca com o CSS que o Filament
+realmente serve em produção.
+
+**Causa raiz:** este painel nunca teve um tema próprio compilado.
+`AdminPanelProvider` usava o CSS padrão do pacote Filament
+(`public/css/filament/filament/app.css`, ~600 KB, versionado — ver "Armadilha:
+os assets do Filament são versionados" na etapa 11), que só contém as
+classes que os **componentes internos do próprio Filament** usam. Ele não é
+um build de Tailwind que varre as views do projeto — é fixo, gerado uma vez
+pelo pacote. Qualquer classe Tailwind usada em Blade **nosso** (não do
+Filament) — `rounded-lg`, `bg-amber-50`, `grid-cols-2`, `text-[10px]`, o que
+for — simplesmente não existe nesse CSS. A classe fica escrita no HTML, o
+navegador não reconhece, e o elemento renderiza sem nenhum estilo. Conferido
+direto: `grep -c "rounded-lg{" public/css/filament/filament/app.css` dava
+zero.
+
+**Consequência, além do manual:** o mesmo bug já existia, silencioso, em
+pelo menos dois lugares de antes desta sessão —
+`resources/views/filament/widgets/banco.blade.php` (BancoWidget, etapa 16,
+painel de saúde) e `resources/views/filament/imagem-externa/preview.blade.php`
+(preview da busca de imagem por URL, etapa 15). Os dois usam classes
+Tailwind fora do vocabulário do Filament (`grid-cols-1 lg:grid-cols-2`,
+`text-danger-600`, `size-24`...) e provavelmente estavam sem estilo em
+produção desde que foram escritos — ninguém tinha reparado, ou reparou e
+não relacionou à causa.
+
+**Correção — a raiz, não um remendo no manual:**
+
+```
+php artisan make:filament-theme --panel=admin
+```
+
+Comando oficial do próprio Filament. Fez tudo sozinho:
+
+1. Criou `resources/css/filament/admin/theme.css`, com `@import` do CSS
+   base do Filament e duas diretivas `@source` (sintaxe do Tailwind 4)
+   apontando para `app/Filament/**/*` e `resources/views/filament/**/*` —
+   agora o painel tem o próprio build de Tailwind, escaneando exatamente as
+   pastas onde o código deste projeto vive.
+2. Adicionou essa entrada ao `input` do `vite.config.js`.
+3. Adicionou `->viteTheme('resources/css/filament/admin/theme.css')` ao
+   `AdminPanelProvider` — troca o CSS fixo do pacote pelo compilado.
+4. Rodou `npm run build` (bumped `tailwindcss`/`@tailwindcss/vite` de
+   `^4.0.0` para `^4.3.3` no `package.json`, versão que o comando exigiu),
+   gerando `public/build/assets/theme-*.css` (637 KB) — commitado, porque
+   produção não tem Node (mesma convenção do `app-*.css` público, etapa 11).
+
+**Conferido depois, não só assumido:**
+
+- `grep` no `theme-*.css` novo confirma a presença de toda classe usada no
+  manual, inclusive as com caractere especial (`bg-white/25`, `text-[10px]`,
+  `sm:grid-cols-4`, `dark:bg-amber-900/20`) — a primeira leitura desse grep
+  deu zero em todas por escapar a regex errado num loop de shell; refeito
+  uma a uma com o escape certo, todas estão lá.
+- Também confirma as classes do `BancoWidget` e do preview de imagem —
+  os dois ganharam estilo de graça, sem eu ter tocado no código deles.
+- `node scripts/verifica-contraste.mjs` continua passando (o `app.css`
+  **público** não foi afetado — ele só `@source`ia `storage/framework/views`
+  e as views de paginação do Laravel, nunca `resources/views/filament`).
+- As suítes `Admin` (71), `Comparador` (23) e `Interface` (10) passando.
+- Verificação visual refeita **com o CSS real** (não mais CDN): mesmo
+  truque de servir o HTML do componente Livewire como arquivo estático
+  temporário em `public/`, desta vez com `<link>` para o
+  `theme-*.css` de verdade — as caixas coloridas, os quatro esquemas e o
+  glossário conferidos exatamente como vão aparecer em produção, removido
+  depois.
+
+**Porque essa arapuca pode voltar:** qualquer Blade novo dentro de
+`app/Filament` ou `resources/views/filament` que use uma classe Tailwind
+ainda não usada em nenhum outro lugar do projeto **precisa de
+`npm run build` antes do deploy** para essa classe entrar no
+`theme-*.css` — exatamente a mesma disciplina que já valia para o
+`app.css` público desde a etapa 11, agora valendo também pro admin. Se uma
+tela nova do painel sair sem estilo, isso é o primeiro lugar a suspeitar.
+
 ## Pendente ao fim da etapa 05
 
 O motor está pronto e testado, mas ele é honesto sobre o que não sabe — e isso

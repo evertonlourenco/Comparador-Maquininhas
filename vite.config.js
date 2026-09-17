@@ -12,6 +12,7 @@ export default defineConfig({
                 'resources/css/app.css',
                 'resources/js/app.js',
                 'resources/js/comparador.js',
+                'resources/css/filament/admin/theme.css',
             ],
             refresh: true,
             // Manual de marca do Maquina Certa (etapa 14). O plugin baixa e
