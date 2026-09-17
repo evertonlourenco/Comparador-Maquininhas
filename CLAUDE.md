@@ -3105,22 +3105,36 @@ que **desde 16/09/2026, `db:seed --class=PagBankSeeder` está permanentemente
 quebrado em produção** — não é falha de rede nem concorrência, reproduz
 100% das vezes.
 
-**Contornado sem decidir nada sobre o plano excluído:** como o código de
-equipamentos mora dentro de `planosComerciais()` (não num método próprio),
-e essa função não toca em "Taxas iniciais" (criado antes, direto em
-`run()`), rodei só `planosComerciais()` em produção via Reflection
+**Contornado na hora sem decidir nada sobre o plano excluído:** como o
+código de equipamentos mora dentro de `planosComerciais()` (não num método
+próprio), e essa função não toca em "Taxas iniciais" (criado antes, direto
+em `run()`), rodei só `planosComerciais()` em produção via Reflection
 (`ReflectionMethod::setAccessible(true)` + `invoke()`), pulando a parte
 que quebra. As 135 taxas publicadas do PagBank não foram tocadas.
 
-**Pendente de decisão do Everton, não resolvido aqui:** ele que excluiu
-"Taxas iniciais" (e o "Padrão" da SidePay) pelo painel — só ele sabe se foi
-definitivo (e então `run()` devia parar de recriar esse plano, exigindo
-reescrever a lógica de faixas que depende dele) ou se foi um teste que
-esqueceu de reverter (e então o plano devia ser restaurado,
-`Plano::withTrashed()->find(1)->restore()`). Enquanto isso não for
-decidido, **qualquer reseed futuro do PagBank vai falhar do mesmo jeito**
-se tentar rodar `run()` inteiro — usar o mesmo contorno por Reflection (ou
-`--class` num método específico) até resolver.
+**Resolvido em seguida, no mesmo dia: o Everton confirmou que a exclusão
+foi definitiva** ("O sistema deve prever isso, planos podem deixar de
+existir, já aconteceu com a Ton... de mudar de 5 para 3 planos, depois
+passar para 4"). Duas mudanças:
+
+1. Removida do `PagBankSeeder::run()` a chamada que recriava "Taxas
+   iniciais" (o bloco de débito/crédito/parcelado que vinha antes de
+   `planosComerciais($marca)`) — a marca não publica mais essa tabela, só
+   os planos comerciais.
+2. **`SeederDeMarca::plano()` agora verifica `Plano::onlyTrashed()` antes
+   de criar/atualizar.** Se a chave (marca + slug) existir só entre os
+   soft-deleted, lança `RuntimeException` nomeando o plano, a marca, a
+   data da exclusão e o comando de `restore()` caso tenha sido engano — em
+   vez do `Duplicate entry` de MySQL sem contexto nenhum. Isso vale para
+   qualquer marca, não só o PagBank: o mesmo padrão (plano aposentado no
+   painel, seeder desatualizado ainda tentando recriá-lo) pode se repetir
+   em qualquer marca à medida que catálogos mudam com o tempo. Testado
+   localmente simulando a mesma situação numa marca diferente (soft-delete
+   de um plano da SidePay, rodar o seeder dela, confirmar a mensagem clara,
+   restaurar): reproduziu e recuperou como esperado.
+
+`db:seed --class=PagBankSeeder` roda direto de novo, sem precisar do
+contorno por Reflection.
 
 ## Pendente ao fim da etapa 05
 
