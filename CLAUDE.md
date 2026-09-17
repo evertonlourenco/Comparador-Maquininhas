@@ -3350,6 +3350,52 @@ cada carregamento do Dashboard — e `StatusDoJson::esquecer()` limpa esse
 cache na hora, dentro da própria ação de gerar o JSON, para o selo sumir
 assim que a geração termina, sem esperar o minuto passar.
 
+### Revisão do manual (17/09/2026): mais explicação, espaçamento, glossário e diagramas
+
+O Everton achou a primeira versão do manual (etapa 18) sucinta demais.
+Reescrita completa de `resources/views/filament/pages/manual.blade.php`,
+mantendo os mesmos oito títulos de seção (e os mesmos `id` de âncora) para
+não quebrar `tests/Feature/Admin/ManualTest.php`, mas expandindo bastante o
+texto de cada uma — sempre explicando o "por quê", não só o "onde clicar".
+Espaçamento também aumentado: `space-y-10` → `space-y-16` na página,
+`space-y-3` → `space-y-5` dentro de cada seção, e uma linha divisória
+(`<hr>`) entre seções, que antes só tinham a borda do próprio `<h2>`.
+
+**Duas coisas novas que o Everton pediu de propósito:**
+
+- **Glossário de termos**, no fim da página (`id="glossario"`), com 19
+  termos do domínio em ordem alfabética — de "Adquirente" a "2FA" — cada um
+  numa frase ou duas, sem jargão. Implementado como uma lista `@php` simples
+  dentro do próprio Blade (não uma tabela do banco nem um arquivo à parte),
+  porque é conteúdo estático que só muda quando o domínio muda.
+- **Imagens ilustrando menus e funções.** Resolvido com **esquemas
+  desenhados em HTML/Tailwind** (divs com borda, setas, uma tabela mockup,
+  os cartões do painel de saúde), não capturas de tela reais — o painel
+  exige 2FA da conta do Everton, e entrar com senha ou código de acesso de
+  qualquer conta, inclusive uma de teste criada só para isso, está fora do
+  que o Claude pode fazer (é regra de segurança do próprio Claude, sem
+  exceção para conta de teste). Cada esquema é rotulado explicitamente como
+  "Esquema ilustrativo" no próprio manual, para não ser confundido com uma
+  captura de tela real. Se o Everton quiser trocar algum por um print de
+  verdade, é só mandar a imagem.
+
+**Também aproveitado para responder, direto no texto do painel de saúde,
+duas perguntas que o Everton fez no chat na mesma sessão:** o que é
+`APP_DEBUG` (tela de erro detalhada — vaza código-fonte e configuração para
+qualquer visitante se ficar ligada em produção) e o que é "Permissão do
+.env" (a permissão Unix do arquivo que guarda todas as senhas do site; `600`
+é o valor seguro, restrito ao dono do arquivo).
+
+**Verificação visual, sem entrar no painel de verdade:** renderizado o
+componente Livewire da página (`Livewire::test(Manual::class)->html()`),
+envolvido num HTML solto com Tailwind via CDN só para inspeção, servido
+temporariamente como arquivo estático em `public/` (removido depois) e
+aberto no navegador para conferir espaçamento, os quatro esquemas e a
+tabela do glossário — sem nenhum login. `tests/Feature/Admin/ManualTest.php`
+ganhou dois testes novos: um confere o glossário (título e três termos), o
+outro confere que `APP_DEBUG`, "Permissão do .env" e o valor `600` aparecem
+explicados na seção do painel de saúde.
+
 ## Pendente ao fim da etapa 05
 
 O motor está pronto e testado, mas ele é honesto sobre o que não sabe — e isso

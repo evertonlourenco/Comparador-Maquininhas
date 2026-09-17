@@ -75,4 +75,26 @@ class ManualTest extends TestCase
         Livewire::test(Manual::class)
             ->assertSee('não publicam nada sozinhas');
     }
+
+    /** Pedido do Everton em 17/09/2026: manual achado sucinto demais — mais explicação, glossário, diagramas. */
+    public function test_tem_glossario_de_termos(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        Livewire::test(Manual::class)
+            ->assertSee('Glossário de termos')
+            ->assertSee('Adquirente')
+            ->assertSee('Selo de frescor')
+            ->assertSee('SITE_EM_BREVE');
+    }
+
+    public function test_explica_app_debug_e_permissao_do_env_no_painel_de_saude(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        Livewire::test(Manual::class)
+            ->assertSee('APP_DEBUG')
+            ->assertSee('Permissão do .env')
+            ->assertSee('600');
+    }
 }
