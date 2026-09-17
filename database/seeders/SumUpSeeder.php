@@ -9,6 +9,7 @@ use App\Models\Equipamento;
 use App\Models\GrupoBandeira;
 use App\Models\Plano;
 use App\Models\PrazoRecebimento;
+use App\Support\Uploads\ImagemSeguraWebp;
 use Illuminate\Support\Str;
 
 /**
@@ -109,28 +110,44 @@ class SumUpSeeder extends SeederDeMarca
     }
 
     /**
-     * Etapa 17: o Everton confirmou os precos a vista (Smart R$ 190,80, Solo
-     * R$ 58,80, Top R$ 46,80) e que a adesao parcela em 12x sem juros, iguais
-     * nos tres planos - a pagina de maquininhas so publicava a parcela, as
-     * vezes ambigua entre dois valores, e por isso a etapa 04 deixou o preco
-     * em branco. Sem URL publica para citar como fonte (info passada
-     * diretamente pelo Everton, dono do afiliado); regra 6 vale para taxa, e
-     * preco de aparelho nao tem coluna de fonte no schema (equipamento_plano).
+     * Preço, etapa 17 (15/09/2026 e corrigido em 17/09/2026): a etapa 04
+     * tinha deixado o preço em branco porque a página de maquininhas só
+     * publicava a parcela, às vezes ambígua entre dois valores. O Everton
+     * confirmou em 15/09/2026 um único preço por aparelho (Smart R$ 190,80,
+     * Solo R$ 58,80, Top R$ 46,80) - sem URL pública pra citar como fonte
+     * naquele momento.
+     *
+     * Em 17/09/2026, revisitando `sumup.com/pt-br/maquininhas/` (a página
+     * agora mostra os dois valores lado a lado, riscado e promocional, para
+     * Solo e Smart - Top continua com um preço só): os números batem
+     * exatamente com o que o Everton tinha confirmado, só que **o valor que
+     * ele deu é o promocional, não o cheio** - Smart tem um "de R$ 598,80"
+     * riscado (12x R$ 49,90) que não estava capturado, e Solo um "de
+     * R$ 118,80" (12x R$ 9,90). Sem aluguel: o aparelho é comprado, mesmo
+     * preço nos três planos de faturamento.
+     *
+     * `parcelas_adesao = 12` continua batendo com a própria página: a
+     * parcela que `EquipamentoPlano::parcelaDaAdesao()` calcula a partir do
+     * preço vigente (promocional quando existe) reproduz exatamente os "12x
+     * R$ X,XX" publicados (Smart 15,90, Solo 4,90, Top 3,90) - conferido
+     * antes de gravar.
      *
      * @param  array<string, Plano>  $planos
      */
     private function equipamentos(int $marcaId, array $planos): void
     {
+        $diretorioAssets = __DIR__.'/assets/sumup';
+
         $aparelhos = [
             ['Top', TipoEquipamento::PinPad, 'Conecta ao celular por Bluetooth. Pagamento por aproximacao e comprovante digital.',
-                ['chip' => false, 'imprime' => false, 'nfc' => true, 'celular' => true], 46.80, 0],
+                ['chip' => false, 'imprime' => false, 'nfc' => true, 'celular' => true], 46.80, null, 'sumup-top.webp', 0],
             ['Solo', TipoEquipamento::Pos, 'Wi-Fi e chip 4G ilimitado, base carregadora, Pix por QR Code e comprovante digital.',
-                ['chip' => true, 'imprime' => false, 'nfc' => true, 'celular' => false], 58.80, 1],
+                ['chip' => true, 'imprime' => false, 'nfc' => true, 'celular' => false], 118.80, 58.80, 'sumup-solo.jpeg', 1],
             ['SumUp Smart', TipoEquipamento::Smart, 'Wi-Fi e chip 4G ilimitado, impressao de comprovantes e relatorios, catalogo e estoque.',
-                ['chip' => true, 'imprime' => true, 'nfc' => true, 'celular' => false], 190.80, 2],
+                ['chip' => true, 'imprime' => true, 'nfc' => true, 'celular' => false], 598.80, 190.80, 'sumup-smart.webp', 2],
         ];
 
-        foreach ($aparelhos as [$nome, $tipo, $descricao, $flags, $adesao, $ordem]) {
+        foreach ($aparelhos as [$nome, $tipo, $descricao, $flags, $adesao, $promocional, $arquivo, $ordem]) {
             $equipamento = Equipamento::updateOrCreate(
                 ['marca_id' => $marcaId, 'slug' => Str::slug($nome)],
                 [
@@ -146,15 +163,24 @@ class SumUpSeeder extends SeederDeMarca
                 ],
             );
 
+            if ($equipamento->imagem_path === null) {
+                $caminho = ImagemSeguraWebp::salvar("{$diretorioAssets}/{$arquivo}", 'equipamentos');
+
+                if ($caminho !== null) {
+                    $equipamento->update(['imagem_path' => $caminho]);
+                }
+            }
+
             foreach ($planos as $plano) {
                 $equipamento->planos()->syncWithoutDetaching([
                     $plano->getKey() => [
                         'preco_adesao' => $adesao,
-                        'preco_adesao_promocional' => null,
+                        'preco_adesao_promocional' => $promocional,
                         'aluguel_mensal' => null,
                         'parcelas_adesao' => 12,
-                        'observacao' => 'Preco confirmado pelo Everton em 15/09/2026 (etapa 17): sem '
-                            .'aluguel, aparelho comprado, mesmo preco nos tres planos.',
+                        'observacao' => 'Preço em sumup.com/pt-br/maquininhas/, verificado em 17/09/2026 '
+                            .'- sem aluguel, aparelho comprado, mesmo preço nos três planos de '
+                            .'faturamento.',
                         'status' => StatusItem::Ativo->value,
                     ],
                 ]);
