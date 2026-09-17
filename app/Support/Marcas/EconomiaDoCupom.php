@@ -30,6 +30,16 @@ final class EconomiaDoCupom
             return null;
         }
 
+        // Etapa 17, achado com a TrincaPay: quando o único preço publicado já
+        // vem com o cupom aplicado (a própria marca avisa isso), o preço de
+        // adesão cadastrado já É o preço com desconto - calcular o percentual
+        // do cupom em cima dele soma o mesmo desconto duas vezes. Diferente
+        // do caso acima (sem valor conhecido): aqui o percentual é real e
+        // fixo, só não pode virar uma segunda economia em reais.
+        if ($cupom->desconto_ja_no_preco) {
+            return null;
+        }
+
         if ($cupom->tipo_desconto === TipoDesconto::Valor) {
             $valor = (float) $cupom->valor;
 

@@ -4,7 +4,13 @@ namespace Database\Seeders;
 
 use App\Enums\StatusItem;
 use App\Enums\TipoEnquadramento;
+use App\Enums\TipoEquipamento;
+use App\Models\Equipamento;
+use App\Models\Marca;
+use App\Models\Plano;
 use App\Models\PrazoRecebimento;
+use App\Support\Uploads\ImagemSeguraWebp;
+use Illuminate\Support\Str;
 
 /**
  * TrincaPay, lida em 15/09/2026 (etapa 17) na página de afiliado do canal
@@ -67,5 +73,84 @@ class TrincaPaySeeder extends SeederDeMarca
             4.04, 5.56, 6.28, 7.29, 8.20, 9.03, 10.84, 11.65, 12.36, 13.13,
             13.89, 14.72, 17.08, 17.80, 18.01, 19.23, 20.44, 22.05, 23.20, 23.91, 24.62,
         ], $fonte);
+
+        $this->equipamento($marca, $plano);
+    }
+
+    /**
+     * Etapa 17, sessão de 17/09/2026: a TrincaPay vende um único modelo, sem
+     * nome comercial próprio - a página não chama de nada além de "a Trinca
+     * Pay"/"minha Trinca Pay" (é hardware Ingenico Move/2500 branco com a
+     * marca no visor, mas isso é fabricante, não nome comercial da marca -
+     * mesma regra do FacilityPay/SidePay/Yelly com o PagBank: cataloga-se o
+     * nome que a própria revendedora usa). Nome do equipamento: "TrincaPay".
+     *
+     * Preço só existe na página de afiliado (`canal-monetizando`) - a página
+     * institucional não divulga valor (regra do Everton: "interessado deve
+     * entrar em contato"). `preco_adesao` = R$ 358,80 (cheio, riscado),
+     * `preco_adesao_promocional` = R$ 298,80 "à vista" - com o aviso da
+     * própria página "Cupom aplicado automaticamente: CANALMONETIZANDO".
+     *
+     * **`parcelas_adesao` fica null de propósito, não é lacuna.** A página
+     * anuncia "12x de R$ 29,90" - mas 29,90 × 12 = R$ 358,80, o preço CHEIO,
+     * não os R$ 298,80 à vista. Ou seja: parcelar aqui abre mão do desconto,
+     * o oposto de toda outra marca já cadastrada (onde a regra do Everton é
+     * "parcela em 12x sem juros sobre o preço à vista"). `parcelaDaAdesao()`
+     * (`EquipamentoPlano`) só sabe calcular parcela dividindo o preço vigente
+     * (promocional quando existe) pelo número de parcelas - gravar 12 aqui
+     * mostraria R$ 24,90 de parcela, um número que a TrincaPay nunca cobra.
+     * Sem um campo para "parcela sobre o cheio, não sobre o vigente", o
+     * jeito honesto é não declarar parcelamento nenhum, não inventar um
+     * número errado.
+     *
+     * **Pendência sinalizada ao Everton, não resolvida nesta sessão:** o
+     * cupom `CANALMONETIZANDO` (16% cadastrado, `CuponsAfiliadoSeeder`) já
+     * está embutido nesse R$ 298,80 - é a própria página que diz "aplicado
+     * automaticamente". `EconomiaDoCupom` (etapa 08) calcula a economia como
+     * 16% de cima do `preco_adesao_vigente`, que already é o preço COM
+     * cupom - isso contaria o mesmo desconto duas vezes na tela de "economize
+     * R$ X" da página da marca. Diferente do caso já resolvido da
+     * FacilityPay (que SUBestima a economia real), este SUPERestimaria.
+     */
+    private function equipamento(Marca $marca, Plano $plano): void
+    {
+        $equipamento = Equipamento::updateOrCreate(
+            ['marca_id' => $marca->getKey(), 'slug' => Str::slug('TrincaPay')],
+            [
+                'nome' => 'TrincaPay',
+                'tipo' => TipoEquipamento::Pos,
+                'descricao' => 'Maquininha com tela colorida e teclado físico, recebe por aproximação '
+                    .'(NFC) e parcela em até 21x no crédito.',
+                'tem_chip_gratis' => false,
+                'imprime_comprovante' => false,
+                'aceita_nfc' => true,
+                'exige_celular' => false,
+                'status' => StatusItem::Ativo,
+                'ordem' => 0,
+            ],
+        );
+
+        if ($equipamento->imagem_path === null) {
+            $caminho = ImagemSeguraWebp::salvar(__DIR__.'/assets/trincapay/trincapay.webp', 'equipamentos');
+
+            if ($caminho !== null) {
+                $equipamento->update(['imagem_path' => $caminho]);
+            }
+        }
+
+        $equipamento->planos()->syncWithoutDetaching([
+            $plano->getKey() => [
+                'preco_adesao' => 358.80,
+                'preco_adesao_promocional' => 298.80,
+                'aluguel_mensal' => null,
+                'parcelas_adesao' => null,
+                'observacao' => 'Preço em trincapay.com.br/canal-monetizando/, verificado em 17/09/2026 - '
+                    .'só existe nessa página (com o cupom de afiliado do Everton aplicado automaticamente); '
+                    .'a página institucional não divulga valor. A própria página anuncia "12x de R$ 29,90", '
+                    .'mas isso é parcelamento do preço CHEIO (29,90 × 12 = 358,80), sem o desconto à vista - '
+                    .'por isso parcelas_adesao ficou null, ver comentário da classe.',
+                'status' => StatusItem::Ativo->value,
+            ],
+        ]);
     }
 }

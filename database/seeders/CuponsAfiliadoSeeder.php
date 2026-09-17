@@ -105,6 +105,11 @@ class CuponsAfiliadoSeeder extends Seeder
                 'descricao' => null,
                 'link' => 'https://www.trincapay.com.br/canal-monetizando/',
                 'termos' => null,
+                // Etapa 17, confirmado com o Everton: o único preço de adesão
+                // publicado (R$ 298,80) já é o preço COM esse cupom aplicado -
+                // não existe um "preço sem cupom" em lugar nenhum verificável.
+                // Sem isso, EconomiaDoCupom somaria o mesmo desconto de novo.
+                'desconto_ja_no_preco' => true,
             ],
         ];
 
@@ -117,6 +122,7 @@ class CuponsAfiliadoSeeder extends Seeder
                 'tipo_desconto' => $dados['tipo_desconto'],
                 'incide_sobre' => IncideSobre::Adesao,
                 'valor' => $dados['valor'],
+                'desconto_ja_no_preco' => $dados['desconto_ja_no_preco'] ?? false,
                 'valido_de' => now()->toDateString(),
                 'valido_ate' => null,
                 'link_afiliado' => $dados['link'],
