@@ -9,6 +9,7 @@ use App\Enums\TipoOperacao;
 use App\Models\Equipamento;
 use App\Models\GrupoBandeira;
 use App\Models\PrazoRecebimento;
+use App\Support\Uploads\ImagemSeguraWebp;
 use Illuminate\Support\Str;
 
 /**
@@ -186,6 +187,22 @@ class InfinitePaySeeder extends SeederDeMarca
         ];
     }
 
+    /**
+     * Etapa 17 (17/09/2026): foto adicionada e dois achados na releitura de
+     * `infinitepay.io/maquininha`.
+     *
+     * **`tem_chip_gratis` estava errado desde a etapa 04 - corrigido para
+     * `false`.** O FAQ da própria página responde "Precisa de chip de
+     * dados?" assim: "A maquininha funciona por Wi-Fi. Dados móveis são
+     * opcionais para usar fora da rede — o chip é adquirido separadamente."
+     * Ou seja, não é chip grátis incluso, é o oposto: comprado à parte, só
+     * se o lojista quiser usar fora de uma rede Wi-Fi.
+     *
+     * **Preço cheio, que não estava capturado.** A home mostra "De: 12x de
+     * R$ 79,90 por: 12x de R$ 16,58 ou apenas R$ 199" - o valor já
+     * cadastrado (R$ 199,00) era só o vigente/promocional. Cheio = 79,90 ×
+     * 12 = R$ 958,80.
+     */
     private function equipamento(int $marcaId, array $planos): void
     {
         $equipamento = Equipamento::updateOrCreate(
@@ -194,8 +211,9 @@ class InfinitePaySeeder extends SeederDeMarca
                 'nome' => 'Maquininha Smart',
                 'tipo' => TipoEquipamento::Smart,
                 'descricao' => 'Unico aparelho da marca. Impressao de comprovante, bateria de alta '
-                    .'duracao, gestao de vendas e estoque, sem aluguel e sem fidelidade.',
-                'tem_chip_gratis' => true,
+                    .'duracao, gestao de vendas e estoque, sem aluguel e sem fidelidade. Conecta por '
+                    .'Wi-Fi; chip de dados moveis e opcional e vendido a parte.',
+                'tem_chip_gratis' => false,
                 'imprime_comprovante' => true,
                 'aceita_nfc' => true,
                 'exige_celular' => false,
@@ -204,19 +222,31 @@ class InfinitePaySeeder extends SeederDeMarca
             ],
         );
 
+        if ($equipamento->imagem_path === null) {
+            $caminho = ImagemSeguraWebp::salvar(
+                __DIR__.'/assets/infinitepay/infinitepay-smart.webp',
+                'equipamentos',
+            );
+
+            if ($caminho !== null) {
+                $equipamento->update(['imagem_path' => $caminho]);
+            }
+        }
+
         foreach ($planos as $plano) {
             $equipamento->planos()->syncWithoutDetaching([
                 $plano->getKey() => [
-                    'preco_adesao' => 199.00,
-                    'preco_adesao_promocional' => null,
+                    'preco_adesao' => 958.80,
+                    'preco_adesao_promocional' => 199.00,
                     // Etapa 05: as 12 vezes ja estavam na observacao desta
                     // mesma carga ("12x de R$ 16,58"). Agora sao campo, para o
                     // motor distinguir a parcela que a marca oferece da
                     // amortizacao que ele proprio faz para comparar.
                     'parcelas_adesao' => 12,
                     'aluguel_mensal' => null,
-                    'observacao' => 'R$ 199,00 a vista ou 12x de R$ 16,58, com frete gratis. '
-                        .'Preco de compra da primeira maquininha, sem aluguel.',
+                    'observacao' => 'Preço em infinitepay.io/maquininha, verificado em 17/09/2026: de '
+                        .'R$ 958,80 por R$ 199,00 à vista ou 12x de R$ 16,58, com frete grátis. Preco '
+                        .'de compra da primeira maquininha, sem aluguel.',
                     'status' => StatusItem::Ativo->value,
                 ],
             ]);
