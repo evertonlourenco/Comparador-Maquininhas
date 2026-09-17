@@ -3049,6 +3049,79 @@ mostra "De: 12x de R$ 79,90 por: 12x de R$ 16,58 ou apenas R$ 199" — cheio
 = 79,90 × 12 = R$ 958,80, gravado agora. `199,00 / 12 = 16,58` bate exato
 com a parcela publicada.
 
+### Fotos e duas correções de ficha técnica no PagBank, e um plano excluído em produção travando o reseed (17/09/2026)
+
+Os seis aparelhos já existiam desde a etapa 04, preço e nome corretos.
+Faltava só foto. Preço conferido de novo contra
+`pagbank.com.br/para-seu-negocio/maquininhas` — sem mudança nos seis.
+
+**Duas correções reais, achadas na página individual de cada aparelho**
+(que tem "Ficha técnica" e, no rodapé, um grid comparativo mais granular
+que a listagem usada na etapa 04):
+
+- **Moderninha Plus 2 não imprime comprovante** — `imprime_comprovante`
+  estava `true`. O texto do produto diz "Envio de comprovante por SMS", e
+  o grid comparativo confirma "Comprovante por SMS" nela, contra "Imprime
+  comprovante" nas outras que realmente imprimem.
+- **Minizinha NFC 2 não tem chip de dados próprio** — `tem_chip_gratis`
+  era fixo `true` para as seis no código. Das seis, é a única cuja página
+  nunca diz "(chip grátis)" — diz só "Conexão por Bluetooth (precisa de
+  celular)". As outras cinco repetem literalmente "Não precisa de celular
+  (chip grátis)". Coerente com `exige_celular`: quem depende do celular
+  para conectar não carrega chip de dados próprio. `tem_chip_gratis`
+  deixou de ser hardcoded fora do array de aparelhos e passou a vir por
+  equipamento.
+
+**Preço de ProFit e Minizinha NFC 2, esclarecido com o Everton via print
+do carrinho.** Antes de mexer no código, encontrei três valores diferentes
+para a ProFit em três páginas do próprio PagBank: R$ 83,88 (home,
+já cadastrado), R$ 95,88 (`loja.pagbank.com.br`, tanto pelo link de
+afiliado do Everton quanto pela página individual do produto) e R$ 75,49
+(uma landing específica com "91% OFF"). O Everton testou o carrinho pelo
+próprio link dele: subtotal R$ 95,88 − R$ 12,00 de desconto automático
+(sem cupom digitado, só por vir do link `cm=vzArXydV`) = **R$ 83,88** — o
+mesmo valor já cadastrado, vindo da home. Preço não mudou; ficou registrado
+que "o link não tem vantagem" (dito por ele antes de testar) não era bem
+exato — o link aplica R$ 12 automático que, coincidentemente ou não,
+devolve o mesmo preço da home.
+
+**Achado real, não relacionado a equipamento, que bloqueou o reseed em
+produção:** rodar `db:seed --class=PagBankSeeder` falhava com
+`SQLSTATE[23000]... Duplicate entry '1-taxas-iniciais'`. Investigado: o
+plano "Taxas iniciais" (id 1, marca PagBank) está **soft-deleted em
+produção desde 16/09/2026 16:50:45** — as 74 taxas dele já estavam todas
+em rascunho antes disso, sinal de que foi substituído pelos "Planos
+comerciais" (Essencial/Super Max) introduzidos na sessão de 16/09. Achado
+um segundo caso irmão, apagado 21 segundos depois: o plano "Padrão" da
+SidePay (id 20), sem taxa nenhuma vinculada — os dois exclusões parecem
+ter vindo de uma limpeza deliberada no painel, na mesma sessão que corrigiu
+a `TabelaDoPlano` e adicionou a coluna "Situação das taxas" (ver seção
+"Duas falhas reais em produção" — mesma data).
+
+`SeederDeMarca::plano()` não usa `withTrashed()`, então `Plano::where($chave)->exists()`
+não vê a linha soft-deleted e tenta `INSERT`, que colide com o índice único
+`planos_marca_id_slug_unique` (que não filtra `deleted_at`). Isso significa
+que **desde 16/09/2026, `db:seed --class=PagBankSeeder` está permanentemente
+quebrado em produção** — não é falha de rede nem concorrência, reproduz
+100% das vezes.
+
+**Contornado sem decidir nada sobre o plano excluído:** como o código de
+equipamentos mora dentro de `planosComerciais()` (não num método próprio),
+e essa função não toca em "Taxas iniciais" (criado antes, direto em
+`run()`), rodei só `planosComerciais()` em produção via Reflection
+(`ReflectionMethod::setAccessible(true)` + `invoke()`), pulando a parte
+que quebra. As 135 taxas publicadas do PagBank não foram tocadas.
+
+**Pendente de decisão do Everton, não resolvido aqui:** ele que excluiu
+"Taxas iniciais" (e o "Padrão" da SidePay) pelo painel — só ele sabe se foi
+definitivo (e então `run()` devia parar de recriar esse plano, exigindo
+reescrever a lógica de faixas que depende dele) ou se foi um teste que
+esqueceu de reverter (e então o plano devia ser restaurado,
+`Plano::withTrashed()->find(1)->restore()`). Enquanto isso não for
+decidido, **qualquer reseed futuro do PagBank vai falhar do mesmo jeito**
+se tentar rodar `run()` inteiro — usar o mesmo contorno por Reflection (ou
+`--class` num método específico) até resolver.
+
 ## Pendente ao fim da etapa 05
 
 O motor está pronto e testado, mas ele é honesto sobre o que não sabe — e isso
