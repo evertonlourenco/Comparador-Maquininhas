@@ -2954,6 +2954,49 @@ anunciado é baixo na prática, e o motor de comparação (que otimiza por
 menor taxa) nunca recomendaria o Black de qualquer forma, já que a taxa
 dele é pior.
 
+### Equipamento da TrincaPay, e o cupom que já vem embutido no preço (17/09/2026)
+
+TrincaPay vende um único modelo, sem nome comercial próprio — é hardware
+Ingenico Move/2500 rebrandeado (a marca só troca o que aparece no visor),
+e a própria página só chama de "a Trinca Pay"/"minha Trinca Pay". Cadastrado
+como **"TrincaPay"** (mesmo espírito de FacilityPay/SidePay/Yelly com o
+PagBank: cataloga-se o nome que a revendedora usa, não o do fabricante).
+
+**Preço só existe na página de afiliado do Everton**
+(`trincapay.com.br/canal-monetizando/`) — a página institucional não
+divulga valor, "interessado deve entrar em contato". `preco_adesao` =
+R$ 358,80 (cheio), `preco_adesao_promocional` = R$ 298,80 "à vista", com o
+aviso da própria página "Cupom aplicado automaticamente: CANALMONETIZANDO".
+
+**`parcelas_adesao` ficou `null` de propósito, não é lacuna.** A página
+anuncia "12x de R$ 29,90" — mas 29,90 × 12 = R$ 358,80, o preço CHEIO, não
+os R$ 298,80 à vista. Parcelar aqui abre mão do desconto — o oposto da
+regra de toda outra marca cadastrada ("parcela em 12x sem juros sobre o
+preço à vista"). `EquipamentoPlano::parcelaDaAdesao()` só sabe dividir o
+`preco_adesao_vigente` (promocional quando existe) pelo número de
+parcelas — gravar 12 aqui mostraria R$ 24,90, um valor que a TrincaPay
+nunca cobra. Sem campo pra "parcela sobre o cheio, não sobre o vigente",
+ficou sem declarar parcelamento a mostrar um número errado.
+
+**Achado real, corrigido com uma migration:** como o R$ 298,80 já é o preço
+COM o cupom `CANALMONETIZANDO` (16%) aplicado, `EconomiaDoCupom` calculava
+16% de cima dele de novo — confirmado na prática, R$ 47,81 de "economia"
+que não existe, um desconto contado duas vezes. Diferente do caso
+PagBank/Mercado Pago (`cupom.valor` nulo — desconto real mas sem
+percentual fixo, varia por equipamento/mês): aqui o percentual é real e
+fixo, só não pode virar uma segunda economia em reais — zerar `valor`
+teria apagado também o selo "16% off" do cupom (`x-bloco-cupom` lê
+`cupom->valor` direto), que continua sendo informação real e válida.
+
+Solução: campo novo `cupons.desconto_ja_no_preco` (boolean, migration
+`2026_09_17_090000`), `true` só na TrincaPay. `EconomiaDoCupom::calcular()`
+devolve `null` quando esse campo é `true` — mesmo efeito prático do `valor`
+nulo (esconde a economia em reais, mantém o resto do cupom intacto), mas
+como um conceito distinto: "eu sei o percentual, só não posso somar de
+novo". Confirmado com o Everton antes de implementar (ele descreveu a
+mecânica exata: "o desconto está somente sobre o preço à vista... a prazo
+paga o valor cheio" — bateu com o que a página mostra).
+
 ## Pendente ao fim da etapa 05
 
 O motor está pronto e testado, mas ele é honesto sobre o que não sabe — e isso
