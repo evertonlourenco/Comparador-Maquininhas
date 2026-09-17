@@ -2866,6 +2866,38 @@ inteiro em busca de `delete()`/`query()->delete()` sem guarda — se existir,
 confirmar que ainda tem função (taxa órfã real) antes de rodar, e considerar
 remover se a correção que ele fazia já está persistida há tempo.
 
+### Catálogo de equipamentos da Yelly, 17/09/2026
+
+Mesmo padrão do catálogo da SidePay (sessão anterior): fotos oficiais
+baixadas de `yelly.com.br/maquininhas` (`mini_sem_fundo.png`, `PRO-2-2.png`,
+`smart_sem_fundo.png`, hospedadas em blob storage da Vercel) e ficha técnica
+lida na mesma página. Antes de rodar em produção, verificado pelo JSON
+público (`comparador.json`) que as 116 taxas da Yelly já estavam publicadas
+— o `YellySeeder` nunca teve `DELETE` incondicional (diferente do
+`SidePaySeeder` antes da correção acima), então reseed não tinha o mesmo
+risco.
+
+`preco_adesao` (cheio) igual nos dois planos (Mini R$ 399, Pro R$ 699, Smart
+R$ 799); só o promocional muda por plano — mais barato no Flash (D+0) que
+no Premium (D+1): Mini R$ 99,90/R$ 199,90, Pro R$ 199,90/R$ 299,90, Smart
+R$ 299,90/R$ 399,90. `parcelas_adesao = 12`.
+
+**O cupom `AFILIADOS10` não precisou de tratamento especial.** O Everton
+mandou screenshots do checkout com cupom aplicado
+(`checkout.yelly.com.br/monetizando/?cupom=AFILIADOS10`) mostrando o preço
+final por combinação de plano e aparelho. Conferido: cada "Total" no resumo
+do pedido bate exatamente com 10% de desconto sobre o `preco_adesao_promocional`
+já cadastrado (ex.: Smart Premium R$ 399,90 × 0,9 = R$ 359,91, o valor exato
+do resumo) — o cupom genérico já cadastrado (regra: incide sobre adesão de
+qualquer maquininha da marca, sem `equipamento_id`) resolve isso sozinho.
+
+**"Yelly Plus" (plano e aparelho) ficou de fora, decisão do Everton.**
+Aparece só no checkout (Débito 1,13%, Crédito 12x 12,68%, aparelho próprio)
+mas não em `yelly.com.br/maquininhas` nem em `yelly.com.br/taxas` — sem
+confirmação em lugar nenhum verificável de que ainda está à venda. Provável
+plano/aparelho descontinuado, mantido fora do catálogo até aparecer em fonte
+oficial.
+
 ## Pendente ao fim da etapa 05
 
 O motor está pronto e testado, mas ele é honesto sobre o que não sabe — e isso
