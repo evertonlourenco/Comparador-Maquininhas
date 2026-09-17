@@ -2771,6 +2771,15 @@ maquininha da marca (nunca um equipamento específico — dito pelo Everton
 abrir o link, mostra e aplica "CANALMONETIZANDO" (sem hífen) — usado o que
 foi verificado na página real. Vale confirmar.
 
+**Ton, 17/09/2026: 20% cadastrado é intencionalmente o valor conservador.**
+O desconto real no link do Everton estava em 25% nessa data (promoção da
+própria Ton por tempo limitado, até o fim do mês, sobre o mesmo cupom).
+Decisão dele: anunciar 20% (o valor que se mantém) em vez de 25% (o que é
+passageiro) — surpresa boa pro cliente quando o desconto real for maior, e
+evita ficar ajustando a página toda vez que a Ton muda a promoção. Não é
+erro de cadastro se uma sessão futura conferir o link e achar um percentual
+real diferente de 20%: é o comportamento esperado.
+
 **Preço de adesão dos três equipamentos da FacilityPay, corrigido em
 16/09/2026 (sessão fora da numeração do plano).** Primeira leitura só
 capturou o preço da aba Express (a ativa por padrão em
@@ -2897,6 +2906,53 @@ mas não em `yelly.com.br/maquininhas` nem em `yelly.com.br/taxas` — sem
 confirmação em lugar nenhum verificável de que ainda está à venda. Provável
 plano/aparelho descontinuado, mantido fora do catálogo até aparecer em fonte
 oficial.
+
+### Fotos dos equipamentos da Ton, e um site oficial que mentiu duas vezes (17/09/2026)
+
+Preço de adesão e ficha técnica do T1/T2/T3/T3 Smart já existiam desde a
+etapa 04 (08/09/2026) — confirmados ainda corretos e batendo com
+`ton.com.br` nesta sessão, sem mudar nada. Faltava só a foto.
+
+**A foto oficial do T3 Smart em `ton.com.br` está errada** (ou desatualizada
+— não dá pra saber qual), e de um jeito raro de pegar: o mesmo arquivo
+aparece consistente em pelo menos 5 lugares do site (página individual do
+T3 Smart, card da home, "compare as três maquininhas", hero do catálogo de
+afiliado, banner promocional "0,57%") mostrando um aparelho com teclado em
+**inglês** (CANCEL/CLEAR/ENTER, com setas ↑↓) — nada a ver com o teclado em
+português (AJUDA/ATALHOS) do aparelho real que o Everton fotografou e
+confirmou duas vezes ser o T3 Smart de verdade. Cinco confirmações do mesmo
+site não bastaram porque todas vinham do mesmo asset reciclado — quantidade
+de lugares que mostram uma imagem não é o mesmo que quantidade de fontes
+independentes.
+
+Na primeira rodada eu argumentei com o Everton usando essa "evidência",
+pedindo pra ele confirmar antes de eu confiar na foto dele. Na segunda, ele
+insistiu e deu os nomes de arquivo (`t3-1`, `t3-smart`) que usa há anos —
+e o `find` no disco achou os originais numa pasta própria dele no Google
+Drive (`Projetos IA/Máquina Certa/Equipamentos/Ton/`, datados de 14/11/2023,
+replicados em mais dois Google Drive diferentes que ele usa). Eram
+exatamente os quatro aparelhos, com o nome batendo com o que ele disse.
+
+**Why vale lembrar:** o site oficial da marca é a fonte padrão neste
+projeto, mas não é infalível — pode reciclar um asset errado/desatualizado
+em vários lugares ao mesmo tempo, o que parece (e não é) confirmação
+cruzada. Quando o dono do domínio insiste numa correção com detalhe
+verificável (nome de arquivo, não só "confia em mim"), vale procurar esse
+detalhe no disco antes de insistir de volta com mais scraping da mesma
+fonte.
+
+**Decisão pendente de confirmação do Everton:** não modelar o "Ton Black"
+(plano exclusivo MEI/PJ, taxas piores, só existe atrás do link de afiliado
+`ton.com.br/catalogo?coupon=...`) nem o preço de aparelho por plano desse
+catálogo. Motivos: (1) o "Ton Mega+" desse catálogo é o mesmo "Período
+Promocional" já cadastrado, só com nome de afiliado; (2) o "% OFF" que a
+página do Ton Black anuncia não fecha matematicamente com o preço cheio
+mostrado do próprio card (conferido, não bate); (3) o checkout do link do
+Everton abre com "Ton Mega+" pré-selecionado — o mesmo plano que já
+mostramos — então o risco de um cliente ver um preço diferente do
+anunciado é baixo na prática, e o motor de comparação (que otimiza por
+menor taxa) nunca recomendaria o Black de qualquer forma, já que a taxa
+dele é pior.
 
 ## Pendente ao fim da etapa 05
 
