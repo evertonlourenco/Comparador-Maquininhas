@@ -2512,8 +2512,8 @@ tinha tamanho fixo, mas o atributo é a declaração explícita que a regra pede
 - [x] **14** — Identidade visual e reforma da interface
 - [x] **15** — Imagens: logos de marca, equipamentos e bandeiras
 - [x] **16** — Painel de saúde e observabilidade do administrador
-- [ ] 17 — Curadoria e validação das taxas
-- [ ] 18 — Manual do administrador
+- [ ] 17 — Curadoria e validação das taxas (avançada, não fechada — ver seção própria)
+- [x] **18** — Manual do administrador
 - [ ] 19 — Lançamento
 - [ ] 20 — Decisão sobre programa de parceiros
 - [ ] 21 — Cadastro de taxas por imagem (IA de visão)
@@ -3231,6 +3231,50 @@ passar para 4"). Duas mudanças:
 
 `db:seed --class=PagBankSeeder` roda direto de novo, sem precisar do
 contorno por Reflection.
+
+## Manual do administrador (etapa 18)
+
+Página dentro do próprio `/admin` (`/admin/manual`), não PDF — de propósito,
+para nunca envelhecer numa pasta esquecida. `App\Filament\Pages\Manual`
+(descoberta automática via `discoverPages`, igual às demais páginas do
+painel), view em `resources/views/filament/pages/manual.blade.php`. Ícone de
+livro, sem grupo de navegação (fica sozinha, no topo do menu,
+`navigationSort = -1`) — é a página que qualquer pessoa nova no painel deve
+achar primeiro, não uma entre as outras.
+
+Cobre, nesta ordem, os oito pontos pedidos: a ordem certa de cadastro
+(adquirente → marca → plano → equipamento → cupom, e por que inverter
+quebra), como lançar taxa em lote (Lançamento em Lote vs. Tabela do Plano,
+e por que 1x grava como `credito_avista` e 2x–21x como `credito_parcelado`),
+o que significa rascunho/publicado/aferido/reportado/vencido em português
+de gente, como aprovar e por que `comparador:gerar-json` precisa rodar
+depois (com o comando exato via SSH), como ler as duas filas de revisão sem
+nunca publicar direto a partir delas, como ler cada cartão do painel de
+saúde e o que fazer quando ele fica laranja ou vermelho, o passo a passo de
+restaurar um backup (local e do Google Drive), e as três coisas que nunca
+se deve fazer.
+
+**Testado com o mesmo padrão dos outros testes de página** (`Livewire::test`,
+não requisição HTTP — ver a nota da etapa 16 sobre por que isso é
+suficiente para conteúdo, mas não para middleware).
+`tests/Feature/Admin/ManualTest.php` cobre: a página monta sem exceção, o
+slug é `manual`, os oito pontos do prompt aparecem no texto, a explicação de
+1x/2x–21x está presente, o comando `comparador:gerar-json` aparece por
+extenso, e os dois avisos centrais ("publicar no painel não muda o site
+sozinho" e "as filas de revisão não publicam nada sozinhas") estão no texto.
+
+**Achado rodando a suíte inteira, sem relação com esta etapa:** `php artisan
+test` sem filtro estoura memória (`Allowed memory size of 134217728 bytes
+exhausted`) dentro de `ImagemSeguraWebp.php:108` (a conversão para WebP via
+GD), sempre no mesmo ponto da execução (`ParidadeDoResumoTest`). Confirmado
+que não tem relação com o manual: removendo os três arquivos novos desta
+etapa e rodando a suíte inteira de novo, o mesmo estouro aconteceu no mesmo
+lugar. Parece acúmulo de memória do GD ao longo de uma suíte grande com
+vários testes de imagem (nenhum `imagedestroy()` esquecido óbvio encontrado
+numa olhada rápida) — os testes envolvidos passam normalmente sozinhos ou
+em grupos menores (`--filter`). Não investigado a fundo nem corrigido, por
+estar fora do escopo desta etapa; vale revisitar se a suíte completa virar
+rotina de CI.
 
 ## Pendente ao fim da etapa 05
 

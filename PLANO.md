@@ -62,6 +62,7 @@ por ele que o trabalho de dados acontece enquanto o site espera.
 - [x] **14** — Identidade visual e reforma da interface (Máquina Certa, 14/09/2026; ver CLAUDE.md)
 - [x] **15** — Imagens: logos de marca, equipamentos e bandeiras (14/09/2026; ver CLAUDE.md)
 - [x] **16** — Painel de saúde e observabilidade do administrador (15/09/2026; ver CLAUDE.md)
+- [x] **18** — Manual do administrador (17/09/2026; ver CLAUDE.md)
 
 ---
 
@@ -227,6 +228,10 @@ avaliar taxa e avaliar tela ao mesmo tempo confunde as duas coisas.
 - Cupons reais cadastrados, com `valido_ate`
 
 ### 18 — Manual do administrador
+
+> **Concluída em 17/09/2026.** O registro do que foi feito está no
+> `CLAUDE.md`, seção "Manual do administrador (etapa 18)". O texto abaixo
+> fica como o planejamento que a orientou.
 
 Didático, claro e simplificado. Escrito **agora** e não antes porque só aqui o
 painel está na forma final — manual escrito sobre alvo em movimento nasce
