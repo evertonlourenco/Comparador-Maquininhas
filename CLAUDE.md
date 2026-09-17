@@ -282,7 +282,7 @@ edita.
 | Seeder | O que carrega |
 |---|---|
 | `AdquirentesSeeder` | 8 adquirentes, cada um confirmado no rodapé ou no texto institucional do site da própria marca |
-| `BandeirasSeeder` | 13 bandeiras, só as que aparecem em alguma marca já carregada |
+| `BandeirasSeeder` | 13 bandeiras da carga original, só as que apareciam em alguma marca já carregada. Ben Visa Vale e Green Card entraram depois, direto (não pelo seeder) — ver "Curadoria e validação das taxas (etapa 17)" |
 | `MarcasSeeder` | 9 marcas + pivot `bandeira_marca` com o grupo de cada uma |
 | `PagBankSeeder`, `InfinitePaySeeder`, `TonSeeder`, `SumUpSeeder` | planos, equipamentos e a tabela de taxas de cada marca |
 
@@ -2729,11 +2729,55 @@ regra, marca a marca, terminando em datas diferentes.
 itens pendentes nas filas de revisão** (propostas, relatos de taxa incorreta,
 detecções do monitor) — conferido em produção na mesma data.
 
-**Ainda sem logo: as 13 bandeiras** (Visa, Mastercard, Elo, Amex…) —
-`bandeiras.logo_path` nulo em todas. Não bloqueia (o site cai para o nome da
-bandeira sozinho, mesmo padrão de "marca sem logo" da etapa 15), mas é o
-próximo alvo óbvio se a busca de imagem por URL for reaberta antes do
-lançamento.
+**Resolvido em 17/09/2026: as 13 bandeiras ganharam logo, e duas bandeiras
+novas entraram no catálogo.** O Everton baixou os logos e mandou pelo chat —
+a maioria já tinha sido salva automaticamente na pasta dele do Drive
+(`Logos Bandeiras/`), no mesmo padrão de sempre. Cadastrados via
+`ImagemSeguraWebp::salvar()` direto (não pela ação de busca por URL da
+etapa 15, que é para candidato buscado na web — aqui o arquivo já estava
+local e confiável, veio do próprio Everton).
+
+**Dois formatos que o pipeline de upload não aceita direto** (só
+JPEG/PNG/GIF/WebP, ver `ImagemSeguraWebp::CRIADORES`): SVG
+(American Express, Pluxee) e AVIF (Green Card, ver abaixo). Convertidos
+para PNG com `qlmanage -t -s 512 -o` (miniatura do Quick Look do macOS —
+não há `rsvg-convert`/ImageMagick instalado nesta máquina) e, para as duas
+SVG, recortados por script PHP com GD (bounding box do conteúdo não-branco/
+não-transparente) porque a miniatura do Quick Look mantém a tela cheia
+512×512 com o logo pequeno num canto.
+
+**Duas bandeiras novas, confirmadas por fonte oficial (regra 6), não só
+porque o Everton mandou o logo:** conferido em `pagbank.com.br/
+para-seu-negocio/voucher`, que lista explicitamente sete bandeiras de
+vale-refeição/alimentação aceitas — Alelo, Pluxee, Ticket, VR, **Ben Visa
+Vale**, Up Brasil, **Green Card**. As duas primeiras (Ben, Green Card) não
+existiam no catálogo; criadas com `ordem` 13 e 14.
+
+**Duas logos que o Everton mandou e NÃO entraram, por enquanto:** Senff e
+Personal Card. Buscadas em `pagbank.com.br/.../voucher` (não aparecem),
+`yelly.com.br` (nem no texto da página nem na tira de logos de "formas de
+pagamento") e `infinitepay.io`/`sumup.com` (sem menção). Só apareceram em
+agregadores de terceiros (tipo "calculadoradetaxas.com.br"), que este
+projeto trata como fonte não confiável desde a regra 8 (nunca raspar
+Reclame Aqui) — o mesmo princípio vale aqui. Ficam pendentes até aparecerem
+numa página oficial de alguma marca já cadastrada.
+
+**Apple Pay, Google Pay e Samsung Pay não são bandeira neste domínio, e por
+isso não entraram no catálogo.** São carteiras digitais — rodam por cima de
+Visa/Mastercard/Elo, que já são a bandeira real cobrada. Cadastrá-las como
+`Bandeira` própria contaria a mesma transação duas vezes, e nenhuma marca
+publica taxa diferenciada para "pagamento por Apple Pay" (a taxa é da
+bandeira do cartão por trás). Ficaram fora do `bandeiras_staging` de
+propósito.
+
+**A vinculação `bandeira_marca` (quais marcas aceitam quais bandeiras)
+não foi expandida nesta sessão**, além do que já existia. A página do
+PagBank confirma que ele aceita todo o grupo de voucher (Alelo, Pluxee,
+Ticket, VR, Ben, Up Brasil, Green Card) mas o `bandeira_marca` dele hoje só
+tem as bandeiras de cartão (Visa, Master, Elo, Amex, Hipercard, Hiper,
+Diners, Cabal) — nenhum voucher. Registrado como pendência de curadoria de
+dado (etapa 17), não de catálogo: decidir marca a marca quais vouchers
+vincular é trabalho à parte de só ter o logo pronto.
 
 Sessão de 15/09/2026. Trabalho de dado real feito com o Everton, não código
 novo de feature — mas exigiu três mudanças de schema porque duas premissas da
