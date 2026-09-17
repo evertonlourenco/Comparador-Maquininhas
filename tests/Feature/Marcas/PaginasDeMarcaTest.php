@@ -36,24 +36,50 @@ class PaginasDeMarcaTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_a_listagem_responde_com_seo_e_a_grade_de_marcas(): void
+    /**
+     * Revisão de 17/09/2026: a trava de aprovação (etapa 19) deixou de abrir
+     * exceção para "sem dado publicado" — nenhuma marca aparece em lugar
+     * nenhum sem `aprovada_em`, mesmo a que só tem rascunho. A carga real via
+     * `DatabaseSeeder` não aprova ninguém (regra 10: aprovação é ato humano,
+     * não efeito colateral de rodar seeder), então a listagem tem de mostrar
+     * o estado vazio até alguém aprovar pelo painel.
+     */
+    public function test_a_listagem_sem_nenhuma_marca_aprovada_mostra_o_estado_vazio(): void
     {
         $this->seed(DatabaseSeeder::class);
 
         $html = $this->get('/maquininhas')
             ->assertOk()
             ->assertSee('Maquininhas de cartão, marca por marca')
+            ->assertDontSee('PagBank')
+            ->getContent();
+
+        $this->assertStringContainsString('<link rel="canonical" href="'.url('/maquininhas').'">', $html);
+        $this->assertStringContainsString('Nenhuma marca ativa no momento.', $html);
+    }
+
+    /**
+     * Uma vez aprovada — mesmo com taxa ainda em rascunho, que é o estado
+     * real da carga hoje — a marca aparece, e regra 10 continua valendo: sem
+     * dado publicado, a tela diz isso em vez de inventar um número.
+     */
+    public function test_a_listagem_mostra_marca_aprovada_mesmo_com_taxa_em_rascunho(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        Marca::where('slug', 'pagbank')->update(['aprovada_em' => now()]);
+
+        $html = $this->get('/maquininhas')
+            ->assertOk()
             ->assertSee('PagBank')
             ->assertSee('data-marca-checkbox', escape: false)
             ->assertSee('value="pagbank"', escape: false)
             ->getContent();
 
-        $this->assertStringContainsString('<link rel="canonical" href="'.url('/maquininhas').'">', $html);
         $this->assertStringContainsString('"@type":"ItemList"', $html);
 
-        // Regra 10: a carga inteira está em rascunho hoje, então nenhuma marca
-        // publicada tem taxa nem mensalidade para mostrar — e a tela precisa
-        // dizer isso, não inventar um número.
+        // Regra 10: a taxa dela ainda está em rascunho, então não há
+        // mensalidade nem taxa publicada para mostrar — a tela precisa dizer
+        // isso, não inventar um número.
         $this->assertStringContainsString('Sem dado publicado', $html);
         $this->assertStringContainsString('Não informado', $html);
     }
@@ -61,6 +87,7 @@ class PaginasDeMarcaTest extends TestCase
     public function test_a_pagina_individual_traz_as_oito_secoes_na_ordem(): void
     {
         $this->seed(DatabaseSeeder::class);
+        Marca::where('slug', 'pagbank')->update(['aprovada_em' => now()]);
 
         $html = $this->get('/maquininha/pagbank')->assertOk()->getContent();
 
@@ -227,6 +254,7 @@ class PaginasDeMarcaTest extends TestCase
             'site_url' => 'https://exemplo.test/oficial',
             'publica_tabela' => true,
             'status' => StatusMarca::Ativa,
+            'aprovada_em' => now(),
         ]);
 
         Cupom::create([
@@ -257,6 +285,7 @@ class PaginasDeMarcaTest extends TestCase
             'slug' => 'marca-ativa',
             'publica_tabela' => true,
             'status' => StatusMarca::Ativa,
+            'aprovada_em' => now(),
         ]);
         Marca::create([
             'adquirente_id' => $adquirente->id,
@@ -264,6 +293,7 @@ class PaginasDeMarcaTest extends TestCase
             'slug' => 'marca-descontinuada',
             'publica_tabela' => true,
             'status' => StatusMarca::Descontinuada,
+            'aprovada_em' => now(),
         ]);
 
         $xml = $this->get('/sitemap.xml')->assertOk()->getContent();

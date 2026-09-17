@@ -87,13 +87,13 @@ final class CatalogoDoComparador
     }
 
     /**
-     * A trava vale para marca que TEM dado — taxa ou faixa — mas ele esta
-     * incompleto. Marca sem nenhum plano com taxa nem faixa (Cielo, Rede,
-     * GetNet, Stone hoje; InfinitePay/SumUp/Mercado Pago antes da curadoria
-     * chegar la) continua aparecendo como "sem dado publicado", porque isso
-     * NAO e o problema que a trava resolve - regra 4 ja e honesta sobre nao
-     * ter numero nenhum, e ocultar essas marcas tambem faria o comparador
-     * "esquecer" que elas existem, o que e pior que mostrar o motivo.
+     * A trava vale sem exceção (decisão do Everton, 17/09/2026, revendo a
+     * primeira versão desta regra): mesmo marca sem nenhuma taxa nem faixa
+     * publicada (Cielo, Rede, GetNet, Stone, InfinitePay, SumUp, Mercado Pago
+     * hoje) fica invisível até ter `aprovada_em` e estar completa — não existe
+     * mais o "sem dado publicado" como bloco visível sem aprovação. Uma marca
+     * assim só sai do limbo quando tiver pelo menos um plano com taxa ou
+     * faixa publicada E alguém clicar em "Aprovar marca" em cima disso.
      *
      * @param  array<int, array<string, mixed>>  $marcas
      */
@@ -111,26 +111,11 @@ final class CatalogoDoComparador
             ->pluck('id')
             ->all();
 
-        return array_values(array_filter($marcas, function (array $marca) use ($aprovadas): bool {
-            if (! self::temTaxaOuFaixa($marca)) {
-                return true;
-            }
-
-            return in_array($marca['id'], $aprovadas, true)
-                && CompletudeDaMarca::avaliarArray($marca)['completa'];
-        }));
-    }
-
-    /** @param  array<string, mixed>  $marca */
-    private static function temTaxaOuFaixa(array $marca): bool
-    {
-        foreach ($marca['planos'] as $plano) {
-            if ($plano['taxas'] !== [] || $plano['faixas'] !== []) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_values(array_filter(
+            $marcas,
+            fn (array $marca): bool => in_array($marca['id'], $aprovadas, true)
+                && CompletudeDaMarca::avaliarArray($marca)['completa'],
+        ));
     }
 
     /**

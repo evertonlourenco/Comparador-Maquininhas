@@ -3420,18 +3420,25 @@ conferência manual. Tinha que ser o motor conferindo sozinho, e a decisão de
 mostrar ou não tinha que sair da minha revisão e ir para um clique explícito
 do Everton, condicionado a essa conferência.
 
-**A regra, em uma frase:** nenhuma marca com taxa ou faixa publicada aparece
-em lugar nenhum do site público — comparador, página própria, cupom — sem
-`aprovada_em` preenchido **e** sem fechar conta nas quatro formas de
-pagamento agora mesmo. As duas coisas, sempre, sem exceção manual possível.
+**A regra, em uma frase:** nenhuma marca aparece em lugar nenhum do site
+público — comparador, página própria, cupom — sem `aprovada_em` preenchido
+**e** sem fechar conta nas quatro formas de pagamento agora mesmo. As duas
+coisas, sempre, sem exceção.
 
-**Marca sem nenhuma taxa nem faixa publicada é a exceção deliberada** — Cielo,
-Rede, GetNet, Stone hoje; InfinitePay/SumUp/Mercado Pago até a curadoria
-deles terminar. Essas continuam aparecendo como "sem dado publicado" sem
-aprovação nenhuma, porque isso já é honesto (regra 4) e não é o problema que
-a trava resolve. Esconder essas marcas faria o comparador "esquecer" que elas
-existem, o que é pior do que mostrar o motivo. A trava só entra quando a
-marca **tem** dado — é aí que "parece pronto mas não é" pode acontecer.
+**Revisão no mesmo dia: a exceção para "sem dado publicado" foi removida.** A
+primeira versão desta trava deixava passar sem aprovação a marca que não
+tinha nenhuma taxa nem faixa publicada (Cielo, Rede, GetNet, Stone hoje;
+InfinitePay/SumUp/Mercado Pago até a curadoria terminar), apoiada na regra 4
+("marca sem dado nunca some, aparece com o motivo"). O Everton pediu o mesmo
+critério para todas, sem exceção — essas marcas agora também ficam
+completamente invisíveis até terem dado publicado **e** aprovação. Na prática
+isso significa: enquanto não houver nenhuma taxa nem faixa publicada para
+essas sete marcas, elas nunca vão poder ser aprovadas (`CompletudeDaMarca`
+sempre devolve `Nenhum plano cadastrado.` ou `nenhuma taxa nem faixa
+publicada.` para uma marca vazia), e é exatamente esse o efeito pretendido —
+regra 4 continua valendo *dentro* do admin (a marca não desaparece do
+`/admin/marcas`, a pendência dela fica visível ali), só deixou de valer
+como estado publicamente visível sem aprovação.
 
 ### O que fica pendente, em quatro perguntas
 
@@ -3485,16 +3492,20 @@ travaria toda marca por um dado que ninguém consegue mais acionar.
 - **`Marca::visiveisNoSite()`** (novo scope): a mesma regra, para as páginas
   que consultam o banco direto em vez do JSON (`/maquininha/{slug}`,
   `/maquininhas`, `/cupom/{slug}`, `/cupons` — etapas 08 e 09, que não seguem
-  a regra 9 porque precisam de SSR para SEO). De propósito **não** roda
-  `CompletudeDaMarca` a cada visita — motor por marca a cada carregamento de
-  página pública custaria caro demais para o que resolve. Só confere
-  `aprovada_em IS NOT NULL` (ou "sem dado", a mesma exceção de sempre). A
+  a regra 9 porque precisam de SSR para SEO). Desde a revisão sem exceção, é
+  literalmente `whereNotNull('aprovada_em')` — nada mais. De propósito
+  **não** roda `CompletudeDaMarca` a cada visita — motor por marca a cada
+  carregamento de página pública custaria caro demais para o que resolve. A
   completude de verdade só é conferida no clique de aprovar e na geração do
   JSON, que são ações raras, não páginas de visitante — se algo ficar
   incompleto depois de aprovado, o JSON já para de incluir a marca sozinho,
   mas a página de marca em si (SSR, sem regenerar nada) pode ficar
   desatualizada até a próxima geração. Aceito conscientemente: é a mesma
   latência que qualquer conteúdo servido do banco já tem.
+- **`SitemapController`** ganhou o mesmo `->visiveisNoSite()` nas duas
+  consultas (`/maquininha/{slug}` e `/cupom/{slug}`) — sem isso o sitemap
+  ficaria anunciando ao Google URL que a trava faz dar 404, o oposto do que
+  SEO pede.
 - **Painel visual**: `MarcasTable.php` ganhou duas colunas (Completude, No
   site) e duas ações por linha — `VerPendenciasDaMarcaAction` (modal com a
   lista, reaproveitando `CompletudeDaMarca`) e `AprovarMarcaAction` (desabilitada
@@ -3536,9 +3547,24 @@ Conferido visualmente também: `Livewire::test(ListMarcas::class)->html()`
 renderizado contra marcas reais do banco local (algumas sintéticas,
 removidas depois do teste) — colunas "Completude"/"No site", contagem de
 pendências e os dois botões aparecem exatamente como esperado, incluindo os
-"2 pendência(s)" corretos em Stone/Cielo/Rede (sem dado, mas com um plano
-vazio cadastrado — não bloqueia o "sem dado publicado" no site, só aparece
-como lembrete no painel).
+"2 pendência(s)" corretos em Stone/Cielo/Rede.
+
+**Revisão no mesmo dia (removendo a exceção do "sem dado publicado"):**
+`apenasAprovadasECompletas()` e `visiveisNoSite()` voltaram a ser filtros
+únicos, sem ramo especial. `SitemapController` ganhou o mesmo scope nas duas
+consultas — sem isso o sitemap ficaria com `/maquininha/{slug}` de marca não
+aprovada, e essa URL dá 404 agora. Seis testes existentes mais precisaram de
+`aprovada_em` na fixture ou de reescrita de expectativa
+(`PaginasDeMarcaTest`: a listagem sem marca aprovada agora espera o estado
+vazio, não mais "PagBank ... sem dado publicado" — virou dois testes, um
+para o vazio e um para marca aprovada com taxa ainda em rascunho; mais os
+fixtures de cupom vencido e sitemap; `PaginaDeCuponsTest`: o helper
+`criarMarcaAtiva()` ganhou `aprovada_em` para as duas marcas com cupom que a
+suíte testa). `AprovacaoDeMarcaTest::test_marca_sem_taxa_nenhuma_...` também
+teve a asserção invertida — confirma agora que marca vazia fica invisível,
+não mais o oposto. Suíte inteira rodada de novo por pasta depois de todos os
+ajustes: mesmo resultado de sempre, só o `MotorSobreACargaRealTest`
+pré-existente falhando.
 
 ## Manual do administrador (etapa 18)
 

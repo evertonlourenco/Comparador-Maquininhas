@@ -34,6 +34,9 @@ class PaginaDeCuponsTest extends TestCase
             'slug' => $slug,
             'publica_tabela' => true,
             'status' => StatusMarca::Ativa,
+            // Etapa 19: a trava de aprovação — sem isto a marca nem aparece
+            // em /cupons nem em /cupom/{slug}, independente de ter cupom.
+            'aprovada_em' => now(),
         ]);
     }
 

@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Enums\StatusMarca;
-use App\Enums\StatusPublicacao;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\Table;
@@ -133,33 +132,25 @@ class Marca extends Model
     }
 
     /**
-     * A trava (etapa 19, 17/09/2026), para as paginas publicas que consultam
-     * o banco direto — a home (etapa 07) e o JSON estatico, e la e
+     * A trava (etapa 19, 17/09/2026 — sem exceção desde a revisão do mesmo
+     * dia), para as páginas públicas que consultam o banco direto (etapas
+     * 08/09: `/maquininha/{slug}`, `/maquininhas`, `/cupom/{slug}`,
+     * `/cupons`). A home lê o JSON estático (regra 9) e é
      * `CatalogoDoComparador::apenasAprovadasECompletas()` que aplica a mesma
-     * regra. Marca com taxa ou faixa publicada so aparece se `aprovada_em`
-     * estiver preenchido; marca sem nenhuma (as que so tem "sem dado
-     * publicado" ainda) continua aparecendo, porque isso ja e honesto por si
-     * so (regra 4) e nao e o problema que a trava resolve.
+     * regra lá. Marca só aparece com `aprovada_em` preenchido — inclusive a
+     * que não tem taxa nem faixa nenhuma ainda, que antes era exceção e
+     * deixou de ser: o Everton pediu o mesmo critério para todas, sem "sem
+     * dado publicado" como estado visível sem aprovação.
      *
-     * De proposito NAO confere completude de novo aqui (o que exigiria rodar
-     * o motor por marca a cada visita) — a completude so vale no momento do
-     * clique em "Aprovar marca" e na geracao do JSON, que sao acoes raras,
-     * nao paginas de visitante.
+     * De propósito NÃO confere completude de novo aqui (o que exigiria rodar
+     * o motor por marca a cada visita) — a completude só vale no momento do
+     * clique em "Aprovar marca" e na geração do JSON, que são ações raras,
+     * não páginas de visitante.
      */
     #[Scope]
     protected function visiveisNoSite(Builder $query): void
     {
-        $query->where(function (Builder $q): void {
-            $q->whereNotNull('aprovada_em')->orWhere(function (Builder $q2): void {
-                $q2->whereDoesntHave(
-                    'planos.taxasDivulgadas',
-                    fn ($t) => $t->where('status', StatusPublicacao::Publicado),
-                )->whereDoesntHave(
-                    'planos.faixasReportadas',
-                    fn ($f) => $f->where('status', StatusPublicacao::Publicado),
-                );
-            });
-        });
+        $query->whereNotNull('aprovada_em');
     }
 
     /** Etapa 10: marca que aparece no select de /enviar-proposta. */

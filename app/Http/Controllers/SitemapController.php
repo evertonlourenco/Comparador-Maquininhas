@@ -40,7 +40,9 @@ class SitemapController extends Controller
         $adicionar(url('/maquininhas'), null, '0.9');
         $adicionar(url('/cupons'), null, '0.9');
 
-        Marca::query()->ativas()->orderBy('nome')->get(['slug', 'updated_at'])
+        // Etapa 19: sitemap nunca lista URL que a trava de aprovação já 404 —
+        // ver Marca::visiveisNoSite().
+        Marca::query()->ativas()->visiveisNoSite()->orderBy('nome')->get(['slug', 'updated_at'])
             ->each(fn (Marca $marca) => $adicionar(
                 url('/maquininha/'.$marca->slug),
                 $marca->updated_at?->toAtomString(),
@@ -49,7 +51,7 @@ class SitemapController extends Controller
 
         // Só a marca com cupom vigente ganha página própria (etapa 09) — a
         // mesma regra que faz ela nem aparecer em /cupons quando não tem.
-        Marca::query()->ativas()
+        Marca::query()->ativas()->visiveisNoSite()
             ->whereHas('cupons', fn ($q) => $q->vigentes())
             ->orderBy('nome')
             ->get(['slug', 'updated_at'])

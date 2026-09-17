@@ -45,8 +45,14 @@ class AprovacaoDeMarcaTest extends TestCase
         $this->actingAs(User::factory()->create());
     }
 
-    /** Marca sem plano nem taxa: regra 4 continua valendo, ela não precisa de aprovação para aparecer como "sem dado". */
-    public function test_marca_sem_taxa_nenhuma_nao_precisa_de_aprovacao(): void
+    /**
+     * Revisão do mesmo dia (17/09/2026): a trava deixou de abrir exceção
+     * para "sem dado publicado" — o Everton pediu o mesmo critério pra toda
+     * marca, sem exceção. Uma marca vazia nunca fecha `completude`
+     * (`Nenhum plano cadastrado.`), então nunca é aprovável, e por isso
+     * nunca aparece — igual a qualquer outra marca incompleta.
+     */
+    public function test_marca_sem_taxa_nenhuma_tambem_fica_invisivel(): void
     {
         $marca = $this->criarMarcaVazia();
 
@@ -58,10 +64,10 @@ class AprovacaoDeMarcaTest extends TestCase
         $catalogo = app(CatalogoDoComparador::class)->montar(incluirRascunhos: false);
         $slugsNoJson = collect($catalogo['marcas'])->pluck('slug')->all();
 
-        $this->assertContains(
+        $this->assertNotContains(
             $marca->slug,
             $slugsNoJson,
-            'Marca sem nenhuma taxa/faixa publicada tem de continuar aparecendo (regra 4: "sem dado publicado" é honesto, não é o que a trava barra).',
+            'Sem exceção: marca sem plano nenhum também precisa de aprovação para aparecer, e nunca fecha completude sem plano.',
         );
     }
 
