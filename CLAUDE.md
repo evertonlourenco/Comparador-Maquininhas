@@ -2571,18 +2571,21 @@ Rodado manualmente uma vez em produção ao fim desta etapa: 9 marcas e 0
 cupons verificados (ainda não há cupom cadastrado — ver `PLANO.md`), 0
 links quebrados.
 
-**Pendente, e só o Everton pode fazer:** o cron do hPanel. Este servidor não
-tem `php artisan schedule:run` agendado — só o script de backup, direto no
-cron (ver "Deploy, backup e producao"). `routes/console.php` registra
+**Resolvido — confirmado em produção em 17/09/2026.** O Everton criou o Cron
+Job no hPanel. `routes/console.php` registra
 `Schedule::command('links:verificar')->dailyAt('07:00')` para quem rodar
-`schedule:work` em local, mas em produção o jeito que funciona de fato é um
-**Cron Job novo no hPanel** (Avançado → Cron Jobs), tipo Comando, diário,
-chamando (mesmo binário PHP que o `deploy.sh` usa — `/usr/bin/php` desta
-Hostinger tem `proc_open` e symlink desabilitados, não serve):
+`schedule:work` em local, mas em produção quem executa de fato é o cron do
+hPanel (Avançado → Cron Jobs), chamando o mesmo binário PHP que o
+`deploy.sh` usa (`/usr/bin/php` desta Hostinger tem `proc_open` e symlink
+desabilitados, não serve):
 
 ```
 /opt/alt/php84/usr/bin/php /home/u835756808/domains/maquinacerta.com.br/comparador/artisan links:verificar
 ```
+
+Confirmado rodando sozinho de madrugada (`marcas.link_verificado_em` e
+`cupons.link_verificado_em` em 17/09/2026 04:05, não um horário de execução
+manual) — 0 links quebrados no momento da checagem.
 
 ### 2. Cliques em cupom
 
@@ -2682,6 +2685,46 @@ coisas: um smoke test no dashboard inteiro, e um teste de conteúdo por
 widget.
 
 ## Curadoria e validação das taxas (etapa 17, em andamento)
+
+**Estado real em produção, conferido em 17/09/2026 (não por seeder — pelo
+que o Everton aprovou/subiu direto no painel):**
+
+| Marca | Taxas publicadas | Logo | Equipamentos com foto |
+|---|---|---|---|
+| Ton | 534/534 | sim | sim |
+| FacilityPay | 117/117 | sim | sim |
+| SidePay | 78/78 | sim | sim |
+| Yelly | 116/116 | sim | sim |
+| TrincaPay | 45/45 | sim | sim |
+| PagBank | 135/209* | sim | sim |
+| InfinitePay | 0/284 | sim | sim |
+| SumUp | 0/81 | sim | sim |
+| Mercado Pago | 0/3 | sim | — |
+| Cielo/Rede/GetNet/Stone | 0 (não publicam tabela, regra 4) | sim | — |
+
+\* Os 74 não publicados do PagBank não são pendência: são taxas órfãs do
+plano "Taxas iniciais" (`plano_id = 1`), soft-deleted em 16/09/2026 — nunca
+vão poder ser publicadas porque o plano-mãe não existe mais. É lixo de
+banco, seguro de limpar com `TaxaDivulgada::where('plano_id', 1)->forceDelete()`
+quando o Everton confirmar, sem efeito nenhum no site (já não aparecem no
+JSON).
+
+**Decisão do Everton em 17/09/2026: lançamento não vai esperar a curadoria
+de todas as 13 marcas.** InfinitePay, SumUp e o restante de Mercado Pago
+(marcas mais caras e/ou sem parceria de afiliado com o Monetizando) ficam
+para depois, em ritmo próprio, sem travar o avanço para a etapa 18/19. Isso
+não é regressão da regra 10 (nada publicado sem aprovação) — é a mesma
+regra, marca a marca, terminando em datas diferentes.
+
+**24/24 equipamentos com foto, 13/13 marcas com logo, 0 links quebrados, 0
+itens pendentes nas filas de revisão** (propostas, relatos de taxa incorreta,
+detecções do monitor) — conferido em produção na mesma data.
+
+**Ainda sem logo: as 13 bandeiras** (Visa, Mastercard, Elo, Amex…) —
+`bandeiras.logo_path` nulo em todas. Não bloqueia (o site cai para o nome da
+bandeira sozinho, mesmo padrão de "marca sem logo" da etapa 15), mas é o
+próximo alvo óbvio se a busca de imagem por URL for reaberta antes do
+lançamento.
 
 Sessão de 15/09/2026. Trabalho de dado real feito com o Everton, não código
 novo de feature — mas exigiu três mudanças de schema porque duas premissas da
