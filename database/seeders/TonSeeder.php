@@ -9,6 +9,7 @@ use App\Models\Equipamento;
 use App\Models\GrupoBandeira;
 use App\Models\Plano;
 use App\Models\PrazoRecebimento;
+use App\Support\Uploads\ImagemSeguraWebp;
 use Illuminate\Support\Str;
 
 /**
@@ -192,22 +193,38 @@ class TonSeeder extends SeederDeMarca
      * par equipamento+plano de qualquer forma - entao a mesma linha e repetida
      * para cada plano, e nao promovida a coluna do equipamento.
      *
+     * Fotos, etapa 17 (17/09/2026): as fotos oficiais do site (ton.com.br) tem o
+     * T3 Smart com teclado em ingles (CANCEL/CLEAR/ENTER) - inconsistente com o
+     * que o Everton mandou e confirmou por duas vezes ser o aparelho real (teclado
+     * em portugues, AJUDA/ATALHOS). Usadas as fotos da propria pasta do projeto do
+     * Everton no Google Drive (`Projetos IA/Máquina Certa/Equipamentos/Ton/`,
+     * arquivos `t1-1.png`/`t2-1.png`/`t3-1.png`/`t3-smart.png`, de 14/11/2023) em
+     * vez do scrape do site - fonte mais confiavel aqui que o proprio site da marca.
+     *
      * @param  array<string, Plano>  $planos
      */
     private function equipamentos(int $marcaId, array $planos): void
     {
+        $diretorioAssets = __DIR__.'/assets/ton';
+
         $aparelhos = [
-            ['T1', TipoEquipamento::PinPad, 'A maquininha compacta que conecta com o seu celular.',
-                ['chip' => true, 'imprime' => false, 'nfc' => true, 'celular' => true], 56.57, 16.80, 0],
-            ['T2', TipoEquipamento::Pos, 'A maquininha compacta, com chip 3G e Wi-Fi. Comprovante por SMS.',
-                ['chip' => true, 'imprime' => false, 'nfc' => true, 'celular' => false], 176.00, 49.88, 1],
-            ['T3', TipoEquipamento::Pos, 'Maquininha com comprovante impresso, chip 3G e Wi-Fi.',
-                ['chip' => true, 'imprime' => true, 'nfc' => true, 'celular' => false], 391.92, 108.00, 2],
-            ['T3 Smart', TipoEquipamento::Smart, 'Maquininha Android com visor touchscreen, chip 4G e Wi-Fi.',
-                ['chip' => true, 'imprime' => true, 'nfc' => true, 'celular' => false], 671.43, 191.88, 3],
+            ['T1', TipoEquipamento::PinPad, 'A maquininha compacta que conecta com o seu celular via '
+                .'Bluetooth. Cabe no bolso, recebe por aproximação (NFC) e envia o comprovante por SMS.',
+                ['chip' => true, 'imprime' => false, 'nfc' => true, 'celular' => true], 56.57, 16.80, 'ton-t1.png', 0],
+            ['T2', TipoEquipamento::Pos, 'A maquininha compacta que tá sempre com você: chip 3G e Wi-Fi '
+                .'grátis, recebe por aproximação (NFC) e por Pix (QR Code ou aproximação), sem precisar do '
+                .'celular. Comprovante por SMS.',
+                ['chip' => true, 'imprime' => false, 'nfc' => true, 'celular' => false], 176.00, 49.88, 'ton-t2.png', 1],
+            ['T3', TipoEquipamento::Pos, 'Maquininha com comprovante impresso, chip 3G e Wi-Fi grátis, '
+                .'recebe por aproximação (NFC) e por Pix. Garantia vitalícia.',
+                ['chip' => true, 'imprime' => true, 'nfc' => true, 'celular' => false], 391.92, 108.00, 'ton-t3.png', 2],
+            ['T3 Smart', TipoEquipamento::Smart, 'Maquininha Android com visor touchscreen, chip 4G e '
+                .'Wi-Fi grátis, bateria de longa duração, comprovante impresso ou por SMS e recebimento por '
+                .'aproximação (NFC) e Pix.',
+                ['chip' => true, 'imprime' => true, 'nfc' => true, 'celular' => false], 671.43, 191.88, 'ton-t3-smart.png', 3],
         ];
 
-        foreach ($aparelhos as [$nome, $tipo, $descricao, $flags, $adesao, $promocional, $ordem]) {
+        foreach ($aparelhos as [$nome, $tipo, $descricao, $flags, $adesao, $promocional, $arquivo, $ordem]) {
             $equipamento = Equipamento::updateOrCreate(
                 ['marca_id' => $marcaId, 'slug' => Str::slug($nome)],
                 [
@@ -222,6 +239,21 @@ class TonSeeder extends SeederDeMarca
                     'ordem' => $ordem,
                 ],
             );
+
+            // Só preenche quando ainda não tem foto - os quatro equipamentos já
+            // existiam sem imagem_path desde a etapa 04/17 (08/09/2026), então
+            // aqui não vale exigir wasRecentlyCreated como nas cargas novas
+            // (SidePay/Yelly): o gatilho certo é "ainda não tem foto", não "acabou
+            // de ser criado". Se o admin trocar depois pelo painel (upload manual
+            // ou "buscar por URL"), o reseed não reverte a escolha dele, porque
+            // imagem_path deixa de ser null.
+            if ($arquivo !== null && $equipamento->imagem_path === null) {
+                $caminho = ImagemSeguraWebp::salvar("{$diretorioAssets}/{$arquivo}", 'equipamentos');
+
+                if ($caminho !== null) {
+                    $equipamento->update(['imagem_path' => $caminho]);
+                }
+            }
 
             foreach ($planos as $plano) {
                 $equipamento->planos()->syncWithoutDetaching([
