@@ -3,11 +3,13 @@
 namespace Tests\Feature\Comparador;
 
 use App\Enums\FonteTipo;
+use App\Enums\StatusItem;
 use App\Enums\StatusMarca;
 use App\Enums\StatusPublicacao;
 use App\Enums\TipoEnquadramento;
 use App\Enums\TipoOperacao;
 use App\Models\Adquirente;
+use App\Models\Equipamento;
 use App\Models\GrupoBandeira;
 use App\Models\Marca;
 use App\Models\Plano;
@@ -53,12 +55,21 @@ class StatusDoJsonTest extends TestCase
 
         $adquirente = Adquirente::create(['nome' => 'Adquirente Teste', 'slug' => 'adquirente-teste-json']);
 
+        // Etapa 19: a trava de aprovacao (aprovada_em + App\Support\Saude\
+        // CompletudeDaMarca) so deixa a marca entrar no JSON gerado se ela
+        // fechar conta nas quatro formas de pagamento - entao a marca deste
+        // teste precisa ser genuinamente completa, nao so ter uma taxa. O
+        // teste em si e sobre deteccao de mudanca de conteudo, nao sobre a
+        // trava, mas precisa passar por ela do mesmo jeito que o comparador
+        // publico passaria.
         $marca = Marca::create([
             'adquirente_id' => $adquirente->id,
             'nome' => 'Marca Teste JSON',
             'slug' => 'marca-teste-json',
+            'logo_path' => 'marcas/logos/teste.webp',
             'publica_tabela' => true,
             'status' => StatusMarca::Ativa,
+            'aprovada_em' => now(),
         ]);
 
         $plano = Plano::create([
@@ -66,7 +77,24 @@ class StatusDoJsonTest extends TestCase
             'nome' => 'Padrão',
             'slug' => 'padrao-json',
             'tipo_enquadramento' => TipoEnquadramento::Automatico,
+            'mensalidade' => 0,
+            'tarifa_pix_recebimento' => 0,
             'status' => 'ativo',
+        ]);
+
+        $equipamento = Equipamento::create([
+            'marca_id' => $marca->getKey(),
+            'nome' => 'Maquininha Teste',
+            'slug' => 'maquininha-teste-json',
+            'tipo' => 'smart',
+            'imagem_path' => 'equipamentos/teste.webp',
+            'status' => StatusItem::Ativo,
+        ]);
+
+        $plano->equipamentos()->attach($equipamento->getKey(), [
+            'preco_adesao' => 100.00,
+            'parcelas_adesao' => 12,
+            'status' => StatusItem::Ativo->value,
         ]);
 
         $visaMaster = GrupoBandeira::where('codigo', GrupoBandeira::VISA_MASTER)->value('id');
@@ -79,6 +107,39 @@ class StatusDoJsonTest extends TestCase
             'parcelas' => 1,
             'prazo_recebimento_id' => $naHora,
             'percentual' => 1.50,
+            'valor_fixo' => 0,
+            'url_fonte' => 'https://exemplo.com/taxas',
+            'fonte_tipo' => FonteTipo::SiteOficial,
+            'data_verificacao' => now()->toDateString(),
+            'status' => StatusPublicacao::Publicado,
+        ]);
+
+        foreach ([
+            [TipoOperacao::CreditoAvista, 1, 1.50],
+            [TipoOperacao::CreditoParcelado, 3, 3.90],
+        ] as [$tipo, $parcelas, $percentual]) {
+            TaxaDivulgada::create([
+                'plano_id' => $plano->getKey(),
+                'tipo_operacao' => $tipo,
+                'grupo_bandeira_id' => $visaMaster,
+                'parcelas' => $parcelas,
+                'prazo_recebimento_id' => $naHora,
+                'percentual' => $percentual,
+                'valor_fixo' => 0,
+                'url_fonte' => 'https://exemplo.com/taxas',
+                'fonte_tipo' => FonteTipo::SiteOficial,
+                'data_verificacao' => now()->toDateString(),
+                'status' => StatusPublicacao::Publicado,
+            ]);
+        }
+
+        TaxaDivulgada::create([
+            'plano_id' => $plano->getKey(),
+            'tipo_operacao' => TipoOperacao::Pix,
+            'grupo_bandeira_id' => GrupoBandeira::where('codigo', GrupoBandeira::PIX)->value('id'),
+            'parcelas' => 1,
+            'prazo_recebimento_id' => $naHora,
+            'percentual' => 0.49,
             'valor_fixo' => 0,
             'url_fonte' => 'https://exemplo.com/taxas',
             'fonte_tipo' => FonteTipo::SiteOficial,
@@ -163,7 +224,9 @@ class StatusDoJsonTest extends TestCase
             'tipo_operacao' => TipoOperacao::CreditoAvista,
             'grupo_bandeira_id' => $this->taxaPublicada->grupo_bandeira_id,
             'parcelas' => 1,
-            'prazo_recebimento_id' => $this->taxaPublicada->prazo_recebimento_id,
+            // d_1, e nao o na_hora que o setUp() ja usou para credito a
+            // vista: mesma chave da regra 1 duas vezes colide no unique.
+            'prazo_recebimento_id' => PrazoRecebimento::where('codigo', PrazoRecebimento::D1)->value('id'),
             'percentual' => 3.20,
             'valor_fixo' => 0,
             'url_fonte' => 'https://exemplo.com/taxas',

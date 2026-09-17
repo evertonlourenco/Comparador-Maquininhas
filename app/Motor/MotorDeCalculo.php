@@ -139,6 +139,21 @@ final class MotorDeCalculo
         }));
     }
 
+    /**
+     * Mesma avaliacao de um plano que `calcular()` faz por dentro, exposta
+     * para `App\Support\Saude\CompletudeDaMarca` (etapa 19): a checagem de
+     * completude precisa saber o que falta num plano especifico, ignorando o
+     * filtro de faturamento de `planosElegiveis()` — a pergunta ali nao e "o
+     * lojista de hoje pode usar este plano", e "este plano, quando alguem cair
+     * nele, tem tudo que precisa". Zero logica nova: e o mesmo caminho que o
+     * comparador publico usa, entao "falta dado" aqui e exatamente "falta
+     * dado" que apareceria na tela.
+     */
+    public function avaliarPlanoParaCompletude(array $catalogo, array $marca, array $plano, Cenario $cenario): array
+    {
+        return $this->avaliarPlano($catalogo, $marca, $plano, $cenario);
+    }
+
     private function avaliarPlano(array $catalogo, array $marca, array $plano, Cenario $cenario): array
     {
         // Regra 4: um plano e avaliado por uma classe de dado so. Havendo taxa

@@ -3406,6 +3406,140 @@ passar para 4"). Duas mudanças:
 `db:seed --class=PagBankSeeder` roda direto de novo, sem precisar do
 contorno por Reflection.
 
+## A trava da marca (etapa 19, 17/09/2026)
+
+**O erro que gerou isto.** A etapa 17 foi dada como "completa" para PagBank,
+Ton, SidePay, FacilityPay, Yelly e TrincaPay olhando só a contagem de taxas
+publicadas (534/534, 117/117...). SidePay e FacilityPay tinham `mensalidade`
+nula em **todos** os planos, e `MotorDeCalculo::custoDaConta()` trata isso
+como "falta dado" sempre — nunca assume zero (regra 4). O Everton achou isso
+sozinho, testando o comparador de verdade, depois de eu já ter dito que
+estava tudo pronto pra etapa 19. A resposta não podia ser "confiro com mais
+cuidado da próxima vez" — é exatamente o tipo de coisa que escapa de uma
+conferência manual. Tinha que ser o motor conferindo sozinho, e a decisão de
+mostrar ou não tinha que sair da minha revisão e ir para um clique explícito
+do Everton, condicionado a essa conferência.
+
+**A regra, em uma frase:** nenhuma marca com taxa ou faixa publicada aparece
+em lugar nenhum do site público — comparador, página própria, cupom — sem
+`aprovada_em` preenchido **e** sem fechar conta nas quatro formas de
+pagamento agora mesmo. As duas coisas, sempre, sem exceção manual possível.
+
+**Marca sem nenhuma taxa nem faixa publicada é a exceção deliberada** — Cielo,
+Rede, GetNet, Stone hoje; InfinitePay/SumUp/Mercado Pago até a curadoria
+deles terminar. Essas continuam aparecendo como "sem dado publicado" sem
+aprovação nenhuma, porque isso já é honesto (regra 4) e não é o problema que
+a trava resolve. Esconder essas marcas faria o comparador "esquecer" que elas
+existem, o que é pior do que mostrar o motivo. A trava só entra quando a
+marca **tem** dado — é aí que "parece pronto mas não é" pode acontecer.
+
+### O que fica pendente, em quatro perguntas
+
+`App\Support\Saude\CompletudeDaMarca::avaliar($marca)` responde exatamente
+isso, e devolve `['completa' => bool, 'pendencias' => list<string>]`:
+
+- **Falta imagem de equipamento?** Todo equipamento vinculado a algum plano
+  da marca precisa de `imagem_path` — isso o motor não cobra (preço e foto
+  são coisas diferentes pra ele), então é conferido à parte.
+- **Falta confirmar taxa?** Roda `MotorDeCalculo::avaliarPlanoParaCompletude()`
+  (wrapper público do mesmo `avaliarPlano()` privado que o comparador usa —
+  zero lógica nova) contra um **cenário de referência**: débito, crédito à
+  vista, crédito parcelado em 3x e Pix, todos com valor e quantidade, prazo
+  em branco ("tanto faz"). Todo `faltando` que ele devolver vira pendência,
+  com o nome do plano na frente. Prazo em branco de propósito: um cenário com
+  prazo fixo em "Em 1 dia útil" reprovaria toda marca por causa do Pix, que
+  nenhuma marca publica nesse prazo por natureza (achado documentado mais
+  abaixo, na revisão do comparador).
+- **Falta confirmar custo de adesão?** Está dentro do "falta confirmar taxa"
+  acima — `avaliarPlano()` já cobra mensalidade, tarifa de Pix recebido e
+  preço do aparelho como parte da mesma conta.
+- **Falta o quê mais?** Logo da marca (`logo_url`).
+
+**O que a trava deliberadamente NÃO cobra:** tarifa de saque/TED/Pix enviado
+e antecipação avulsa. A tela pública não pergunta mais isso ao lojista (saiu
+na mesma revisão do comparador desta sessão) — exigir esses campos aqui
+travaria toda marca por um dado que ninguém consegue mais acionar.
+
+### Onde isso mora
+
+- **Migration** `2026_09_17_153701_add_aprovada_em_to_marcas_table.php`:
+  `aprovada_em` timestamp nullable em `marcas`. Timestamp e não boolean, no
+  mesmo espírito de `data_verificacao` nas taxas — registra quando, não só
+  se.
+- **`App\Support\Saude\CompletudeDaMarca`** (novo): a lógica acima, com
+  `avaliar(Marca $marca)` (busca o array da marca via
+  `CatalogoDoComparador::paraMarca()`) e `avaliarArray(array $marca)` (a
+  mesma conta a partir de um array já montado — usada pelo próprio catálogo
+  ao decidir quem entra no JSON, sem reconsultar o banco por marca).
+- **`App\Motor\MotorDeCalculo::avaliarPlanoParaCompletude()`** (novo, público):
+  wrapper fino sobre o `avaliarPlano()` privado que `calcular()` já usa — a
+  única diferença é ignorar o filtro de faturamento de `planosElegiveis()`,
+  porque a pergunta aqui não é "o lojista de hoje pode usar este plano", é
+  "este plano, quando alguém cair nele, tem tudo que precisa". Nenhuma linha
+  de cálculo nova; os testes de paridade não mudaram.
+- **`App\Motor\CatalogoDoComparador::apenasAprovadasECompletas()`** (novo,
+  chamado dentro de `montar()` só quando `incluirRascunhos: false`): filtra o
+  array de marcas já montado. O modo com rascunho (conferência local antes de
+  aprovar) não passa por aqui de propósito — senão o Everton nunca
+  conseguiria ver o que falta numa marca ainda não aprovada.
+- **`Marca::visiveisNoSite()`** (novo scope): a mesma regra, para as páginas
+  que consultam o banco direto em vez do JSON (`/maquininha/{slug}`,
+  `/maquininhas`, `/cupom/{slug}`, `/cupons` — etapas 08 e 09, que não seguem
+  a regra 9 porque precisam de SSR para SEO). De propósito **não** roda
+  `CompletudeDaMarca` a cada visita — motor por marca a cada carregamento de
+  página pública custaria caro demais para o que resolve. Só confere
+  `aprovada_em IS NOT NULL` (ou "sem dado", a mesma exceção de sempre). A
+  completude de verdade só é conferida no clique de aprovar e na geração do
+  JSON, que são ações raras, não páginas de visitante — se algo ficar
+  incompleto depois de aprovado, o JSON já para de incluir a marca sozinho,
+  mas a página de marca em si (SSR, sem regenerar nada) pode ficar
+  desatualizada até a próxima geração. Aceito conscientemente: é a mesma
+  latência que qualquer conteúdo servido do banco já tem.
+- **Painel visual**: `MarcasTable.php` ganhou duas colunas (Completude, No
+  site) e duas ações por linha — `VerPendenciasDaMarcaAction` (modal com a
+  lista, reaproveitando `CompletudeDaMarca`) e `AprovarMarcaAction` (desabilitada
+  enquanto incompleta; clicar de novo numa marca já aprovada revoga — para o
+  caso raro de um dado completo virar incompleto depois, deixar a intenção
+  registrada em vez de só esperar a próxima geração do JSON tirar a marca em
+  silêncio). Mais um filtro "Não aprovadas" na listagem.
+
+### O que isso muda no dia do lançamento
+
+**Depois deste deploy, nenhuma marca com taxa aparece no comparador até
+alguém clicar em "Aprovar marca" para cada uma, no `/admin/marcas`.** O
+site está fechado (`SITE_EM_BREVE=true`), então não há visitante afetado —
+mas o `comparador.json` gerado a partir de agora vai ter só as marcas "sem
+dado publicado" até o Everton passar pelo painel novo e aprovar Ton, PagBank,
+SidePay, FacilityPay, Yelly e TrincaPay (as que a curadoria já deu como
+prontas) uma a uma. **Isso é intencional** — é o próprio propósito da trava:
+a decisão de "está pronto" não sai mais de uma revisão em conversa, sai de um
+clique condicionado à conferência do motor.
+
+**Conferido:** migration roda limpa; `CompletudeDaMarca::avaliar()` testado
+via tinker contra dado real (SidePay local: pegou exatamente "mensalidade do
+plano" e "tarifa de Pix recebido" nos dois planos — o mesmo buraco que
+motivou tudo isso). Suíte completa rodada por pasta (mesmo contorno de sempre
+para o vazamento de memória pré-existente do `ImagemSeguraWebp`):
+`tests/Feature/{Admin,Comparador,Marcas,Cupons,Relatos,Console,Api,Motor}` e
+`tests/Unit` — tudo verde, exceto o mesmo `MotorSobreACargaRealTest` que já
+falhava antes de qualquer mudança de hoje (confirmado com `git stash` no
+início desta sessão). Três testes existentes precisaram de fixture mais
+completa para continuar válidos depois da trava
+(`PaginasDeMarcaTest::test_pagina_completa_com_cupom_nota_e_taxa_publicada`,
+os dois de `StatusDoJsonTest` que editam/despublicam taxa) — ajustados para
+criar marca genuinamente completa, não só marcada como aprovada. Sete testes
+novos em `tests/Feature/Admin/AprovacaoDeMarcaTest.php` cobrem os quatro
+cantos da matriz (sem dado / incompleta / completa-mas-não-aprovada /
+completa-e-aprovada) e a interação real do botão via Livewire
+(`assertTableActionDisabled`/`assertTableActionEnabled`/`callTableAction`).
+Conferido visualmente também: `Livewire::test(ListMarcas::class)->html()`
+renderizado contra marcas reais do banco local (algumas sintéticas,
+removidas depois do teste) — colunas "Completude"/"No site", contagem de
+pendências e os dois botões aparecem exatamente como esperado, incluindo os
+"2 pendência(s)" corretos em Stone/Cielo/Rede (sem dado, mas com um plano
+vazio cadastrado — não bloqueia o "sem dado publicado" no site, só aparece
+como lembrete no painel).
+
 ## Manual do administrador (etapa 18)
 
 Página dentro do próprio `/admin` (`/admin/manual`), não PDF — de propósito,

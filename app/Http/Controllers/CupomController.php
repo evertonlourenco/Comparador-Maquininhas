@@ -87,6 +87,7 @@ class CupomController extends Controller
     {
         return Marca::query()
             ->ativas()
+            ->visiveisNoSite()
             ->with([
                 'cupons' => fn ($q) => $q->vigentes()->orderBy('ordem'),
                 'planos' => fn ($q) => $q->ativos(),

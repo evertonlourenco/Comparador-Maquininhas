@@ -132,6 +132,10 @@ class PaginasDeMarcaTest extends TestCase
             'reclame_aqui_consultado_em' => Carbon::create(2026, 8, 1),
             'publica_tabela' => true,
             'status' => StatusMarca::Ativa,
+            // Etapa 19: a trava de aprovacao so deixa a pagina publica no ar
+            // com isto preenchido - o proprio nome do teste ("marca
+            // completa") ja diz que ela deveria passar.
+            'aprovada_em' => now(),
         ]);
 
         $plano = Plano::create([

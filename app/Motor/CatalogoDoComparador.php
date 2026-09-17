@@ -9,6 +9,7 @@ use App\Models\Marca;
 use App\Models\PrazoRecebimento;
 use App\Models\TaxaDivulgada;
 use App\Support\Dinheiro;
+use App\Support\Saude\CompletudeDaMarca;
 use Illuminate\Support\Carbon;
 
 /**
@@ -46,6 +47,18 @@ final class CatalogoDoComparador
             ? [StatusPublicacao::Rascunho, StatusPublicacao::Publicado]
             : [StatusPublicacao::Publicado];
 
+        $marcas = $this->marcas($status);
+
+        // A trava da marca (etapa 19, 17/09/2026): so entra no JSON publico
+        // quem foi aprovada a mao E continua completa agora - as duas coisas,
+        // sempre, sem excecao. So no modo com rascunho ela nao se aplica: esse
+        // modo existe justamente para o Everton conferir uma marca ainda
+        // incompleta em localhost, antes de aprova-la. Ver
+        // App\Support\Saude\CompletudeDaMarca.
+        if (! $incluirRascunhos) {
+            $marcas = $this->apenasAprovadasECompletas($marcas);
+        }
+
         return [
             'versao' => self::VERSAO,
             'gerado_em' => Carbon::now()->toIso8601String(),
@@ -54,12 +67,78 @@ final class CatalogoDoComparador
             'dias_ate_degradar' => TaxaDivulgada::DIAS_ATE_DEGRADAR,
             'prazos' => $this->prazos(),
             'grupos' => $this->grupos(),
-            'marcas' => $this->marcas($status),
+            'marcas' => $marcas,
         ];
     }
 
-    /** Mapa por codigo: o motor busca o prazo de uma taxa por ele. */
-    private function prazos(): array
+    /**
+     * O array cru de uma marca so, no mesmo formato de `marcas()` - para
+     * `App\Support\Saude\CompletudeDaMarca` conferir uma marca especifica sem
+     * passar pela trava (senao nunca daria para ver o que falta numa marca
+     * ainda nao aprovada).
+     */
+    public function paraMarca(int $marcaId, bool $incluirRascunhos = false): ?array
+    {
+        $status = $incluirRascunhos
+            ? [StatusPublicacao::Rascunho, StatusPublicacao::Publicado]
+            : [StatusPublicacao::Publicado];
+
+        return $this->marcas($status, $marcaId)[0] ?? null;
+    }
+
+    /**
+     * A trava vale para marca que TEM dado — taxa ou faixa — mas ele esta
+     * incompleto. Marca sem nenhum plano com taxa nem faixa (Cielo, Rede,
+     * GetNet, Stone hoje; InfinitePay/SumUp/Mercado Pago antes da curadoria
+     * chegar la) continua aparecendo como "sem dado publicado", porque isso
+     * NAO e o problema que a trava resolve - regra 4 ja e honesta sobre nao
+     * ter numero nenhum, e ocultar essas marcas tambem faria o comparador
+     * "esquecer" que elas existem, o que e pior que mostrar o motivo.
+     *
+     * @param  array<int, array<string, mixed>>  $marcas
+     */
+    private function apenasAprovadasECompletas(array $marcas): array
+    {
+        if ($marcas === []) {
+            return [];
+        }
+
+        $ids = array_column($marcas, 'id');
+
+        $aprovadas = Marca::query()
+            ->whereIn('id', $ids)
+            ->whereNotNull('aprovada_em')
+            ->pluck('id')
+            ->all();
+
+        return array_values(array_filter($marcas, function (array $marca) use ($aprovadas): bool {
+            if (! self::temTaxaOuFaixa($marca)) {
+                return true;
+            }
+
+            return in_array($marca['id'], $aprovadas, true)
+                && CompletudeDaMarca::avaliarArray($marca)['completa'];
+        }));
+    }
+
+    /** @param  array<string, mixed>  $marca */
+    private static function temTaxaOuFaixa(array $marca): bool
+    {
+        foreach ($marca['planos'] as $plano) {
+            if ($plano['taxas'] !== [] || $plano['faixas'] !== []) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Mapa por codigo: o motor busca o prazo de uma taxa por ele. Publico
+     * porque App\Support\Saude\CompletudeDaMarca monta um catalogo minimo
+     * para avaliar um plano isolado sem passar por `montar()` inteiro.
+     */
+    public function prazos(): array
     {
         return PrazoRecebimento::query()->orderBy('ordem')->get()
             ->mapWithKeys(fn (PrazoRecebimento $p): array => [$p->codigo => [
@@ -71,7 +150,7 @@ final class CatalogoDoComparador
             ]])->all();
     }
 
-    private function grupos(): array
+    public function grupos(): array
     {
         return GrupoBandeira::query()->orderBy('ordem')->get()
             ->mapWithKeys(fn (GrupoBandeira $g): array => [$g->codigo => [
@@ -83,10 +162,11 @@ final class CatalogoDoComparador
     }
 
     /** @param  list<StatusPublicacao>  $status */
-    private function marcas(array $status): array
+    private function marcas(array $status, ?int $apenasMarcaId = null): array
     {
         $marcas = Marca::query()
             ->ativas()
+            ->when($apenasMarcaId !== null, fn ($q) => $q->where('id', $apenasMarcaId))
             ->with([
                 'adquirente',
                 'cupons' => fn ($q) => $q->where('status', StatusItem::Ativo)->orderBy('ordem'),

@@ -3,7 +3,9 @@
 namespace App\Filament\Resources\Marcas\Tables;
 
 use App\Enums\StatusMarca;
+use App\Filament\Actions\AprovarMarcaAction;
 use App\Filament\Actions\BuscarImagemPorUrlAction;
+use App\Filament\Actions\VerPendenciasDaMarcaAction;
 use App\Models\Marca;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -67,6 +69,30 @@ class MarcasTable
                     ->label('RA')
                     ->numeric(1)
                     ->sortable(),
+                // Etapa 19: a trava da marca. "Completa" é o que
+                // App\Support\Saude\CompletudeDaMarca calcula rodando o motor
+                // de verdade contra a marca — não é um campo salvo, é
+                // conferido de novo a cada carregamento da tela, para nunca
+                // mostrar uma completude que já ficou desatualizada.
+                TextColumn::make('completude')
+                    ->label('Completude')
+                    ->state(fn (Marca $record): string => $record->completude['completa']
+                        ? 'Completa'
+                        : count($record->completude['pendencias']).' pendência(s)')
+                    ->badge()
+                    ->color(fn (Marca $record): string => $record->completude['completa'] ? 'success' : 'warning'),
+                TextColumn::make('aprovada_em')
+                    ->label('No site')
+                    ->badge()
+                    ->state(fn (Marca $record): string => $record->aprovada
+                        ? 'Aprovada'
+                        : ($record->aprovada_em !== null ? 'Aprovação desatualizada' : 'Não aprovada'))
+                    ->color(fn (Marca $record): string => match (true) {
+                        $record->aprovada => 'success',
+                        $record->aprovada_em !== null => 'danger',
+                        default => 'gray',
+                    })
+                    ->tooltip(fn (Marca $record): ?string => $record->aprovada_em?->format('\A\p\r\o\v\a\d\a \e\m d/m/Y \à\s H:i')),
                 TextColumn::make('status')
                     ->badge()
                     ->sortable(),
@@ -82,6 +108,10 @@ class MarcasTable
             ->defaultSort('ordem')
             ->filters([
                 SelectFilter::make('status')->options(StatusMarca::class),
+                Filter::make('nao_aprovadas')
+                    ->label('Não aprovadas')
+                    ->toggle()
+                    ->query(fn ($query) => $query->whereNull('aprovada_em')),
                 Filter::make('link_quebrado')
                     ->label('Link quebrado')
                     ->toggle()
@@ -89,6 +119,8 @@ class MarcasTable
                 TrashedFilter::make(),
             ])
             ->recordActions([
+                VerPendenciasDaMarcaAction::make(),
+                AprovarMarcaAction::make(),
                 EditAction::make(),
                 BuscarImagemPorUrlAction::make('logo_path', 'marcas/logos', 'logo'),
             ])

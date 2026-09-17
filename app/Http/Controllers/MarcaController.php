@@ -29,6 +29,7 @@ class MarcaController extends Controller
     {
         $marcas = Marca::query()
             ->ativas()
+            ->visiveisNoSite()
             ->with([
                 'planos' => fn ($q) => $q->ativos()->permanentes(),
                 'taxasDivulgadas' => fn ($q) => $q->where('status', StatusPublicacao::Publicado)->with('prazoRecebimento'),
@@ -60,6 +61,7 @@ class MarcaController extends Controller
     {
         $marcaModel = Marca::query()
             ->ativas()
+            ->visiveisNoSite()
             ->where('slug', $marca)
             ->with([
                 'adquirente',

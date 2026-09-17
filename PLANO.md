@@ -253,6 +253,15 @@ numa pasta.
 
 ### 19 — Lançamento
 
+> **Trava de aprovação da marca, adicionada em 17/09/2026** (ver `CLAUDE.md`,
+> seção "A trava da marca"): nenhuma marca com taxa publicada aparece no site
+> sem um clique em "Aprovar marca" em `/admin/marcas`, condicionado o motor
+> conferir que ela fecha conta nas quatro formas de pagamento. Passo novo
+> antes da conferência final: aprovar Ton, PagBank, SidePay, FacilityPay,
+> Yelly e TrincaPay uma a uma no painel.
+
+- Aprovar cada marca pronta no painel (`/admin/marcas`, botão "Aprovar
+  marca") — sem isso o JSON sai só com "sem dado publicado"
 - Conferência final das oito páginas com conteúdo real e identidade nova
 - `SITE_EM_BREVE=false` e `deploy.sh` — o único passo que reabre o site
 - Sitemap, indexação e Search Console liberados — a etapa 12 deixou a
