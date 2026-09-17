@@ -2696,18 +2696,27 @@ que o Everton aprovou/subiu direto no painel):**
 | SidePay | 78/78 | sim | sim |
 | Yelly | 116/116 | sim | sim |
 | TrincaPay | 45/45 | sim | sim |
-| PagBank | 135/209* | sim | sim |
+| PagBank | 135/135 | sim | sim |
 | InfinitePay | 0/284 | sim | sim |
 | SumUp | 0/81 | sim | sim |
 | Mercado Pago | 0/3 | sim | — |
 | Cielo/Rede/GetNet/Stone | 0 (não publicam tabela, regra 4) | sim | — |
 
-\* Os 74 não publicados do PagBank não são pendência: são taxas órfãs do
-plano "Taxas iniciais" (`plano_id = 1`), soft-deleted em 16/09/2026 — nunca
-vão poder ser publicadas porque o plano-mãe não existe mais. É lixo de
-banco, seguro de limpar com `TaxaDivulgada::where('plano_id', 1)->forceDelete()`
-quando o Everton confirmar, sem efeito nenhum no site (já não aparecem no
-JSON).
+**Resolvido em 17/09/2026:** as 74 taxas que estavam presas ao plano
+"Taxas iniciais" (`plano_id = 1`, soft-deleted em 16/09) eram lixo de banco
+sem efeito no site (já não apareciam no JSON) — removidas em produção com
+`TaxaDivulgada::where('plano_id', 1)->delete()`, a pedido do Everton. O
+`plano` em si (registro `planos` id 1) continua soft-deleted, não
+force-deleted — histórico, sem risco de colidir com slug novo porque o
+`PagBankSeeder` não tenta mais recriá-lo.
+
+**Divergência achada entre local e produção, ao limpar isso:** localmente o
+mesmo plano "Taxas iniciais" **não está soft-deleted** (a exclusão foi uma
+ação manual do Everton só em produção, nunca replicada local) e as mesmas
+74 taxas ainda existem lá, vinculadas a um plano que localmente parece
+ativo. Não mexido — risco baixo (base local não serve ao público, só a
+testes e ao próprio Claude), mas vale lembrar antes de rodar
+`PagBankSeeder` local achando que reflete produção.
 
 **Decisão do Everton em 17/09/2026: lançamento não vai esperar a curadoria
 de todas as 13 marcas.** InfinitePay, SumUp e o restante de Mercado Pago
