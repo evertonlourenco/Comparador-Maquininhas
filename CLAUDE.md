@@ -2997,6 +2997,35 @@ novo". Confirmado com o Everton antes de implementar (ele descreveu a
 mecânica exata: "o desconto está somente sobre o preço à vista... a prazo
 paga o valor cheio" — bateu com o que a página mostra).
 
+### Fotos e preço cheio dos equipamentos da SumUp (17/09/2026)
+
+Sem cupom de afiliado nesta marca (dito pelo Everton) — página e valores
+100% oficiais, `sumup.com/pt-br/maquininhas/`. Equipamento e preço já
+existiam desde 15/09/2026 (etapa 17), só faltava foto.
+
+**O preço confirmado em 15/09 era o promocional, não o cheio — só descoberto
+ao reler a página hoje.** Ela agora mostra riscado ao lado do promocional
+para Solo (de R$ 118,80 por R$ 58,80) e Smart (de R$ 598,80 por R$ 190,80);
+Top continua com um preço só (R$ 46,80), sem riscado em lugar nenhum.
+Conferido antes de gravar: a parcela que `EquipamentoPlano::parcelaDaAdesao()`
+calcula a partir do preço vigente reproduz exatamente os "12x R$X,XX" que a
+própria página publica (Top 3,90, Solo 4,90, Smart 15,90) — os três batem.
+
+**Mapeamento nome↔foto exigiu atenção às dimensões, não só à forma na
+imagem.** As três fotos que o Everton mandou pareciam, à primeira vista,
+combinar melhor na ordem "alta e fina = Solo, quadrada e pequena = Smart" -
+errado. A ficha técnica da Solo (`sumup.com/pt-br/maquininhas/solo/`) diz
+83×83×17mm, quase um cubo; é a foto pequena e quadrada
+("Favor inserir ou aproximar o cartão") que bate com isso, não a alta e
+fina (essa é a Smart, com tela de 6,5" — dimensão bem maior, corpo mais
+alto). A pasta do Everton no Drive já tinha os arquivos nomeados
+corretamente (`smart.webp`/`solo.jpeg`/`top.webp`), o que resolveu de vez
+antes de eu errar a foto de novo (ver o episódio da Ton, sessão anterior).
+
+**Continua incompleto, sem eu ter mexido nisso:** as 81 taxas da SumUp
+seguem em `rascunho` (0 publicadas) — pendência de aprovação no painel já
+existente antes desta sessão, sem relação com equipamento/foto.
+
 ## Pendente ao fim da etapa 05
 
 O motor está pronto e testado, mas ele é honesto sobre o que não sabe — e isso
