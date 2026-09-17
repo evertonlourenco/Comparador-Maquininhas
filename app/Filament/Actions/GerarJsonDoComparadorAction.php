@@ -2,6 +2,7 @@
 
 namespace App\Filament\Actions;
 
+use App\Support\Saude\StatusDoJson;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
@@ -21,6 +22,11 @@ use Illuminate\Support\Facades\File;
  * de aprovar taxa, pelo motivo que já valia: o comparador não consulta o
  * banco por visita (regra 9), então só automatiza o "apertar o botão", não a
  * decisão de quando apertar.
+ *
+ * Pedido do Everton no mesmo dia, depois de usar o botão pela primeira vez:
+ * um alerta ao lado dele avisando se há mudança pendente. O badge "Pendente"
+ * (ver App\Support\Saude\StatusDoJson) some sozinho assim que o arquivo é
+ * regenerado — não depende de recarregar a página nem de esperar o cache.
  */
 final class GerarJsonDoComparadorAction
 {
@@ -29,14 +35,19 @@ final class GerarJsonDoComparadorAction
         return Action::make('gerarJsonDoComparador')
             ->label('Gerar JSON do comparador')
             ->icon(Heroicon::OutlinedArrowPath)
-            ->color('gray')
-            ->tooltip('O site lê um arquivo gerado, não o banco direto (regra 9) — rode isto depois de aprovar taxas para o site refletir a mudança.')
+            ->color(fn (): string => StatusDoJson::desatualizado() ? 'warning' : 'gray')
+            ->badge(fn (): ?string => StatusDoJson::desatualizado() ? 'Pendente' : null)
+            ->badgeColor('warning')
+            ->tooltip(fn (): string => StatusDoJson::desatualizado()
+                ? 'Há mudança aprovada que ainda não está no arquivo público — o site está mostrando o estado anterior.'
+                : 'O arquivo público já reflete tudo o que está aprovado agora.')
             ->requiresConfirmation()
             ->modalHeading('Gerar JSON do comparador')
             ->modalDescription('Reescreve o arquivo público que o comparador lê no navegador, com o que está aprovado agora no banco de dados. Não publica nem aprova nada sozinho — só espelha o que você já aprovou.')
             ->modalSubmitActionLabel('Gerar agora')
             ->action(function (): void {
                 $codigo = Artisan::call('comparador:gerar-json');
+                StatusDoJson::esquecer();
 
                 if ($codigo !== Command::SUCCESS) {
                     Notification::make()

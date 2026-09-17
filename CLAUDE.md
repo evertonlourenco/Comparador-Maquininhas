@@ -3319,6 +3319,37 @@ execução) e notifica o admin. O teste restaura o `comparador.json` local ao
 estado de antes no `tearDown()` — o arquivo é gitignored e não devia mudar
 só por rodar a suíte.
 
+### Alerta de mudança pendente ao lado do botão
+
+Pedido do Everton no mesmo dia, ao usar o botão pela primeira vez: um selo
+avisando se existe mudança aprovada ainda não refletida no arquivo público.
+`App\Support\Saude\StatusDoJson::desatualizado()` decide isso, e
+`GerarJsonDoComparadorAction` liga a cor do botão (`warning`/laranja) e um
+badge "Pendente" a ele.
+
+**A comparação é por conteúdo, não por `updated_at` de tabela — decisão
+deliberada.** Uma heurística ingênua ("algo mudou depois de X") pegaria
+toda edição de taxa em rascunho — e o Everton vai editar InfinitePay/SumUp/
+Mercado Pago em rascunho por dias (decisão da etapa 17, registrada acima),
+sem que isso deva acender alerta nenhum, porque rascunho nunca esteve no
+arquivo. `StatusDoJson` resolve isso regenerando o catálogo com a mesma
+classe que o comando usa (`CatalogoDoComparador::montar(false)`) e
+comparando com o que está gravado no arquivo, ignorando só o campo
+`gerado_em` (que muda toda geração, com ou sem mudança de conteúdo). Isso
+cobre com precisão os três jeitos reais de o arquivo ficar desatualizado —
+aprovação nova, edição de taxa já publicada, despublicação (inclusive
+célula apagada, que uma comparação por `updated_at` perderia por completo,
+já que a linha deixa de existir) — sem nenhum falso positivo de rascunho.
+`tests/Feature/Comparador/StatusDoJsonTest.php::
+test_criar_e_editar_taxa_em_rascunho_nao_marca_como_desatualizado` é o teste
+que prova exatamente essa distinção.
+
+Resultado cacheado por 1 minuto (`Cache::remember`, mesma família de
+`OperacaoWidget`/`TrafegoWidget`) para não recalcular o catálogo inteiro a
+cada carregamento do Dashboard — e `StatusDoJson::esquecer()` limpa esse
+cache na hora, dentro da própria ação de gerar o JSON, para o selo sumir
+assim que a geração termina, sem esperar o minuto passar.
+
 ## Pendente ao fim da etapa 05
 
 O motor está pronto e testado, mas ele é honesto sobre o que não sabe — e isso

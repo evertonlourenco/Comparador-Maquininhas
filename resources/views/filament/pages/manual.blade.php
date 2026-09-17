@@ -183,6 +183,14 @@
                 marcas e taxas entraram no arquivo novo. Essa é a forma recomendada; use-a sempre que puder.</p>
             </div>
 
+            <p>
+                O próprio botão avisa quando há trabalho pendente: um selo laranja <strong>"Pendente"</strong> aparece
+                ao lado dele sempre que existe alguma aprovação, edição ou despublicação ainda não refletida no
+                arquivo — comparado pelo conteúdo, não só pela data, então editar uma taxa que ainda está em rascunho
+                (as marcas que você for curando aos poucos) não aciona o aviso à toa. Sem o selo, o arquivo já está em
+                dia. O selo some sozinho assim que você clica e a geração termina.
+            </p>
+
             <p class="text-gray-500 dark:text-gray-400">
                 O botão só existe desde 17/09/2026. Antes disso o único jeito era rodar o comando por SSH — o que
                 travou o terminal na primeira tentativa real (o comando é comprido, quebra em duas linhas na tela, e

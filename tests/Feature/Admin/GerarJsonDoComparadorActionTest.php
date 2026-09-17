@@ -16,7 +16,10 @@ use Tests\TestCase;
  * mesmo `comparador:gerar-json` em processo, sem SSH e sem aspa para errar —
  * ver App\Filament\Actions\GerarJsonDoComparadorAction. Fica no Dashboard e
  * em toda tela onde uma taxa é aprovada (TabelaDoPlano, Lançamento em Lote,
- * as duas listagens de Taxas).
+ * as duas listagens de Taxas). Ganhou, no mesmo dia, um selo "Pendente"
+ * quando há mudança não refletida no arquivo — ver
+ * App\Support\Saude\StatusDoJson e tests/Feature/Comparador/StatusDoJsonTest.php
+ * para a lógica de comparação por conteúdo (não por updated_at).
  */
 class GerarJsonDoComparadorActionTest extends TestCase
 {
@@ -79,5 +82,32 @@ class GerarJsonDoComparadorActionTest extends TestCase
             $dados['gerado_em'],
             'O comando real grava um timestamp ISO 8601 em "gerado_em" — se ainda for o valor antigo, o arquivo não foi regenerado de verdade.',
         );
+    }
+
+    /** Pedido do Everton no mesmo dia: um alerta ao lado do botão quando há mudança pendente. */
+    public function test_o_botao_avisa_com_selo_laranja_quando_ha_mudanca_pendente(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        if (File::exists($this->caminho)) {
+            File::delete($this->caminho);
+        }
+
+        Livewire::test(Dashboard::class)
+            ->assertActionHasColor('gerarJsonDoComparador', 'warning');
+    }
+
+    public function test_o_selo_some_assim_que_o_botao_e_clicado(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        if (File::exists($this->caminho)) {
+            File::delete($this->caminho);
+        }
+
+        Livewire::test(Dashboard::class)
+            ->assertActionHasColor('gerarJsonDoComparador', 'warning')
+            ->callAction('gerarJsonDoComparador')
+            ->assertActionHasColor('gerarJsonDoComparador', 'gray');
     }
 }
