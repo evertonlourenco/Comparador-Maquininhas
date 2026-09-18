@@ -286,37 +286,10 @@ numa pasta.
   agora ao Search Console e reimportar no Bing Webmaster Tools
 - Vídeo do canal apontando para o portal
 
-### 20 — Decisão sobre programa de parceiros
+### 20 — Resultado que vende: simplificação, CTAs e reforma de UX
 
-Era a 15. Vai para o fim porque é decisão de negócio, não bloqueio técnico.
-
-**Atenção herdada da etapa 11:** se isso trouxer cadastro público de usuário,
-`User::canAccessPanel()` precisa de critério de verdade — hoje ele devolve
-`true` para qualquer usuário da tabela, e com cadastro aberto todo cadastrado
-entraria no `/admin`.
-
-### 21 — Cadastro de taxas por imagem (IA de visão)
-
-Pedida pelo Everton em 15/09/2026, na etapa 17: em vez de descrever a tabela
-por texto, subir a captura de tela e a ferramenta ler e propor o
-cadastro sozinha — o que hoje só acontece manualmente, via chat com o
-Claude. Fica para **depois do lançamento** de propósito: enquanto isso, o
-Everton manda print por aqui mesmo, e o cadastro segue manual (Tabela do
-Plano, etapa 17).
-
-- Upload de imagem no admin (mesmo padrão de segurança do `ImagemSeguraWebp`
-  da etapa 15 — valida pelo conteúdo, não pela extensão)
-- Chamada a uma API de visão (a chave e o custo por chamada precisam existir
-  — não é gratuito como a busca de imagem por URL da etapa 15)
-- **Regra 10 não é opcional aqui**: o que a IA leu vai para uma prévia, nunca
-  direto ao banco — o admin confere linha por linha antes de aprovar, no
-  mesmo espírito da busca de imagem por URL (etapa 15): "automatiza o
-  trabalho chato sem automatizar a decisão"
-- Reaproveita a grade da Tabela do Plano (etapa 17) como tela de conferência
-  — a IA pré-preenche as células, a pessoa só corrige o que estiver errado
-  antes de salvar
-
-### 22 — Resultado que vende: simplificação, CTAs e reforma de UX
+> **Renumerada em 18/09/2026:** entrou como 22 e virou a 20 por decisão do
+> Everton — é a prioridade. Parceiros passou a 21 e taxas por imagem a 22.
 
 Pedida pelo Everton em 18/09/2026, olhando o cartão da Ton no resultado
 publicado. O diagnóstico dele, que vira a regra desta etapa: **o comparador
@@ -446,6 +419,36 @@ selo "cupom já aplicado", gráfico por forma de pagamento) e a própria página
 ler nenhum parágrafo; cupom aparece em toda marca que tem; nenhum aviso
 técnico na tela pública; tabela de taxas alternável; testes de paridade
 PHP/JS passando; conferido em produção em celular e desktop.
+
+### 21 — Decisão sobre programa de parceiros
+
+Era a 15, depois a 20. Vai para o fim porque é decisão de negócio, não bloqueio técnico.
+
+**Atenção herdada da etapa 11:** se isso trouxer cadastro público de usuário,
+`User::canAccessPanel()` precisa de critério de verdade — hoje ele devolve
+`true` para qualquer usuário da tabela, e com cadastro aberto todo cadastrado
+entraria no `/admin`.
+
+### 22 — Cadastro de taxas por imagem (IA de visão)
+
+Pedida pelo Everton em 15/09/2026, na etapa 17: em vez de descrever a tabela
+por texto, subir a captura de tela e a ferramenta ler e propor o
+cadastro sozinha — o que hoje só acontece manualmente, via chat com o
+Claude. Fica para **depois do lançamento** de propósito: enquanto isso, o
+Everton manda print por aqui mesmo, e o cadastro segue manual (Tabela do
+Plano, etapa 17).
+
+- Upload de imagem no admin (mesmo padrão de segurança do `ImagemSeguraWebp`
+  da etapa 15 — valida pelo conteúdo, não pela extensão)
+- Chamada a uma API de visão (a chave e o custo por chamada precisam existir
+  — não é gratuito como a busca de imagem por URL da etapa 15)
+- **Regra 10 não é opcional aqui**: o que a IA leu vai para uma prévia, nunca
+  direto ao banco — o admin confere linha por linha antes de aprovar, no
+  mesmo espírito da busca de imagem por URL (etapa 15): "automatiza o
+  trabalho chato sem automatizar a decisão"
+- Reaproveita a grade da Tabela do Plano (etapa 17) como tela de conferência
+  — a IA pré-preenche as células, a pessoa só corrige o que estiver errado
+  antes de salvar
 
 ---
 
