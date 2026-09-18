@@ -51,7 +51,7 @@
                      aqui com isso, entao verde e sempre numero publicado. O mais
                      caro nao ganha cor: vermelho e de vencido. --}}
                 <article
-                    class="scroll-mt-4 overflow-hidden rounded-bloco bg-papel focus:outline-none"
+                    class="elevavel scroll-mt-4 overflow-hidden rounded-bloco bg-papel focus:outline-none"
                     tabindex="-1"
                     x-bind:id="idDoCartaoResultado(item)"
                     @if ($ranqueado)
@@ -223,7 +223,7 @@
                                  cupom, /ir/{marca} e quem grava o clique em
                                  eventos_cupom e redireciona. --}}
                             <a
-                                class="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-botao border-[1.5px] border-acao bg-acao px-5 py-2.5 text-center font-titulo text-[0.9375rem] font-semibold leading-tight text-sobre-acao transition-opacity hover:opacity-90 active:opacity-100"
+                                class="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-botao border-[1.5px] border-acao bg-acao px-5 py-2.5 text-center font-titulo text-[0.9375rem] font-semibold leading-tight text-sobre-acao shadow-botao transition-[background-color,border-color,box-shadow] duration-150 ease-out hover:border-acao-forte hover:bg-acao-forte active:shadow-none"
                                 target="_blank"
                                 x-bind:href="hrefContratar(item)"
                                 x-bind:rel="temCupomParaContratar(item) ? 'sponsored nofollow noopener noreferrer' : 'noopener noreferrer'"

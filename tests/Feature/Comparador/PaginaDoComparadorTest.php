@@ -20,7 +20,7 @@ class PaginaDoComparadorTest extends TestCase
     {
         $this->get('/')
             ->assertOk()
-            ->assertSee('Quanto a maquininha custa para o seu negócio')
+            ->assertSee('Qual maquininha cobra menos de você?')
             // O comparador le o JSON estatico, e nao um endpoint dinamico.
             ->assertSee(ComparadorController::CAMINHO_DO_JSON, escape: false);
     }

@@ -87,6 +87,7 @@ const exigidos = (p) => [
     ['acao na superficie', p.acao, p.superficie, 4.5],
     ['acao no fundo acao', p.acao, p['acao-fundo'], 4.5],
     ['texto sobre botao acao', p['sobre-acao'], p.acao, 4.5],
+    ['texto sobre botao acao no hover', p['sobre-acao'], p['acao-forte'], 4.5],
     ['tinta no fundo acao', p.tinta, p['acao-fundo'], 4.5],
     // Rodape e selo "desconto parceiro", sobre o navy.
     ['texto sobre marca', p['sobre-marca'], p.marca, 4.5],

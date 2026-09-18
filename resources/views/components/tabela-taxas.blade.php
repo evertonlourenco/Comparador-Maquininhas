@@ -56,7 +56,7 @@
         : 'Taxas publicadas pela marca, por linha de venda.';
 @endphp
 
-<figure {{ $attributes->class('overflow-hidden rounded-bloco border border-regua bg-papel') }}>
+<figure {{ $attributes->class('overflow-hidden rounded-bloco border border-regua bg-papel shadow-cartao') }}>
     <figcaption class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-regua px-4 py-3">
         <span class="font-titulo text-cartao font-semibold">{{ $titulo }}</span>
         @if ($reportada)

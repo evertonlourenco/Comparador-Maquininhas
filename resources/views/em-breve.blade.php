@@ -45,7 +45,7 @@
 </head>
 <body class="flex min-h-dvh flex-col items-center justify-center bg-superficie px-4 py-10 text-tinta antialiased">
 
-    <main class="w-full max-w-xl rounded-bloco border border-regua bg-papel px-6 py-10 text-center sm:px-10 sm:py-14">
+    <main class="w-full max-w-xl rounded-bloco border border-regua bg-papel shadow-cartao px-6 py-10 text-center sm:px-10 sm:py-14">
         <h1 class="sr-only">{{ config('app.name') }} — em breve</h1>
 
         <img
@@ -63,7 +63,7 @@
             class="so-tema-escuro mx-auto h-auto w-56 sm:w-72"
         >
 
-        <p class="mx-auto mt-8 inline-flex items-center rounded-selo bg-acao-fundo px-2.5 py-1 text-selo font-semibold uppercase text-acao">
+        <p class="mx-auto mt-8 inline-flex items-center rounded-selo bg-aferido-fundo px-2.5 py-1 text-selo font-semibold uppercase text-aferido">
             Em breve
         </p>
 

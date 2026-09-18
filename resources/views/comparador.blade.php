@@ -67,7 +67,7 @@
 
         <form class="mt-8 space-y-8" x-on:submit.prevent>
             {{-- 1 ----------------------------------------------------------- --}}
-            <section aria-labelledby="passo-faturamento" class="rounded-bloco border border-regua bg-papel">
+            <section aria-labelledby="passo-faturamento" class="rounded-bloco border border-regua bg-papel shadow-cartao">
                 <div class="border-b border-regua px-4 py-3">
                     <h2 id="passo-faturamento" class="flex items-center gap-3 text-cartao sm:text-2xl">
                         <span class="numero-destaque inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-marca text-base text-sobre-marca">1</span> Quanto você vende (ou venderá) por mês na maquininha?
@@ -89,7 +89,7 @@
             </section>
 
             {{-- 2 ----------------------------------------------------------- --}}
-            <section aria-labelledby="passo-mix" class="rounded-bloco border border-regua bg-papel">
+            <section aria-labelledby="passo-mix" class="rounded-bloco border border-regua bg-papel shadow-cartao">
                 <div class="border-b border-regua px-4 py-3">
                     <h2 id="passo-mix" class="flex items-center gap-3 text-cartao sm:text-2xl">
                         <span class="numero-destaque inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-marca text-base text-sobre-marca">2</span> Como seus clientes pagam
@@ -235,7 +235,7 @@
             </section>
 
             {{-- 3 ----------------------------------------------------------- --}}
-            <section aria-labelledby="passo-prazo" class="rounded-bloco border border-regua bg-papel">
+            <section aria-labelledby="passo-prazo" class="rounded-bloco border border-regua bg-papel shadow-cartao">
                 <div class="border-b border-regua px-4 py-3">
                     <h2 id="passo-prazo" class="flex items-center gap-3 text-cartao sm:text-2xl">
                         <span class="numero-destaque inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-marca text-base text-sobre-marca">3</span> Quando você quer o dinheiro
@@ -266,7 +266,7 @@
             </section>
 
             {{-- 4 ----------------------------------------------------------- --}}
-            <section aria-labelledby="passo-marcas" class="rounded-bloco border border-regua bg-papel">
+            <section aria-labelledby="passo-marcas" class="rounded-bloco border border-regua bg-papel shadow-cartao">
                 <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-regua px-4 py-3">
                     <h2 id="passo-marcas" class="flex items-center gap-3 text-cartao sm:text-2xl">
                         <span class="numero-destaque inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-marca text-base text-sobre-marca">4</span> Quais marcas comparar
@@ -412,21 +412,21 @@
                  so no menor custo (canal de acao); o mais caro fica neutro. --}}
             <template x-if="resultado && resultado.resumo.melhor && resultado.resumo.pior">
                 <div class="grid gap-3 md:grid-cols-3">
-                    <div class="rounded-bloco border-[1.5px] border-acao bg-acao-fundo px-4 py-4">
+                    <div class="rounded-bloco border-[1.5px] border-acao bg-acao-fundo px-4 py-4 shadow-cartao">
                         <p class="text-etiqueta font-semibold uppercase text-acao">Menor custo</p>
                         <p class="mt-1 font-titulo text-cartao font-semibold" x-text="resultado.resumo.melhor.marca"></p>
                         <p class="numero-destaque text-numero text-acao" x-text="resultado.resumo.melhor.formatado.custo_mensal_recorrente + ' por mês'"></p>
                         <p class="mt-1 text-miudo text-tinta" x-text="resultado.resumo.melhor.plano"></p>
                     </div>
 
-                    <div class="rounded-bloco border border-regua bg-papel px-4 py-4">
+                    <div class="rounded-bloco border border-regua bg-papel px-4 py-4 shadow-cartao">
                         <p class="text-etiqueta font-semibold uppercase text-tinta-suave">Mais caro</p>
                         <p class="mt-1 font-titulo text-cartao font-semibold" x-text="resultado.resumo.pior.marca"></p>
                         <p class="numero-destaque text-numero" x-text="resultado.resumo.pior.formatado.custo_mensal_recorrente + ' por mês'"></p>
                         <p class="mt-1 text-miudo text-tinta-suave" x-text="resultado.resumo.pior.plano"></p>
                     </div>
 
-                    <div class="rounded-bloco border border-regua bg-papel px-4 py-4">
+                    <div class="rounded-bloco border border-regua bg-papel px-4 py-4 shadow-cartao">
                         <p class="text-etiqueta font-semibold uppercase text-tinta-suave">A diferença</p>
                         <p class="numero-destaque mt-1 text-numero" x-text="resultado.resumo.formatado.diferenca_mensal"></p>
                         <p class="text-miudo text-tinta-suave">
@@ -450,7 +450,7 @@
                 estado="calculado"
                 tom="aferido"
                 titulo="Taxa publicada pela marca"
-                descricao="Ordenado pelo custo mensal com a adesão diluída. Todo número aqui vem da tabela que a própria marca publica."
+                descricao="Ordenado pelo custo mensal em taxas, mais a mensalidade quando houver. Todo número aqui vem da tabela que a própria marca publica."
                 :ranqueado="true"
             />
 
@@ -486,7 +486,7 @@
                         <li>
                             {{-- A forma diz o estado (etapa 14): borda tracejada em ocre,
                                  nunca a borda cheia do cartao de taxa publicada. --}}
-                            <article class="overflow-hidden rounded-bloco border-2 border-dashed border-reportado bg-papel">
+                            <article class="elevavel overflow-hidden rounded-bloco border-2 border-dashed border-reportado bg-papel">
                                 <div class="flex flex-wrap items-start justify-between gap-x-3 gap-y-2 border-b border-dashed border-reportado bg-reportado-fundo px-4 py-3">
                                     <div class="flex min-w-0 items-start gap-3">
                                         {{-- Etapa 15: mesmo quadrado de logo/inicial dos outros blocos. --}}
@@ -570,7 +570,7 @@
                     Sem dado publicado
                     <span class="numero font-normal text-tinta-suave" x-text="'(' + itensNoEstado('sem_dado_publicado').length + ')'"></span>
                 </h3>
-                <ul class="divide-y divide-regua rounded-bloco border border-regua bg-papel">
+                <ul class="divide-y divide-regua rounded-bloco border border-regua bg-papel shadow-cartao">
                     <template x-for="item in itensNoEstado('sem_dado_publicado')" :key="item.marca.slug">
                         <li class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-4 py-3">
                             <span class="font-medium" x-text="item.marca.nome"></span>
@@ -602,7 +602,7 @@
 
                 <div class="space-y-3">
                     <template x-for="linha in linhasDaTabelaDeTaxas" :key="linha.rotulo">
-                        <div class="overflow-hidden rounded-bloco border border-regua bg-papel">
+                        <div class="overflow-hidden rounded-bloco border border-regua bg-papel shadow-cartao">
                             <div class="flex items-stretch overflow-x-auto">
                                 <div class="sticky left-0 z-10 flex min-w-[7rem] shrink-0 items-center border-e border-regua bg-superficie px-3 py-3">
                                     <span class="text-sm font-medium text-tinta" x-text="linha.rotulo"></span>
@@ -658,7 +658,7 @@
                         <p class="numero-destaque truncate text-base text-tinta" x-text="campoTexto(melhorItem, 'custo_mensal_recorrente') + '/mês'"></p>
                     </div>
                     <a
-                        class="inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-botao border-[1.5px] border-acao bg-acao px-4 text-center font-titulo text-sm font-semibold leading-tight text-sobre-acao"
+                        class="inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-botao border-[1.5px] border-acao bg-acao px-4 text-center font-titulo text-sm font-semibold leading-tight text-sobre-acao shadow-botao transition-colors duration-150 hover:border-acao-forte hover:bg-acao-forte"
                         target="_blank"
                         x-bind:href="hrefContratar(melhorItem)"
                         x-bind:rel="temCupomParaContratar(melhorItem) ? 'sponsored nofollow noopener noreferrer' : 'noopener noreferrer'"

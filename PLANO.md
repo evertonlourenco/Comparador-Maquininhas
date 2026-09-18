@@ -386,7 +386,9 @@ bloco C.
 - Rodapé: logo, links, data de atualização. Os três parágrafos vão para
   `/metodologia`.
 
-**E. Reforma visual** (tokens, não reescrita — ver tabela da etapa 14)
+**E. Reforma visual** (tokens, não reescrita — ver tabela da etapa 14) —
+**concluído em 18/09/2026**, ver `CLAUDE.md`, "Resultado que vende (etapa 20)",
+bloco E.
 - Sombras em camadas nos cartões, elevação no hover, raio maior (~12px
   cartão, ~10px botão), transições de 150–200ms.
 - Fundo da página levemente acinzentado para os cartões brancos saltarem;

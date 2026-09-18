@@ -73,7 +73,7 @@
             </p>
         </section>
 
-        <section aria-labelledby="s-comissao" class="space-y-3 rounded-bloco border border-regua bg-papel p-4 sm:p-6">
+        <section aria-labelledby="s-comissao" class="space-y-3 rounded-bloco border border-regua bg-papel p-4 shadow-cartao sm:p-6">
             <h2 id="s-comissao" class="text-titulo">Comissão e independência do número</h2>
             <p class="text-tinta">
                 Ganhamos comissão quando alguém contrata uma maquininha por um link daqui.

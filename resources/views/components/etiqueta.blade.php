@@ -3,7 +3,9 @@
     //   estado do dado — aferido = publicado pela marca e dentro do prazo;
     //     reportado = faixa, promocao ou condicao; vencido = fora da validade;
     //     apagado = sem dado.
-    //   marca — economia = menor custo ou desconto (verde claro do manual);
+    //   marca — economia = so o destaque do 1o lugar ("Menor custo"); desde a
+    //     etapa 20 (bloco E) o verde e reservado ao clicavel e ao 1o lugar,
+    //     entao desconto de cupom vai de `parceiro`;
     //     parceiro = "desconto parceiro", obrigatorio quando ha comissao.
     'tom' => 'neutro',
     'variante' => 'contorno',

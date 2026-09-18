@@ -19,15 +19,18 @@
     // min-h-12 = 48px, a altura minima do manual no celular. A maioria do
     // publico chega pelo celular, entao isso vale para o botao discreto tambem.
     $base = 'inline-flex min-h-12 items-center justify-center gap-2 rounded-botao border-[1.5px] '
-        .'font-titulo font-semibold leading-tight transition-opacity transition-colors '
+        .'font-titulo font-semibold leading-tight '
+        // Etapa 20, bloco E: 150ms em cor e sombra. `transition-opacity` e
+        // `transition-colors` juntos se anulavam (a ultima classe vence).
+        .'transition-[color,background-color,border-color,box-shadow] duration-150 ease-out '
         // Desativado do manual: fundo cinza, texto apagado — nunca o verde
         // lavado, que ainda pareceria a acao principal.
         .'disabled:cursor-not-allowed disabled:border-superficie-forte disabled:bg-superficie-forte disabled:text-tinta-suave disabled:no-underline '
         .'aria-disabled:cursor-not-allowed aria-disabled:border-superficie-forte aria-disabled:bg-superficie-forte aria-disabled:text-tinta-suave aria-disabled:no-underline';
 
     $variantes = [
-        'principal' => 'border-acao bg-acao text-sobre-acao hover:opacity-90 active:opacity-100',
-        'marca' => 'border-marca bg-marca text-sobre-marca hover:opacity-90 active:opacity-100',
+        'principal' => 'border-acao bg-acao text-sobre-acao shadow-botao hover:border-acao-forte hover:bg-acao-forte active:shadow-none',
+        'marca' => 'border-marca bg-marca text-sobre-marca shadow-botao hover:opacity-90 active:shadow-none',
         'secundaria' => 'border-tinta bg-transparent text-tinta hover:bg-superficie',
         'discreta' => 'border-transparent bg-transparent font-sans text-link underline underline-offset-4 hover:bg-superficie',
     ];

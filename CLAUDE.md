@@ -4140,6 +4140,74 @@ Testado no navegador local (porta 8765) contra o JSON real de produção
 `node scripts/verifica-contraste.mjs` passando nos dois temas.
 `npm run build` rodado depois da troca de classes Tailwind.
 
+### Bloco E — reforma visual (18/09/2026)
+
+Tokens, não reescrita: quase tudo mora em `resources/css/app.css`, e o markup
+só ganhou classes novas onde precisava.
+
+**Tokens que mudaram ou entraram:**
+
+| Token | Antes | Agora | Por quê |
+|---|---|---|---|
+| `--cor-superficie` (claro) | `#F6F7F9` | `#EEF1F5` | Fundo um degrau mais cinza para o cartão branco saltar. O escuro não mudou (o contraste papel/superfície lá já era grande) |
+| `--cor-acao-forte` | — | `#005A4B` / escuro `#7DDCC9` | Hover do botão principal. Antes era `hover:opacity-90`, que **clareava** o verde e baixava o contraste do texto branco; agora escurece (8,19:1 no claro) |
+| `--radius-botao` | 6px | 10px | Botão e campo (o `<code>` do cupom também usa) |
+| `--radius-bloco` | 10px | 12px | Cartão. `--radius-selo` continua 4px: etiqueta não é controle |
+| `--sombra-cartao`, `--sombra-cartao-elevado`, `--sombra-botao` | — | ver `app.css` | Sombras em camadas: uma curta e nítida que assenta, uma longa e difusa que dá altura. Tingidas de navy no claro (preto sujaria o cinza-azulado), pretas e mais fortes no escuro. Viram `shadow-cartao`, `shadow-cartao-elevado` e `shadow-botao` pelo `@theme inline` |
+
+As sombras não são `--cor-*` de hexadecimal, então `verifica-contraste.mjs`
+não as lê — e nem precisa: sombra é decorativa, e a borda `regua` de 1px
+continua em todo cartão. O script ganhou um par novo: **texto sobre o botão
+de ação no hover**. Os dois blocos escuros continuam idênticos (o script
+cobra isso).
+
+**`@utility elevavel`** (fim do `app.css`): sombra de repouso + transição de
+180ms em `box-shadow` e `transform`; no hover, sombra longa e `translateY(-2px)`.
+O hover fica dentro de `@media (hover: hover)` — no toque o `:hover` gruda
+depois do toque e o cartão ficaria levantado. Vai só nos cartões que o lojista
+percorre para escolher: cartão de resultado (`resultado-comparado`), cartão
+de faixa reportada, `<x-cartao-marca>` e `<x-bloco-cupom>`. Blocos estáticos
+(passos do formulário, veredito, tabela de taxas, equipamentos, CTA da página
+de marca, metodologia, em-breve) ganham só `shadow-cartao`, sem subir.
+Avisos (`px-4 py-3 text-sm`) continuam chapados — são recado, não cartão.
+
+**Cor de ação só no que é clicável (e no destaque do 1º lugar).** Três verdes
+que não eram clicáveis saíram:
+- o bloco inteiro do CTA de `/maquininha/{slug}` era `bg-acao-fundo` com
+  borda verde; virou cartão branco (igual ao de "sem cupom" logo abaixo) — o
+  verde fica só no botão dentro dele. O valor da economia em reais saiu de
+  `text-acao` para `text-tinta`;
+- o percentual do cupom em `<x-bloco-cupom>` (`text-acao` → `text-tinta`);
+- o selo "Em breve" da em-breve (`acao` → `aferido`).
+
+Continuam verdes, de propósito: botão principal, CTA "Contratar", faixa
+"Menor custo no seu cenário" e borda do 1º cartão, o bloco "Menor custo" do
+veredito e a 1ª célula de cada linha da tabela de taxas (que é um botão). A
+etiqueta `tom="economia"` passa a ser só para o 1º lugar; o "−30% adesão" do
+`/guia-visual` foi para `parceiro`.
+
+**Transições.** `<x-botao>` tinha `transition-opacity transition-colors` —
+as duas escrevem `transition-property` e a última anulava a primeira. Virou
+uma lista explícita (cor, fundo, borda, sombra) em 150ms. Os botões feitos à
+mão (CTA do cartão, barra fixa do celular, cookies, formulário de taxa
+incorreta) receberam o mesmo tratamento.
+
+**Corrigido de passagem:**
+- a descrição do bloco ranqueado ainda dizia "Ordenado pelo custo mensal com a
+  adesão diluída" — o ranking perdeu a adesão no bloco A. Agora: "Ordenado pelo
+  custo mensal em taxas, mais a mensalidade quando houver";
+- dois testes quebrados desde o bloco D (ninguém rodou a suíte):
+  `PaginaDoComparadorTest` procurava o título antigo da home, e
+  `PaginasLegaisTest` procurava "mesma do site oficial", que saiu do rodapé e
+  na `/metodologia` quebra linha no meio. Suíte: 312/312.
+
+**Conferido** no navegador local (porta 8765, JSON de produção) em desktop e
+375px (`scrollWidth` = 375), tema claro e escuro, cartões de marca e cupom
+pelo `/guia-visual` (a base local não tem marca ativa, então `/maquininhas`
+sai vazia localmente). O navegador embutido do Claude não dispara `:hover`
+de CSS: o estado elevado foi conferido pela regra compilada no
+`public/build` e aplicando o mesmo estilo à mão no cartão.
+
 ## Pendente ao fim da etapa 05
 
 O motor está pronto e testado, mas ele é honesto sobre o que não sabe — e isso

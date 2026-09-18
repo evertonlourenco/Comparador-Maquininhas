@@ -32,10 +32,10 @@
     };
 @endphp
 
-{{-- Cartao de comparacao do manual: raio 10px, borda 1px no padrao, 1,5px
-     verde no destaque. --}}
+{{-- Cartao de comparacao do manual: borda 1px no padrao, 1,5px verde no
+     destaque. Raio 12px e sombra que sobe no hover desde a etapa 20. --}}
 <article {{ $attributes->class([
-    'overflow-hidden rounded-bloco bg-papel',
+    'elevavel overflow-hidden rounded-bloco bg-papel',
     $destaque ? 'border-[1.5px] border-acao' : 'border border-regua',
 ]) }}>
     <div class="flex items-start gap-3 p-4">

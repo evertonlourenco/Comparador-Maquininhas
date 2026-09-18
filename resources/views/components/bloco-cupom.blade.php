@@ -65,7 +65,7 @@
     {{-- Regra 5: some sozinho ao vencer, sem depender de alguem lembrar. --}}
 @else
     <section {{ $attributes->class([
-        'overflow-hidden rounded-bloco bg-papel',
+        'elevavel overflow-hidden rounded-bloco bg-papel',
         $vencido ? 'border border-vencido' : ($vencendo ? 'border border-dashed border-reportado' : 'border border-regua'),
     ]) }} aria-labelledby="cupom-{{ Str::slug($codigo) }}">
         <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-regua px-4 py-3">
@@ -90,7 +90,7 @@
 
         <div class="space-y-3 px-4 py-4">
             @if ($desconto)
-                <p class="font-titulo text-numero font-bold {{ $vencido ? 'text-tinta-suave' : 'text-acao' }}">{{ $desconto }}</p>
+                <p class="font-titulo text-numero font-bold {{ $vencido ? 'text-tinta-suave' : 'text-tinta' }}">{{ $desconto }}</p>
             @endif
 
             <div class="flex flex-wrap items-center gap-2">

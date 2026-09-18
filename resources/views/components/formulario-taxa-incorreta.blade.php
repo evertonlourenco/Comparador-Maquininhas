@@ -48,7 +48,7 @@
 
             <x-campo-honeypot />
 
-            <button type="submit" class="min-h-12 rounded-botao border-[1.5px] border-tinta bg-tinta px-5 font-titulo text-[0.9375rem] font-semibold text-papel hover:opacity-90">
+            <button type="submit" class="min-h-12 rounded-botao border-[1.5px] border-tinta bg-tinta px-5 font-titulo text-[0.9375rem] font-semibold text-papel transition-opacity hover:opacity-90">
                 Enviar aviso
             </button>
 

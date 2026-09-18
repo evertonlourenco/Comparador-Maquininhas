@@ -17,7 +17,8 @@ class PaginasLegaisTest extends TestCase
         $resposta->assertOk();
         $resposta->assertSee('Metodologia', false);
         $resposta->assertSee('faixa reportada', false);
-        $resposta->assertSee('mesma do site oficial', false);
+        // Desde a etapa 20 (bloco D) a frase so mora aqui, nao mais no rodape.
+        $resposta->assertSee('exatamente a mesma do', false);
     }
 
     public function test_privacidade_responde_e_mostra_base_legal(): void

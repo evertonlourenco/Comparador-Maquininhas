@@ -31,7 +31,7 @@
         @else
             {{-- No celular fica grudada no topo enquanto a pessoa marca os
                  cartoes: o botao de comparar nao some ao rolar a grade. --}}
-            <div class="sticky top-0 z-10 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-bloco border border-regua bg-papel px-4 py-3">
+            <div class="sticky top-0 z-10 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-bloco border border-regua bg-papel px-4 py-3 shadow-cartao">
                 <p class="text-sm text-tinta-suave">
                     <span class="numero font-semibold text-tinta" data-contagem-selecionadas>0</span>
                     de <span class="numero">{{ $marcas->count() }}</span> marcas selecionadas.

@@ -179,7 +179,7 @@
                         $precos = $grupo->pluck('equipamento.pivot.preco_adesao_vigente')->filter(fn ($v) => $v !== null)->map(fn ($v) => (float) $v);
                         $alugueis = $grupo->pluck('equipamento.pivot.aluguel_mensal')->filter(fn ($v) => $v !== null)->map(fn ($v) => (float) $v);
                     @endphp
-                    <li class="flex flex-col overflow-hidden rounded-bloco border border-regua bg-papel">
+                    <li class="flex flex-col overflow-hidden rounded-bloco border border-regua bg-papel shadow-cartao">
                         <div class="flex aspect-4/3 items-center justify-center border-b border-regua bg-superficie">
                             @if ($equipamento->imagem_url)
                                 <img src="{{ $equipamento->imagem_url }}" alt="" class="max-h-full max-w-full object-contain p-4" width="400" height="300" loading="lazy" decoding="async">
@@ -280,7 +280,7 @@
     @if ($marca->youtube_video_id)
         <section aria-labelledby="s-video" class="mx-auto w-full max-w-5xl space-y-3 border-t border-regua px-4 py-8 sm:px-6">
             <h2 id="s-video" class="text-titulo">Vídeo</h2>
-            <div class="aspect-video overflow-hidden rounded-bloco border border-regua">
+            <div class="aspect-video overflow-hidden rounded-bloco border border-regua shadow-cartao">
                 <iframe
                     class="size-full"
                     src="https://www.youtube-nocookie.com/embed/{{ $marca->youtube_video_id }}"
@@ -296,15 +296,16 @@
     {{-- 8. CTA: o cupom e a economia em reais ----------------------------------- --}}
     <section aria-labelledby="s-cta" class="mx-auto w-full max-w-5xl border-t border-regua px-4 py-10 sm:px-6">
         @if ($cupomDestaque)
-            {{-- Economia e canal de acao: verde claro com o verde escuro do manual. --}}
-            <div class="rounded-bloco border-[1.5px] border-acao bg-acao-fundo px-4 py-8 text-center sm:px-10">
+            {{-- Etapa 20, bloco E: o verde fica so no botao (o que e clicavel);
+                 o bloco em volta e cartao branco, como o de sem cupom abaixo. --}}
+            <div class="rounded-bloco border border-regua bg-papel px-4 py-8 text-center shadow-cartao sm:px-10">
                 <x-etiqueta tom="parceiro">Desconto parceiro</x-etiqueta>
                 <h2 id="s-cta" class="mt-3 text-titulo">Pronto para contratar a {{ $marca->nome }}?</h2>
                 <p class="mx-auto mt-3 max-w-prose leading-loose text-tinta">
                     @if ($economia)
                         Use o cupom
                         <code class="numero rounded-botao border border-dashed border-contorno bg-papel px-2 py-1 font-semibold tracking-wider">{{ $cupomDestaque->codigo }}</code>
-                        e economize <span class="numero-destaque text-acao">{{ $economia['formatado'] }}</span>{{ $economia['base'] ? ' '.$economia['base'] : '' }}.
+                        e economize <span class="numero-destaque text-tinta">{{ $economia['formatado'] }}</span>{{ $economia['base'] ? ' '.$economia['base'] : '' }}.
                     @else
                         Use o cupom
                         <code class="numero rounded-botao border border-dashed border-contorno bg-papel px-2 py-1 font-semibold tracking-wider">{{ $cupomDestaque->codigo }}</code>
@@ -331,7 +332,7 @@
                 </p>
             </div>
         @else
-            <div class="rounded-bloco border border-regua bg-papel px-4 py-8 text-center sm:px-10">
+            <div class="rounded-bloco border border-regua bg-papel px-4 py-8 text-center shadow-cartao sm:px-10">
                 <h2 id="s-cta" class="text-titulo">Pronto para contratar a {{ $marca->nome }}?</h2>
                 <p class="mt-2 text-tinta-suave">Não há cupom vigente para esta marca no momento.</p>
                 @if ($marca->site_url)

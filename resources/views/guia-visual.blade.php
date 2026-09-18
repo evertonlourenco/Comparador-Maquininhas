@@ -18,8 +18,9 @@
         ['Régua forte', 'regua-forte', 'bg-regua-forte', 'Fio de seção (decorativo)'],
         ['Contorno', 'contorno', 'bg-contorno', 'Borda de campo'],
         ['Marca', 'marca', 'bg-marca', 'Rodapé, selo “desconto parceiro”'],
-        ['Ação', 'acao', 'bg-acao', 'Botão principal, menor custo, economia'],
-        ['Ação, fundo', 'acao-fundo', 'bg-acao-fundo', 'Selo de economia'],
+        ['Ação', 'acao', 'bg-acao', 'Só o que é clicável e o destaque do 1º lugar'],
+        ['Ação, hover', 'acao-forte', 'bg-acao-forte', 'Hover do botão principal'],
+        ['Ação, fundo', 'acao-fundo', 'bg-acao-fundo', 'Fundo do 1º lugar'],
         ['Ação, vivo', 'acao-vivo', 'bg-acao-vivo', 'Verde do símbolo (decorativo)'],
         ['Aferido', 'aferido', 'bg-aferido', 'Taxa divulgada, dado fresco'],
         ['Aferido, fundo', 'aferido-fundo', 'bg-aferido-fundo', 'Fundo da etiqueta aferida'],
@@ -175,7 +176,7 @@
                 <h2 id="s-etiquetas" class="text-titulo">Etiquetas</h2>
                 <p class="max-w-2xl text-sm text-tinta-suave">
                     Primeira linha: estado do dado, dito por forma e rótulo. Segunda: os selos da
-                    marca — economia em verde e “desconto parceiro”, obrigatório quando há comissão.
+                    marca — verde só no 1º lugar (o clicável já é verde por ser botão) e “desconto parceiro”, obrigatório quando há comissão.
                 </p>
             </div>
 
@@ -189,7 +190,7 @@
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <x-etiqueta tom="economia">Menor custo</x-etiqueta>
-                    <x-etiqueta tom="economia">−30% adesão</x-etiqueta>
+                    <x-etiqueta tom="parceiro">−30% adesão</x-etiqueta>
                     <x-etiqueta tom="parceiro">Desconto parceiro</x-etiqueta>
                     <x-etiqueta tom="neutro">Sem aluguel</x-etiqueta>
                 </div>
@@ -267,7 +268,7 @@
 
                     <x-slot:acoes>
                         <x-botao href="https://exemplo.test" afiliado>Ver oferta</x-botao>
-                        <x-etiqueta tom="economia" class="self-center">−30% adesão</x-etiqueta>
+                        <x-etiqueta tom="parceiro" class="self-center">−30% adesão</x-etiqueta>
                     </x-slot:acoes>
                 </x-cartao-marca>
 

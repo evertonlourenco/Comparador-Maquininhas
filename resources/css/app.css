@@ -38,9 +38,10 @@
     color-scheme: light;
 
     /* Papel e o cartao; superficie e o fundo da pagina e a faixa dentro do
-       cartao. O manual chama de "Fundo" o #F6F7F9. */
+       cartao. O manual chama de "Fundo" o #F6F7F9; a etapa 20 (bloco E)
+       acinzentou um degrau para o cartao branco saltar do fundo. */
     --cor-papel: #ffffff;
-    --cor-superficie: #f6f7f9;
+    --cor-superficie: #eef1f5;
     --cor-superficie-forte: #e4e7ec;
 
     --cor-tinta: #18264b;
@@ -62,6 +63,9 @@
     --cor-acao-fundo: #e8f5f1;
     --cor-acao-vivo: #009c82;
     --cor-sobre-acao: #ffffff;
+    /* Hover do botao principal: escurece em vez de lavar (a opacidade 90%
+       deixava o verde mais claro e o texto branco com menos contraste). */
+    --cor-acao-forte: #005a4b;
 
     --cor-aferido: #18264b;
     --cor-aferido-fundo: #edf0f7;
@@ -75,6 +79,13 @@
 
     --cor-link: #18264b;
     --cor-foco: #18264b;
+
+    /* Sombras em camadas (etapa 20, bloco E): uma curta e nitida que assenta
+       o cartao no fundo, uma longa e difusa que da a altura. Tingidas de navy,
+       nao de preto, para nao sujar o cinza-azulado do fundo. */
+    --sombra-cartao: 0 1px 2px rgb(24 38 75 / 0.06), 0 4px 14px -4px rgb(24 38 75 / 0.14);
+    --sombra-cartao-elevado: 0 4px 8px -2px rgb(24 38 75 / 0.08), 0 18px 40px -12px rgb(24 38 75 / 0.30);
+    --sombra-botao: 0 1px 2px rgb(24 38 75 / 0.14), 0 2px 6px -2px rgb(24 38 75 / 0.18);
 }
 
 /* Sem JavaScript nao ha atributo, entao a preferencia do sistema ainda vale.
@@ -105,6 +116,7 @@
         --cor-acao-fundo: #0f2b29;
         --cor-acao-vivo: #2bb39a;
         --cor-sobre-acao: #06201b;
+        --cor-acao-forte: #7ddcc9;
 
         --cor-aferido: #c5d0ea;
         --cor-aferido-fundo: #1c2742;
@@ -117,6 +129,10 @@
 
         --cor-link: #a9c1f0;
         --cor-foco: #a9c1f0;
+
+        --sombra-cartao: 0 1px 2px rgb(0 0 0 / 0.35), 0 4px 12px -4px rgb(0 0 0 / 0.4);
+        --sombra-cartao-elevado: 0 2px 4px rgb(0 0 0 / 0.4), 0 16px 36px -10px rgb(0 0 0 / 0.6);
+        --sombra-botao: 0 1px 2px rgb(0 0 0 / 0.4), 0 2px 6px -2px rgb(0 0 0 / 0.45);
     }
 }
 
@@ -142,6 +158,7 @@
     --cor-acao-fundo: #0f2b29;
     --cor-acao-vivo: #2bb39a;
     --cor-sobre-acao: #06201b;
+    --cor-acao-forte: #7ddcc9;
 
     --cor-aferido: #c5d0ea;
     --cor-aferido-fundo: #1c2742;
@@ -154,6 +171,10 @@
 
     --cor-link: #a9c1f0;
     --cor-foco: #a9c1f0;
+
+    --sombra-cartao: 0 1px 2px rgb(0 0 0 / 0.35), 0 4px 12px -4px rgb(0 0 0 / 0.4);
+    --sombra-cartao-elevado: 0 2px 4px rgb(0 0 0 / 0.4), 0 16px 36px -10px rgb(0 0 0 / 0.6);
+    --sombra-botao: 0 1px 2px rgb(0 0 0 / 0.4), 0 2px 6px -2px rgb(0 0 0 / 0.45);
 }
 
 @theme inline {
@@ -179,6 +200,7 @@
     --color-acao-fundo: var(--cor-acao-fundo);
     --color-acao-vivo: var(--cor-acao-vivo);
     --color-sobre-acao: var(--cor-sobre-acao);
+    --color-acao-forte: var(--cor-acao-forte);
     --color-aferido: var(--cor-aferido);
     --color-aferido-fundo: var(--cor-aferido-fundo);
     --color-reportado: var(--cor-reportado);
@@ -188,10 +210,16 @@
     --color-link: var(--cor-link);
     --color-foco: var(--cor-foco);
 
-    /* Tres raios, os do manual: selo 4px, botao e campo 6px, cartao 10px. */
+    /* Tres raios. O manual pedia selo 4px, botao e campo 6px, cartao 10px;
+       a etapa 20 (bloco E) arredondou botao/campo para 10px e cartao para
+       12px — o selo continua 4px, e etiqueta, nao controle. */
     --radius-selo: 4px;
-    --radius-botao: 6px;
-    --radius-bloco: 10px;
+    --radius-botao: 10px;
+    --radius-bloco: 12px;
+
+    --shadow-cartao: var(--sombra-cartao);
+    --shadow-cartao-elevado: var(--sombra-cartao-elevado);
+    --shadow-botao: var(--sombra-botao);
 
     /* H1 do manual: Saira 700, 40–56px, -2,5%, 1,05. */
     --text-manchete: clamp(2.5rem, 2.05rem + 1.9vw, 3.5rem);
@@ -323,4 +351,22 @@
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.02em;
+}
+
+/* Cartao que sobe no hover (etapa 20, bloco E): sombra longa e 2px de
+   deslocamento, em 180ms. So em dispositivo com ponteiro de verdade — no toque
+   o :hover "gruda" depois do toque e o cartao ficaria levantado. O
+   prefers-reduced-motion do @layer base zera a transicao, nao o estado. */
+@utility elevavel {
+    box-shadow: var(--sombra-cartao);
+    transition:
+        box-shadow 180ms ease-out,
+        transform 180ms ease-out;
+
+    @media (hover: hover) {
+        &:hover {
+            box-shadow: var(--sombra-cartao-elevado);
+            transform: translateY(-2px);
+        }
+    }
 }

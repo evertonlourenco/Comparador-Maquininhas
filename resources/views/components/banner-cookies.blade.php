@@ -25,7 +25,7 @@
             <button type="button" data-cookies-recusar class="min-h-12 rounded-botao border-[1.5px] border-tinta px-5 font-titulo text-[0.9375rem] font-semibold text-tinta hover:bg-superficie">
                 Recusar
             </button>
-            <button type="button" data-cookies-aceitar class="min-h-12 rounded-botao border-[1.5px] border-tinta bg-tinta px-5 font-titulo text-[0.9375rem] font-semibold text-papel hover:opacity-90">
+            <button type="button" data-cookies-aceitar class="min-h-12 rounded-botao border-[1.5px] border-tinta bg-tinta px-5 font-titulo text-[0.9375rem] font-semibold text-papel transition-opacity hover:opacity-90">
                 Aceitar
             </button>
         </div>
