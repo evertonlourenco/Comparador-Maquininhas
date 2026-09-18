@@ -503,7 +503,9 @@
                                         </div>
                                         <div class="min-w-0">
                                             <h4 class="text-cartao" x-text="item.marca.nome"></h4>
-                                            <p class="mt-0.5 text-miudo text-tinta-suave" x-text="item.plano ? item.plano.nome : ''"></p>
+                                            <template x-if="item.plano">
+                                                <p class="mt-0.5 text-miudo text-tinta-suave">Plano: <span x-text="item.plano.nome"></span></p>
+                                            </template>
                                         </div>
                                     </div>
                                     <div class="flex flex-wrap items-center gap-2">
@@ -607,8 +609,14 @@
                     <template x-for="linha in linhasDaTabelaDeTaxas" :key="linha.rotulo">
                         <div class="overflow-hidden rounded-bloco border border-regua bg-papel shadow-cartao">
                             <div class="flex items-stretch overflow-x-auto">
-                                <div class="sticky left-0 z-10 flex min-w-[7rem] shrink-0 items-center border-e border-regua bg-superficie px-3 py-3">
-                                    <span class="text-sm font-medium text-tinta" x-text="linha.rotulo"></span>
+                                {{-- Largura fixa, nao min-w: sem isso cada linha crescia so o
+                                     necessario para o proprio rotulo ("Pix" vs "Crédito à
+                                     vista — Visa e Mastercard"), e as caixas de marca comecavam
+                                     em posicoes diferentes em cada linha — o "alinhamento
+                                     bagunçado" que o Everton reportou. Largura igual em toda
+                                     linha faz as colunas baterem de cima a baixo, como tabela. --}}
+                                <div class="sticky left-0 z-10 flex w-32 shrink-0 items-center border-e border-regua bg-superficie px-3 py-3 sm:w-48">
+                                    <span class="text-sm font-medium leading-tight text-tinta" x-text="linha.rotulo"></span>
                                 </div>
 
                                 <template x-for="(posicao, indice) in linha.posicoes" :key="posicao.item.marca.slug + '-' + (posicao.item.plano ? posicao.item.plano.id : 0)">
@@ -776,6 +784,130 @@
 
                     <div class="border-t border-regua px-5 py-4">
                         <x-botao variante="secundaria" x-on:click="fecharModalPromocao()">Fechar</x-botao>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        {{-- O modal "Ver todas as taxas" (revisao pos-lancamento): o cartao so
+             destaca debito e credito 1x; aqui vai a tabela completa do plano —
+             parcelado, Pix, todo prazo publicado. Quando a marca tem mais de
+             um plano, um seletor no topo deixa trocar entre eles sem fechar o
+             modal. Mesmo padrao de fechamento do modal de promocao (etapa 20):
+             click.self no fundo, nao click.outside no painel. --}}
+        <template x-if="taxasAbertas && marcaDasTaxasAbertas && planoDasTaxasAbertas">
+            <div
+                class="fixed inset-0 z-50 flex items-end justify-center bg-tinta/60 p-0 sm:items-center sm:p-4"
+                x-on:keydown.escape.window="fecharModalTaxas()"
+                x-on:click.self="fecharModalTaxas()"
+            >
+                <div
+                    class="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-t-bloco border border-regua bg-papel shadow-xl sm:rounded-bloco"
+                    role="dialog"
+                    aria-modal="true"
+                    :aria-label="'Todas as taxas da ' + marcaDasTaxasAbertas.nome"
+                >
+                    <div class="flex items-start justify-between gap-4 border-b border-regua px-5 py-4">
+                        <div class="min-w-0">
+                            <p class="text-etiqueta font-semibold uppercase text-tinta-suave">Todas as taxas</p>
+                            <h3 class="mt-1 text-cartao" x-text="marcaDasTaxasAbertas.nome"></h3>
+                        </div>
+                        <button
+                            type="button"
+                            class="shrink-0 rounded-botao border border-contorno p-2 text-tinta-suave hover:bg-superficie"
+                            x-on:click="fecharModalTaxas()"
+                        >
+                            <svg class="size-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                                <path d="M3 3l10 10M13 3 3 13" stroke-linecap="round"/>
+                            </svg>
+                            <span class="sr-only">Fechar</span>
+                        </button>
+                    </div>
+
+                    <div class="space-y-4 px-5 py-4">
+                        {{-- O seletor so aparece quando ha o que escolher — a marca com um
+                             plano so nao ganha um <select> de opcao unica. --}}
+                        <template x-if="marcaDasTaxasAbertas.planos.length > 1">
+                            <div class="space-y-1.5">
+                                <label for="campo-plano-taxas" class="block text-sm font-medium text-tinta">Plano</label>
+                                <select
+                                    id="campo-plano-taxas"
+                                    class="block min-h-11 w-full rounded-botao border-2 border-contorno bg-superficie px-3 py-2 text-base text-tinta"
+                                    x-model.number="taxasAbertas.planoId"
+                                >
+                                    <template x-for="p in marcaDasTaxasAbertas.planos" :key="p.id">
+                                        <option :value="p.id" x-text="p.nome"></option>
+                                    </template>
+                                </select>
+                            </div>
+                        </template>
+                        <template x-if="marcaDasTaxasAbertas.planos.length <= 1">
+                            <p class="text-sm text-tinta">Plano: <span class="font-medium" x-text="planoDasTaxasAbertas.nome"></span></p>
+                        </template>
+
+                        <template x-if="gruposDeTaxasDoPlano.length === 0">
+                            <p class="rounded-bloco border border-reportado bg-reportado-fundo px-4 py-3 text-sm text-reportado">
+                                Este plano não tem taxa publicada.
+                            </p>
+                        </template>
+
+                        {{-- Uma tabela por prazo de recebimento — o mesmo par forma-de-
+                             pagamento/bandeira pode ter numero diferente em "Na hora" e
+                             "Em 1 dia útil", e misturar os dois numa tabela so confundiria. --}}
+                        <template x-for="grupo in gruposDeTaxasDoPlano" :key="grupo.nome">
+                            <div>
+                                <p class="text-etiqueta font-semibold uppercase text-tinta-suave" x-text="grupo.nome"></p>
+                                <div class="mt-2 overflow-x-auto">
+                                    <table class="w-full min-w-[20rem] border-collapse text-left text-sm">
+                                        <thead>
+                                            <tr class="border-b border-regua-forte">
+                                                <th scope="col" class="py-2 pe-3 text-etiqueta font-semibold uppercase text-tinta-suave">Forma de pagamento</th>
+                                                <th scope="col" class="py-2 ps-3 text-end text-etiqueta font-semibold uppercase text-tinta-suave">Taxa</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <template x-for="(linha, i) in grupo.linhas" :key="i">
+                                                <tr class="border-b border-regua">
+                                                    <th scope="row" class="py-2 pe-3 text-start font-normal" x-text="linha.rotulo"></th>
+                                                    <td class="numero py-2 ps-3 text-end">
+                                                        <template x-if="linha.percentual_formatado">
+                                                            <span class="inline-flex items-center justify-end gap-1.5">
+                                                                <span class="font-medium" x-text="linha.percentual_formatado"></span>
+                                                                <template x-if="linha.condicao">
+                                                                    <span class="relative" x-data="{ aberta: false }" x-on:mouseenter="aberta = true" x-on:mouseleave="aberta = false" x-on:click.outside="aberta = false" x-on:keydown.escape="aberta = false">
+                                                                        <button
+                                                                            type="button"
+                                                                            class="inline-flex size-4 items-center justify-center rounded-full border border-contorno text-[0.65rem] font-semibold leading-none text-tinta-suave hover:border-link hover:text-link"
+                                                                            x-on:click="aberta = true"
+                                                                            x-bind:aria-expanded="aberta"
+                                                                            aria-label="Condição desta taxa"
+                                                                        >?</button>
+                                                                        <span
+                                                                            x-cloak
+                                                                            x-show="aberta"
+                                                                            role="tooltip"
+                                                                            class="absolute bottom-full right-0 z-10 mb-2 w-56 rounded-botao border border-regua bg-papel px-3 py-2 text-start font-sans text-miudo text-tinta shadow-lg"
+                                                                            x-text="linha.condicao"
+                                                                        ></span>
+                                                                    </span>
+                                                                </template>
+                                                            </span>
+                                                        </template>
+                                                        <template x-if="! linha.percentual_formatado">
+                                                            <span class="text-tinta-suave">não publicada</span>
+                                                        </template>
+                                                    </td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <div class="border-t border-regua px-5 py-4">
+                        <x-botao variante="secundaria" x-on:click="fecharModalTaxas()">Fechar</x-botao>
                     </div>
                 </div>
             </div>

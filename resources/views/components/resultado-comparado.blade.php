@@ -85,13 +85,12 @@
 
                         <div class="min-w-0 flex-1">
                             <h4 class="text-cartao" x-text="item.marca.nome"></h4>
-                            <p class="mt-0.5 text-miudo text-tinta-suave">
-                                <span x-text="item.plano ? item.plano.nome : ''"></span>
-                                <template x-if="item.marca.adquirente">
-                                    {{-- Regra 7: adquirente e transparencia, nunca deduplicacao. --}}
-                                    <span> · processa com <span class="text-tinta" x-text="item.marca.adquirente.nome"></span></span>
-                                </template>
-                            </p>
+                            {{-- O adquirente saiu daqui (revisao pos-lancamento, pedido do
+                                 Everton): nao e relevante para o cliente decidir por aqui,
+                                 fica so na pagina da marca. --}}
+                            <template x-if="item.plano">
+                                <p class="mt-0.5 text-miudo text-tinta-suave">Plano: <span x-text="item.plano.nome"></span></p>
+                            </template>
                         </div>
 
                         <div class="flex w-full flex-wrap items-center gap-2 sm:w-auto">
@@ -129,9 +128,13 @@
                          dentro de "Ver simulação". A condicao (Pix a 0% com a
                          chave ativada, por exemplo) continua no mesmo "?" que
                          a tabela detalhada ja usava. --}}
+                    {{-- Revisao pos-lancamento: so debito e credito 1x aparecem aqui —
+                         os numeros que decidem a comparacao a primeira vista. O resto
+                         (parcelado, Pix, outros planos/prazos da marca) vai para o
+                         modal "Ver todas as taxas", ao lado. --}}
                     <div class="flex flex-wrap items-center gap-2 border-b border-regua px-4 py-3">
-                        <template x-for="(linha, i) in item.vendas.filter((l) => ! l.falta)" :key="i">
-                            <span class="inline-flex items-center gap-1.5 rounded-full border border-regua bg-superficie px-2.5 py-1 text-miudo text-tinta">
+                        <template x-for="(linha, i) in item.vendas.filter((l) => ! l.falta && ['debito', 'credito_avista'].includes(l.venda.tipo_operacao))" :key="i">
+                            <span class="inline-flex items-center gap-1.5 rounded-full border-2 border-tinta bg-superficie px-2.5 py-1 text-miudo text-tinta">
                                 <span x-text="rotuloCurtoDaVenda(linha.venda)"></span>
                                 <span class="numero font-semibold" x-text="linha.percentual_formatado"></span>
                                 <template x-if="linha.condicao">
@@ -154,25 +157,30 @@
                                 </template>
                             </span>
                         </template>
+
+                        <button
+                            type="button"
+                            class="inline-flex min-h-8 items-center rounded-full border border-contorno px-3 text-miudo font-medium text-tinta hover:bg-superficie-forte"
+                            x-on:click="abrirModalTaxas(item)"
+                        >Ver todas as taxas</button>
                     </div>
 
-                    {{-- Dois numeros so (decisao do Everton, 18/09/2026): sem
-                         "sobra no mes", sem "taxa efetiva combinada" (mistura
-                         adesao e mensalidade no percentual — a confusao que
-                         ele apontou). item.formatado.vendas e
-                         taxa_efetiva_das_vendas vem da mesma conta
-                         (custos.vendas), entao os dois numeros combinam. --}}
-                    <dl class="grid grid-cols-2 gap-x-6 gap-y-4 border-b border-regua px-4 py-4">
+                    {{-- Um numero so (revisao pos-lancamento: "Taxa média" saiu —
+                         confundia, o usuario nao entendia de onde vinha). O custo
+                         mensal vem colado ao faturamento simulado, para ficar claro
+                         de onde ele saiu, e "Ver simulação" mora logo abaixo, para
+                         quem quiser abrir a conta. --}}
+                    <div class="space-y-3 border-b border-regua px-4 py-4">
                         <div>
-                            <dt class="text-etiqueta font-semibold uppercase text-tinta-suave">Custo mensal em taxas</dt>
-                            <dd class="numero-destaque mt-1 text-numero" x-text="item.formatado.vendas"></dd>
+                            <p class="text-etiqueta font-semibold uppercase text-tinta-suave">Custo mensal em taxas</p>
+                            <p class="numero-destaque mt-1 text-numero" x-text="item.formatado.vendas"></p>
+                            <p class="mt-1 text-miudo text-tinta-suave">
+                                Para <span class="numero font-medium text-tinta" x-text="real(faturamento)"></span> em vendas na maquininha por mês
+                            </p>
                         </div>
 
-                        <div>
-                            <dt class="text-etiqueta font-semibold uppercase text-tinta-suave">Taxa média</dt>
-                            <dd class="numero-destaque mt-1 text-numero" x-text="campoTexto(item, 'taxa_efetiva_das_vendas') ?? '—'"></dd>
-                        </div>
-                    </dl>
+                        <x-detalhe-do-resultado />
+                    </div>
 
                     {{-- Motivo, sucessor, o que falta e avisos — um bloco so, nao
                          quatro barras empilhadas (revisao de layout, etapa 19: o
@@ -276,25 +284,6 @@
                         <template x-if="! temCupomParaContratar(item)">
                             <p class="text-miudo text-tinta-suave">Sem parceria com esta marca — link direto para o site oficial.</p>
                         </template>
-                    </div>
-
-                    <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3">
-                        <x-detalhe-do-resultado />
-
-                        {{-- Regra 8: o selo de frescor viaja no resultado e e
-                             recalculado contra hoje, nao contra o dia em que o
-                             JSON nasceu. --}}
-                        <p class="text-miudo" :class="item.frescor.nivel === 'fresca' ? 'font-medium text-aferido' : (item.frescor.nivel === 'desatualizada' ? 'text-reportado' : 'text-tinta-suave')">
-                            <template x-if="item.frescor.nivel === 'sem_data'"><span>Sem data de verificação</span></template>
-                            <template x-if="item.frescor.nivel !== 'sem_data'">
-                                <span>
-                                    Verificada em <span class="numero" x-text="item.formatado.frescor.data_verificacao"></span>
-                                    <template x-if="item.frescor.nivel === 'desatualizada'">
-                                        <span> — há <span class="numero" x-text="item.frescor.dias"></span> dias</span>
-                                    </template>
-                                </span>
-                            </template>
-                        </p>
                     </div>
                 </article>
             </li>

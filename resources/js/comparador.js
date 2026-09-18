@@ -45,6 +45,9 @@ const VISA_MASTER_PADRAO = 100;
  */
 const ORDEM_PARCEIROS = ['ton', 'mercado-pago', 'facilitypay', 'sidepay', 'trincapay', 'yelly', 'pagbank'];
 
+/** Ordem de exibicao das formas de pagamento no modal "Ver todas as taxas". */
+const ORDEM_TIPO_OPERACAO = { debito: 0, credito_avista: 1, credito_parcelado: 2, pix: 3 };
+
 function estadoInicial() {
   const segmento = SEGMENTOS[SEGMENTO_PADRAO];
 
@@ -109,6 +112,10 @@ function comparador(caminhoDoJson) {
     detalhesMixAbertos: false,
     // Slug da marca cujo modal de promocao esta aberto, ou null.
     promocaoAberta: null,
+    // { marcaSlug, planoId } do modal "Ver todas as taxas", ou null. O plano
+    // comeca no do cartao que abriu o modal, mas o seletor pode trocar para
+    // qualquer outro plano da mesma marca.
+    taxasAbertas: null,
     // Etapa 20 (bloco C): a segunda visualizacao do resultado, so alterna a
     // tela — nao muda cenario nem entra na URL.
     visualizacaoResultado: 'cartoes',
@@ -620,6 +627,82 @@ function comparador(caminhoDoJson) {
         });
     },
 
+    /**
+     * Etapa 20 (revisao pos-lancamento): o botao "Ver todas as taxas" do
+     * cartao abre este modal com a tabela completa do plano — inclusive as
+     * formas de pagamento que o chip do cartao nao mostra (parcelado, Pix).
+     */
+    abrirModalTaxas(item) {
+      this.taxasAbertas = { marcaSlug: item.marca.slug, planoId: item.plano ? item.plano.id : null };
+    },
+
+    fecharModalTaxas() {
+      this.taxasAbertas = null;
+    },
+
+    get marcaDasTaxasAbertas() {
+      if (this.taxasAbertas === null) {
+        return null;
+      }
+
+      return this.catalogo?.marcas.find((marca) => marca.slug === this.taxasAbertas.marcaSlug) ?? null;
+    },
+
+    /** O plano comeca no do cartao; `marca.planos[0]` cobre o caso raro de o id nao bater mais. */
+    get planoDasTaxasAbertas() {
+      const marca = this.marcaDasTaxasAbertas;
+
+      if (marca === null) {
+        return null;
+      }
+
+      return marca.planos.find((plano) => plano.id === this.taxasAbertas.planoId) ?? marca.planos[0] ?? null;
+    },
+
+    /**
+     * A tabela completa do plano aberto, agrupada por prazo de recebimento —
+     * um plano pode publicar o mesmo par forma-de-pagamento em mais de um
+     * prazo (etapa 04/05), e o modal precisa mostrar os dois, nao so o mais
+     * barato que o cartao usa no calculo.
+     */
+    get gruposDeTaxasDoPlano() {
+      const plano = this.planoDasTaxasAbertas;
+
+      if (plano === null) {
+        return [];
+      }
+
+      const porPrazo = new Map();
+
+      for (const taxa of plano.taxas) {
+        if (! porPrazo.has(taxa.prazo)) {
+          porPrazo.set(taxa.prazo, []);
+        }
+
+        porPrazo.get(taxa.prazo).push(taxa);
+      }
+
+      const prazos = this.catalogo?.prazos ?? {};
+
+      return [...porPrazo.entries()]
+        .sort(([a], [b]) => (prazos[a]?.ordem ?? 0) - (prazos[b]?.ordem ?? 0))
+        .map(([codigo, taxas]) => ({
+          nome: this.nomeDoPrazo(codigo),
+          linhas: [...taxas]
+            .sort(
+              (a, b) =>
+                (ORDEM_TIPO_OPERACAO[a.tipo_operacao] ?? 9) - (ORDEM_TIPO_OPERACAO[b.tipo_operacao] ?? 9) ||
+                a.parcelas - b.parcelas ||
+                this.nomeDoGrupo(a.grupo).localeCompare(this.nomeDoGrupo(b.grupo)),
+            )
+            .map((taxa) => ({
+              rotulo: this.rotuloDaVenda({ tipo_operacao: taxa.tipo_operacao, parcelas: taxa.parcelas, grupo: taxa.grupo }),
+              percentual_formatado: taxa.percentual === null ? null : percentual(Number(taxa.percentual)),
+              condicao: taxa.condicao,
+            })),
+        }));
+    },
+
     get temAlgumResultado() {
       return this.resultado !== null && this.resultado.itens.length > 0;
     },
@@ -757,7 +840,7 @@ function comparador(caminhoDoJson) {
         return `${venda.parcelas}x`;
       }
 
-      return { debito: 'Débito', credito_avista: 'Crédito', pix: 'Pix' }[venda.tipo_operacao] ?? venda.tipo_operacao;
+      return { debito: 'Débito', credito_avista: 'Crédito 1x', pix: 'Pix' }[venda.tipo_operacao] ?? venda.tipo_operacao;
     },
 
     /** O item de menor custo do bloco calculado — o CTA fixo do celular usa este. */
