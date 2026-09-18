@@ -539,6 +539,32 @@
             </template>
         </section>
 
+        {{-- Espaçador: some junto com a barra fixa abaixo (mesma condição),
+             pra ela não tampar o rodapé da página no celular. --}}
+        <div class="h-20 sm:hidden" x-show="melhorItem" x-cloak></div>
+
+        {{-- CTA fixo no celular (etapa 20, bloco B): o 1º colocado sempre a
+             um toque, mesmo depois de rolar o resultado inteiro. Só aparece
+             com o bloco ranqueado resolvido — sem isso não há "1º colocado". --}}
+        <template x-if="melhorItem">
+            <div class="fixed inset-x-0 bottom-0 z-40 border-t border-regua bg-papel px-4 py-3 shadow-lg sm:hidden" x-cloak>
+                <div class="flex items-center gap-3">
+                    <div class="min-w-0 flex-1">
+                        <p class="truncate text-miudo text-tinta-suave" x-text="melhorItem.marca.nome"></p>
+                        <p class="numero-destaque truncate text-base text-tinta" x-text="campoTexto(melhorItem, 'custo_mensal_recorrente') + '/mês'"></p>
+                    </div>
+                    <a
+                        class="inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-botao border-[1.5px] border-acao bg-acao px-4 text-center font-titulo text-sm font-semibold leading-tight text-sobre-acao"
+                        target="_blank"
+                        x-bind:href="hrefContratar(melhorItem)"
+                        x-bind:rel="temCupomParaContratar(melhorItem) ? 'sponsored nofollow noopener noreferrer' : 'noopener noreferrer'"
+                        x-on:click="registrarCliqueContratar(melhorItem)"
+                        x-text="textoContratarCurto(melhorItem)"
+                    ></a>
+                </div>
+            </div>
+        </template>
+
         {{-- O modal da tabela promocional (etapa 19). O selo no cartao do plano
              permanente abre isto; aqui e onde as taxas de entrada, o prazo de
              validade e o plano sucessor aparecem — nunca no cartao principal,
@@ -586,23 +612,51 @@
                             <span x-text="itemDaPromocaoAberta.motivo"></span>
                             <template x-if="itemDaPromocaoAberta.promocao && itemDaPromocaoAberta.promocao.sucessor">
                                 <span>
-                                    Depois, a conta passa para o plano
-                                    <strong x-text="itemDaPromocaoAberta.promocao.sucessor.nome"></strong> — essa é a
-                                    taxa que efetivamente fica.
+                                    Depois do período, as taxas passam para as regulares do plano
+                                    <strong x-text="itemDaPromocaoAberta.promocao.sucessor.nome"></strong>.
                                 </span>
                             </template>
                         </p>
 
+                        {{-- Etapa 20 (bloco B): regras de elegibilidade — o
+                             texto que o motor ja associa ao enquadramento
+                             promocional do plano (regra 6: nada alem do que
+                             o dado sustenta). --}}
+                        <template x-if="itemDaPromocaoAberta.enquadramento && itemDaPromocaoAberta.enquadramento.aviso">
+                            <p class="text-sm text-tinta-suave" x-text="itemDaPromocaoAberta.enquadramento.aviso"></p>
+                        </template>
+
+                        {{-- Promocional x regular, lado a lado — a mesma linha
+                             de venda pareada com a taxa que fica depois do
+                             periodo, quando a marca tem plano permanente no
+                             cenario. Sem ele (promocao orfa), so a coluna
+                             promocional aparece. --}}
                         <div>
                             <p class="text-etiqueta font-semibold uppercase text-tinta-suave">Taxas desta tabela de entrada</p>
-                            <ul class="mt-2 divide-y divide-regua">
-                                <template x-for="(linha, i) in itemDaPromocaoAberta.vendas" :key="i">
-                                    <li class="flex items-center justify-between gap-3 py-2 text-sm">
-                                        <span x-text="rotuloDaVenda(linha.venda)"></span>
-                                        <span class="numero font-medium text-tinta" x-text="linha.percentual_formatado ?? 'não publicada'"></span>
-                                    </li>
-                                </template>
-                            </ul>
+                            <div class="mt-2 overflow-x-auto">
+                                <table class="w-full min-w-[24rem] border-collapse text-left text-sm">
+                                    <thead>
+                                        <tr class="border-b border-regua-forte">
+                                            <th scope="col" class="py-2 pe-3 text-etiqueta font-semibold uppercase text-tinta-suave">Forma de pagamento</th>
+                                            <th scope="col" class="py-2 px-3 text-end text-etiqueta font-semibold uppercase text-reportado">Promocional</th>
+                                            <template x-if="itemPermanenteDaMarca(itemDaPromocaoAberta.marca.slug)">
+                                                <th scope="col" class="py-2 ps-3 text-end text-etiqueta font-semibold uppercase text-tinta-suave">Regular depois</th>
+                                            </template>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <template x-for="(linha, i) in linhasComparadasDaPromocao(itemDaPromocaoAberta)" :key="i">
+                                            <tr class="border-b border-regua">
+                                                <th scope="row" class="py-2 pe-3 text-start font-normal" x-text="linha.rotulo"></th>
+                                                <td class="numero py-2 px-3 text-end font-medium text-reportado" x-text="linha.promocional"></td>
+                                                <template x-if="linha.regular !== null">
+                                                    <td class="numero py-2 ps-3 text-end text-tinta" x-text="linha.regular"></td>
+                                                </template>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
 
                         <template x-if="itemDaPromocaoAberta.comparacao && itemDaPromocaoAberta.comparacao.custo_inicial">

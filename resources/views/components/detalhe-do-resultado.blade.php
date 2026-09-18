@@ -1,10 +1,15 @@
 {{--
-    A conta aberta de um item do resultado, dentro de um <details>.
+    A simulacao de um item do resultado, dentro de um <details>.
 
     Ela fica fechada porque a tela responde primeiro a "quanto custa" — mas
     fica a um clique porque um comparador que nao mostra a conta e um
     comparador em que se acredita, e a regra 6 existe justamente para o
     contrario disso.
+
+    Etapa 20 (bloco B), simplificacao pedida pelo Everton: so a tabela de
+    linhas de venda — sem data (o selo de frescor ja fica no rodape do
+    cartao), sem adesao (tem bloco proprio, junto do CTA) e sem "prazos
+    usados" (ja tinha saido da tela publica no bloco A).
 
     Serve as duas classes de dado (regra 4): a linha imprime percentual unico
     quando ele foi publicado pela marca, e as tres pontas com o numero de
@@ -16,7 +21,7 @@
 --}}
 <details class="min-w-0 flex-1">
     <summary class="inline-flex min-h-11 cursor-pointer items-center text-sm text-link underline underline-offset-4 hover:no-underline">
-        Ver a conta aberta
+        Ver simulação
     </summary>
 
     <div class="mt-3 space-y-4">
@@ -109,35 +114,5 @@
                 </tbody>
             </table>
         </div>
-
-        {{-- Custo da conta: so mensalidade (etapa 19, 17/09/2026 — saque, TED
-             e Pix da conta digital saíram do escopo do Máquina Certa, que
-             compara só custo direto de operar a maquininha). Tarifa nao
-             usada nao vira linha de zero. --}}
-        <template x-if="Object.keys(item.conta).length > 0">
-            <dl class="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
-                <template x-for="[chave, valor] in Object.entries(item.conta)" :key="chave">
-                    <div class="flex justify-between gap-3 border-b border-regua py-1">
-                        <dt class="text-tinta-suave" x-text="({ mensalidade: 'Mensalidade do plano' })[chave] ?? chave"></dt>
-                        <dd class="numero" x-text="real(valor)"></dd>
-                    </div>
-                </template>
-            </dl>
-        </template>
-
-        {{-- A adesao cheia anda junto da amortizada porque 12 x R$ 16,58 nao da
-             R$ 199,00: o arredondamento ao centavo nao pode esconder a conta. --}}
-        <template x-if="item.adesao && item.adesao.vigente !== null">
-            <p class="text-miudo text-tinta-suave">
-                Aparelho <span class="font-medium text-tinta" x-text="item.equipamento ? item.equipamento.nome : ''"></span>:
-                adesão de <span class="numero" x-text="item.formatado.adesao.valor_final"></span>,
-                diluída em <span class="numero" x-text="item.horizonte_meses"></span> meses
-                = <span class="numero" x-text="item.formatado.adesao.por_mes"></span> por mês.
-                <template x-if="item.equipamento && item.equipamento.aluguel_mensal > 0">
-                    <span>Aluguel de <span class="numero" x-text="real(item.equipamento.aluguel_mensal)"></span> por mês.</span>
-                </template>
-            </p>
-        </template>
-
     </div>
 </details>

@@ -383,10 +383,58 @@ function comparador(caminhoDoJson) {
       return 'acima_de_50_mil';
     },
 
-    /** O clique no cupom dentro do resultado — vai para /cupom/{slug}, pagina nossa. */
-    registrarCliqueCupom(item) {
-      window.gtag?.('event', 'clique_cupom', {
+    /**
+     * Etapa 20 (bloco B): a marca tem cupom com desconto real aplicado a
+     * este item? A mesma checagem que ja decide "Sem cupom disponível hoje"
+     * no custo inicial (regra 5) - reaproveitada aqui para decidir entre o
+     * CTA "Contratar com desconto" (via /ir/, rastreado) e "Ir para o site
+     * da marca" (direto, sem parceria a rastrear).
+     */
+    temCupomParaContratar(item) {
+      return Boolean(item.comparacao?.custo_inicial?.tem_cupom && item.cupom);
+    },
+
+    textoContratar(item) {
+      if (! this.temCupomParaContratar(item)) {
+        return `Ir para o site da ${item.marca.nome}`;
+      }
+
+      const cupom = item.cupom;
+
+      if (cupom.tipo_desconto === 'percentual' && cupom.valor !== null) {
+        return `Contratar com ${percentual(Number(cupom.valor))} de desconto`;
+      }
+
+      return 'Contratar com desconto';
+    },
+
+    /** A versao curta do texto, para a barra fixa do celular — sem espaço para a frase inteira. */
+    textoContratarCurto(item) {
+      return this.temCupomParaContratar(item) ? 'Contratar' : `Ir para ${item.marca.nome}`;
+    },
+
+    hrefContratar(item) {
+      if (! this.temCupomParaContratar(item)) {
+        return item.marca.site_url;
+      }
+
+      return `/ir/${item.marca.slug}?origem=comparador&cupom=${encodeURIComponent(item.cupom.codigo)}`;
+    },
+
+    /**
+     * O evento de GA4 do clique de saida (a rota /ir/ ja grava o clique de
+     * verdade em eventos_cupom, do lado do servidor - isto e so o espelho no
+     * GA4, no mesmo nome que o resto do site ja usa para saida de afiliado).
+     * Sem cupom nao ha o que rastrear: e navegacao direta para o site oficial.
+     */
+    registrarCliqueContratar(item) {
+      if (! this.temCupomParaContratar(item)) {
+        return;
+      }
+
+      window.gtag?.('event', 'clique_afiliado', {
         marca: item.marca.slug,
+        cupom: item.cupom.codigo,
         pagina_origem: 'comparador',
       });
     },
@@ -520,6 +568,44 @@ function comparador(caminhoDoJson) {
       return this.promocaoAberta === null ? null : this.promocaoDaMarca(this.promocaoAberta);
     },
 
+    /** O plano permanente desta marca no resultado de hoje, se houver. */
+    itemPermanenteDaMarca(slug) {
+      return this.resultado?.itens.find((item) => item.marca.slug === slug && item.estado !== 'promocional') ?? null;
+    },
+
+    /**
+     * Etapa 20 (bloco B): a tabela promocional x regular do modal — cada
+     * linha da tabela de entrada pareada com a mesma linha (forma de
+     * pagamento, grupo de bandeiras, parcelas) do plano permanente da marca.
+     * Sem plano permanente no cenario (a excecao das promocionais orfas), a
+     * coluna regular fica nula — nunca um numero inventado.
+     */
+    linhasComparadasDaPromocao(promo) {
+      if (! promo) {
+        return [];
+      }
+
+      const permanente = this.itemPermanenteDaMarca(promo.marca.slug);
+
+      return promo.vendas
+        .filter((linha) => ! linha.falta)
+        .map((linha) => {
+          const par = permanente?.vendas.find(
+            (outra) =>
+              ! outra.falta &&
+              outra.venda.tipo_operacao === linha.venda.tipo_operacao &&
+              outra.venda.parcelas === linha.venda.parcelas &&
+              outra.venda.grupo === linha.venda.grupo,
+          );
+
+          return {
+            rotulo: this.rotuloDaVenda(linha.venda),
+            promocional: linha.percentual_formatado ?? 'não publicada',
+            regular: permanente ? (par?.percentual_formatado ?? 'não publicada') : null,
+          };
+        });
+    },
+
     get temAlgumResultado() {
       return this.resultado !== null && this.resultado.itens.length > 0;
     },
@@ -639,6 +725,25 @@ function comparador(caminhoDoJson) {
       const base = nomes[venda.tipo_operacao] ?? venda.tipo_operacao;
 
       return venda.tipo_operacao === 'pix' ? base : `${base} — ${this.nomeDoGrupo(venda.grupo)}`;
+    },
+
+    /**
+     * Etapa 20 (bloco B): o rotulo do chip de forma de pagamento no cartao —
+     * curto de proposito ("Débito", "3x", "Pix"), sem o grupo de bandeiras
+     * que rotuloDaVenda() carrega para a tabela detalhada. O grupo continua
+     * disponivel em "Ver simulação" para quem quiser a conta aberta.
+     */
+    rotuloCurtoDaVenda(venda) {
+      if (venda.tipo_operacao === 'credito_parcelado') {
+        return `${venda.parcelas}x`;
+      }
+
+      return { debito: 'Débito', credito_avista: 'Crédito', pix: 'Pix' }[venda.tipo_operacao] ?? venda.tipo_operacao;
+    },
+
+    /** O item de menor custo do bloco calculado — o CTA fixo do celular usa este. */
+    get melhorItem() {
+      return this.itensNoEstado('calculado')[0] ?? null;
     },
 
     real,

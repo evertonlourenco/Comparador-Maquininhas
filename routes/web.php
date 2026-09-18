@@ -6,6 +6,7 @@ use App\Http\Controllers\EventoCupomController;
 use App\Http\Controllers\MarcaController;
 use App\Http\Controllers\PropostaController;
 use App\Http\Controllers\RelatoTaxaIncorretoController;
+use App\Http\Controllers\SaidaMarcaController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Middleware\SiteEmBreve;
 use Illuminate\Support\Facades\Route;
@@ -29,6 +30,11 @@ Route::get('/', ComparadorController::class)->name('comparador');
 // Etapa 08: listagem de marcas e a pagina individual de cada uma.
 Route::get('/maquininhas', [MarcaController::class, 'index'])->name('maquininhas.index');
 Route::get('/maquininha/{marca}', [MarcaController::class, 'show'])->name('maquininhas.show');
+
+// Etapa 20 (bloco B): rota propria de saida do CTA "Contratar com desconto"
+// do cartao do comparador — grava o clique e redireciona para o link de
+// afiliado (ou para o site oficial, quando a marca nao tem cupom vigente).
+Route::get('/ir/{marca}', SaidaMarcaController::class)->name('marcas.ir');
 
 // Etapa 09: a área de cupons e o rastreamento de clique/cópia.
 Route::get('/cupons', [CupomController::class, 'index'])->name('cupons.index');

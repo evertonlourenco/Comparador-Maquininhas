@@ -341,7 +341,8 @@ O bug do modal promocional (bloco B) foi resolvido junto.
 3. Avisos técnicos marcados como internos, fora do cartão público.
 4. Ranking sem adesão diluída.
 
-**B. Cartão de resultado enxuto**
+**B. Cartão de resultado enxuto** — **concluído em 18/09/2026**, ver
+`CLAUDE.md`, "Resultado que vende (etapa 20)", bloco B.
 - Cabeçalho: posição, logo, nome, plano. Selo "Menor taxa" no primeiro.
 - Dois números só: **custo mensal em taxas** e **taxa média**. Sem "sobra no
   mês", sem "taxa efetiva combinada" (a combinada mistura adesão e

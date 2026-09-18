@@ -3979,6 +3979,69 @@ imagem; rodar `php -d memory_limit=2G vendor/bin/phpunit`.
 copiar o JSON de produção: `curl -s https://maquinacerta.com.br/dados/comparador.json
 -o public/dados/comparador.json` (a pasta é ignorada pelo Git).
 
+### Bloco 2 — cartão de resultado enxuto (18/09/2026)
+
+Reforma do cartão do comparador (`resources/views/components/
+resultado-comparado.blade.php`), sem mexer no motor — bloco A já tinha
+fechado a regra de domínio. Testado no navegador local (porta 8765) contra o
+JSON real de produção (Ton, com cupom e plano promocional).
+
+**Dois números só.** `item.formatado.vendas` (o custo mensal só das taxas,
+já formatado pelo motor) e `taxa_efetiva_das_vendas` — os dois vêm da mesma
+conta (`custos.vendas`), por isso o par combina. `custo_mensal_recorrente`
+(que soma mensalidade/aluguel) continua sendo o que ordena o ranking e
+aparece no topo da página e na barra fixa do celular — só saiu do corpo do
+cartão. "Sobra no mês" e "Custo inicial" (como bloco próprio) saíram: o
+segundo virou a linha "Adesão a partir de R$ X" dentro do bloco de CTA.
+
+**Chips de forma de pagamento** (`rotuloCurtoDaVenda()` em `comparador.js`):
+rótulo curto (Débito, Crédito, `Nx`, Pix — sem o grupo de bandeiras, que
+`rotuloDaVenda()` ainda carrega para a tabela detalhada) + percentual + o
+mesmo "?" de condição que a tabela de "Ver simulação" já usava, agora também
+aqui. Duas instâncias do mesmo tooltip por cartão (chip e tabela) — código
+duplicado de propósito, componente próprio ficaria maior que o ganho.
+
+**Bloco de CTA, sem depender de `eventos_cupom` duplicado.** A rota nova
+`GET /ir/{marca}` (`App\Http\Controllers\SaidaMarcaController`) recebe o
+`codigo` do cupom **por querystring**, resolvido no JavaScript
+(`item.cupom`, já calculado pelo motor) — o controller só confere que o
+código ainda está vigente (`Cupom::vigentes()`) e grava o clique, sem
+duplicar `cupomVigente()` em PHP. Sem `cupom` na query (marca sem parceria)
+ou com um código que não bate mais, cai para `marca.site_url` sem gravar
+nada — mesmo espírito defensivo do `EventoCupomController` da etapa 09.
+`PaginaOrigemCupom` ganhou o caso `Comparador = 'comparador'` (coluna é
+`string(20)`, não `ENUM` do banco — sem migration). Botão "Copiar código"
+reusa o mecanismo já existente de `resources/js/app.js`
+(`data-copiar`/`rastrearEventoCupom`, delegado em `document`, funciona sem
+mudança nenhuma dentro do conteúdo renderizado pelo Alpine). Testes em
+`tests/Feature/Cupons/SaidaMarcaTest.php`.
+
+**"Ver simulação" (era "Ver a conta aberta") ficou só com a tabela de linhas
+de venda** — os blocos de mensalidade e de adesão amortizada saíram
+(`resources/views/components/detalhe-do-resultado.blade.php`): a adesão já
+tem linha própria no bloco de CTA, e mensalidade não tinha mais função ali
+sem ela.
+
+**Modal da promoção ganhou a tabela promocional × regular lado a lado**
+(`linhasComparadasDaPromocao()` em `comparador.js`): pareia cada linha de
+venda da tabela promocional com a mesma linha (forma de pagamento, grupo de
+bandeiras, parcelas) do **plano permanente da marca no cenário atual**
+(`itemPermanenteDaMarca()`). Sem plano permanente no cenário (a exceção das
+"promocionais órfãs" da etapa 19), a coluna regular não aparece — nunca um
+número inventado. "Regras de elegibilidade" reaproveita
+`item.enquadramento.aviso`, que o motor já calcula a partir de
+`tipo_enquadramento` (regra 6: nada além do que o dado sustenta — não existe
+campo de elegibilidade próprio por marca).
+
+**CTA fixo no celular**: barra `fixed` (`sm:hidden`) ligada a
+`melhorItem` (getter novo — o primeiro item de `itensNoEstado('calculado')`,
+que o motor já entrega ordenado). Texto do botão é uma versão curta
+(`textoContratarCurto()`, só "Contratar" ou "Ir para {marca}") — a frase
+inteira ("Contratar com 20,00% de desconto") estourava a largura em 375px e
+truncava o preço ao lado. Um `<div class="h-20 sm:hidden">` com o mesmo
+`x-show` reserva o espaço embaixo da página para a barra não tampar o
+rodapé.
+
 ## Pendente ao fim da etapa 05
 
 O motor está pronto e testado, mas ele é honesto sobre o que não sabe — e isso

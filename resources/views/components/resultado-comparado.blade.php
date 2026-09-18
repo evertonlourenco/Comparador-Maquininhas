@@ -116,81 +116,59 @@
                                     class="inline-flex min-h-8 items-center rounded-full border-[1.5px] border-reportado bg-reportado-fundo px-3 text-etiqueta font-semibold uppercase text-reportado hover:opacity-80"
                                     x-on:click="abrirModalPromocao(item.marca.slug)"
                                 >
-                                    Tem tabela de entrada por tempo limitado
+                                    Oferece taxas promocionais
                                 </button>
                             </template>
                         </div>
                     </div>
 
-                    {{-- Os quatro numeros que a etapa 07 pede, na mesma ordem em
-                         todo cartao: o que sai por mes, quanto isso da em
-                         percentual do que passa na maquininha, o que sai na
-                         adesao e o que sobra. Mobile-first: um numero por linha
-                         ate caber dois lado a lado sem quebrar o rotulo em tres. --}}
-                    <dl class="grid grid-cols-1 gap-x-6 gap-y-4 border-b border-regua px-4 py-4 min-[30rem]:grid-cols-2 md:grid-cols-4">
+                    {{-- Etapa 20 (bloco B): a taxa por forma de pagamento em
+                         chips legiveis, uma linha so — nao mais escondida
+                         dentro de "Ver simulação". A condicao (Pix a 0% com a
+                         chave ativada, por exemplo) continua no mesmo "?" que
+                         a tabela detalhada ja usava. --}}
+                    <div class="flex flex-wrap items-center gap-2 border-b border-regua px-4 py-3">
+                        <template x-for="(linha, i) in item.vendas.filter((l) => ! l.falta)" :key="i">
+                            <span class="inline-flex items-center gap-1.5 rounded-full border border-regua bg-superficie px-2.5 py-1 text-miudo text-tinta">
+                                <span x-text="rotuloCurtoDaVenda(linha.venda)"></span>
+                                <span class="numero font-semibold" x-text="linha.percentual_formatado"></span>
+                                <template x-if="linha.condicao">
+                                    <span class="relative" x-data="{ aberta: false }" x-on:mouseenter="aberta = true" x-on:mouseleave="aberta = false" x-on:click.outside="aberta = false" x-on:keydown.escape="aberta = false">
+                                        <button
+                                            type="button"
+                                            class="inline-flex size-4 items-center justify-center rounded-full border border-contorno text-[0.65rem] font-semibold leading-none text-tinta-suave hover:border-link hover:text-link"
+                                            x-on:click="aberta = true"
+                                            x-bind:aria-expanded="aberta"
+                                            aria-label="Condição desta taxa"
+                                        >?</button>
+                                        <span
+                                            x-cloak
+                                            x-show="aberta"
+                                            role="tooltip"
+                                            class="absolute bottom-full left-1/2 z-10 mb-2 w-56 -translate-x-1/2 rounded-botao border border-regua bg-papel px-3 py-2 text-start font-sans text-miudo text-tinta shadow-lg"
+                                            x-text="linha.condicao"
+                                        ></span>
+                                    </span>
+                                </template>
+                            </span>
+                        </template>
+                    </div>
+
+                    {{-- Dois numeros so (decisao do Everton, 18/09/2026): sem
+                         "sobra no mes", sem "taxa efetiva combinada" (mistura
+                         adesao e mensalidade no percentual — a confusao que
+                         ele apontou). item.formatado.vendas e
+                         taxa_efetiva_das_vendas vem da mesma conta
+                         (custos.vendas), entao os dois numeros combinam. --}}
+                    <dl class="grid grid-cols-2 gap-x-6 gap-y-4 border-b border-regua px-4 py-4">
                         <div>
-                            <dt class="text-etiqueta font-semibold uppercase text-tinta-suave">Custo mensal recorrente</dt>
-                            <dd class="numero-destaque mt-1 text-numero" x-text="campoTexto(item, 'custo_mensal_recorrente')"></dd>
-                            <p class="mt-1 text-miudo text-tinta-suave">
-                                Sem a adesão. Com ela diluída:
-                                <span class="numero" x-text="campoTexto(item, 'custo_mensal_total')"></span>
-                            </p>
+                            <dt class="text-etiqueta font-semibold uppercase text-tinta-suave">Custo mensal em taxas</dt>
+                            <dd class="numero-destaque mt-1 text-numero" x-text="item.formatado.vendas"></dd>
                         </div>
 
                         <div>
-                            <dt class="text-etiqueta font-semibold uppercase text-tinta-suave">Taxa efetiva combinada</dt>
-                            <dd class="numero-destaque mt-1 text-numero" x-text="campoTexto(item, 'taxa_efetiva_combinada') ?? '—'"></dd>
-                            <p class="mt-1 text-miudo text-tinta-suave">
-                                Só as taxas de venda:
-                                <span class="numero" x-text="campoTexto(item, 'taxa_efetiva_das_vendas') ?? '—'"></span>
-                            </p>
-                        </div>
-
-                        <div>
-                            <dt class="text-etiqueta font-semibold uppercase text-tinta-suave">Custo inicial</dt>
-                            <template x-if="item.comparacao && item.comparacao.custo_inicial">
-                                <div>
-                                    {{-- Etapa 19: sempre a vista e em 12x, nunca so um dos dois
-                                         (pedido do Everton, 17/09/2026) — o horizonte de diluicao
-                                         da adesao e fixo em 12 meses agora, entao
-                                         item.formatado.adesao.por_mes ja E o valor da parcela. --}}
-                                    <dd class="numero-destaque mt-1 text-numero" x-text="item.comparacao.custo_inicial.formatado.com_cupom + ' à vista'"></dd>
-                                    <p class="mt-1 text-miudo text-tinta-suave">
-                                        ou 12x de <span class="numero" x-text="item.formatado.adesao.por_mes"></span>
-                                    </p>
-                                    <p class="mt-1 text-miudo text-tinta-suave">
-                                        <template x-if="item.comparacao.custo_inicial.tem_cupom">
-                                            {{-- Regra 5: o preco de onde o desconto saiu anda junto. --}}
-                                            <span>
-                                                Sem cupom:
-                                                <span class="numero line-through" x-text="item.comparacao.custo_inicial.formatado.sem_cupom"></span>
-                                                · cupom
-                                                <a
-                                                    class="numero font-semibold text-acao underline underline-offset-2 hover:no-underline"
-                                                    :href="'/cupom/' + item.marca.slug"
-                                                    x-text="item.comparacao.custo_inicial.cupom"
-                                                    @click="registrarCliqueCupom(item)"
-                                                ></a>
-                                            </span>
-                                        </template>
-                                        <template x-if="! item.comparacao.custo_inicial.tem_cupom">
-                                            <span>Sem cupom disponível hoje.</span>
-                                        </template>
-                                    </p>
-                                </div>
-                            </template>
-                            <template x-if="! (item.comparacao && item.comparacao.custo_inicial)">
-                                {{-- Preco ausente e ausente: zero aqui seria mentira. --}}
-                                <dd class="mt-1 text-miudo text-tinta-suave">A marca não publicou o preço do aparelho neste plano.</dd>
-                            </template>
-                        </div>
-
-                        <div>
-                            <dt class="text-etiqueta font-semibold uppercase text-tinta-suave">Sobra no mês</dt>
-                            <dd class="numero-destaque mt-1 text-numero" x-text="campoTexto(item, 'sobra_no_mes')"></dd>
-                            <p class="mt-1 text-miudo text-tinta-suave">
-                                Do faturamento informado, já descontado tudo acima.
-                            </p>
+                            <dt class="text-etiqueta font-semibold uppercase text-tinta-suave">Taxa média</dt>
+                            <dd class="numero-destaque mt-1 text-numero" x-text="campoTexto(item, 'taxa_efetiva_das_vendas') ?? '—'"></dd>
                         </div>
                     </dl>
 
@@ -231,6 +209,72 @@
 
                         </div>
                     </template>
+
+                    {{-- Bloco de CTA (etapa 20, bloco B), padrao dos grandes
+                         comparadores: contratar primeiro, conhecer a marca
+                         depois, cupom e adesao sempre a vista. --}}
+                    <div class="space-y-3 border-b border-regua bg-superficie px-4 py-4">
+                        <div class="flex flex-col gap-3 sm:flex-row">
+                            {{-- Regra 5: sem parceria o CTA vai direto ao
+                                 site_url, sem passar pela rota de saida — nao
+                                 ha clique de afiliado para rastrear. Com
+                                 cupom, /ir/{marca} e quem grava o clique em
+                                 eventos_cupom e redireciona. --}}
+                            <a
+                                class="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-botao border-[1.5px] border-acao bg-acao px-5 py-2.5 text-center font-titulo text-[0.9375rem] font-semibold leading-tight text-sobre-acao transition-opacity hover:opacity-90 active:opacity-100"
+                                target="_blank"
+                                x-bind:href="hrefContratar(item)"
+                                x-bind:rel="temCupomParaContratar(item) ? 'sponsored nofollow noopener noreferrer' : 'noopener noreferrer'"
+                                x-on:click="registrarCliqueContratar(item)"
+                            >
+                                <span x-text="textoContratar(item)"></span>
+                                <span class="sr-only">(abre em nova aba)</span>
+                            </a>
+
+                            <a
+                                class="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-botao border-[1.5px] border-tinta bg-transparent px-5 py-2.5 text-center font-titulo text-[0.9375rem] font-semibold leading-tight text-tinta transition-colors hover:bg-superficie-forte"
+                                x-bind:href="'/maquininha/' + item.marca.slug"
+                            >Conhecer a <span x-text="item.marca.nome"></span></a>
+                        </div>
+
+                        <template x-if="temCupomParaContratar(item)">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="text-miudo text-tinta-suave">Cupom:</span>
+                                <code class="numero rounded-botao border border-dashed border-contorno bg-papel px-2.5 py-1.5 text-sm font-semibold tracking-wider" x-text="item.cupom.codigo"></code>
+                                <button
+                                    type="button"
+                                    class="inline-flex min-h-8 items-center rounded-botao border border-tinta px-3 text-etiqueta font-semibold uppercase text-tinta hover:bg-superficie-forte"
+                                    x-bind:data-copiar="item.cupom.codigo"
+                                    x-bind:data-marca="item.marca.slug"
+                                    x-bind:data-cupom="item.cupom.codigo"
+                                    data-origem="comparador"
+                                >Copiar código</button>
+                            </div>
+                        </template>
+
+                        <template x-if="item.comparacao && item.comparacao.custo_inicial">
+                            <p class="text-miudo text-tinta-suave">
+                                Adesão a partir de
+                                <span class="numero font-medium text-tinta" x-text="item.comparacao.custo_inicial.formatado.com_cupom"></span>
+                                <template x-if="temCupomParaContratar(item)">
+                                    <span> — sem cupom, <span class="numero line-through" x-text="item.comparacao.custo_inicial.formatado.sem_cupom"></span></span>
+                                </template>
+                            </p>
+                        </template>
+                        <template x-if="! (item.comparacao && item.comparacao.custo_inicial)">
+                            {{-- Preco ausente e ausente: zero aqui seria mentira. --}}
+                            <p class="text-miudo text-tinta-suave">A marca não publicou o preço do aparelho neste plano.</p>
+                        </template>
+
+                        <template x-if="temCupomParaContratar(item)">
+                            <p class="text-miudo text-tinta-suave">
+                                Link de parceiro. <strong class="font-semibold text-tinta">A taxa é a mesma do site oficial.</strong>
+                            </p>
+                        </template>
+                        <template x-if="! temCupomParaContratar(item)">
+                            <p class="text-miudo text-tinta-suave">Sem parceria com esta marca — link direto para o site oficial.</p>
+                        </template>
+                    </div>
 
                     <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3">
                         <x-detalhe-do-resultado />
