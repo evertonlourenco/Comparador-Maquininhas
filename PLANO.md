@@ -354,6 +354,12 @@ não tem nenhum botão de contratar.
 
 #### Blocos, na ordem de execução
 
+> **Modelo por bloco (decidido em 18/09/2026):** Opus 5 nos blocos **A**
+> (motor — regra de domínio, paridade PHP/JS, muda a ordenação) e **E**
+> (direção visual — onde o Everton já ficou insatisfeito duas vezes). Sonnet 5
+> nos blocos **B, C, D e F**, que implementam o que este texto já especifica.
+> Ranking sem adesão **confirmado** pelo Everton no mesmo dia.
+
 **A. Correções do motor** (PHP e JS juntos, com teste de paridade)
 1. Cupom sem `valido_ate` = sem data de fim, vigente.
 2. Pix fora da contagem de prazos.
