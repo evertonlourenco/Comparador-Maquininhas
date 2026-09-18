@@ -121,6 +121,15 @@ Estas regras vêm da análise de viabilidade e não devem ser simplificadas:
       Converter para float só na fronteira do cálculo, e formatar de volta na saída.
     - No JavaScript do comparador, usar `Intl.NumberFormat('pt-BR', ...)`.
     - Guardar sempre em `decimal` no banco, nunca `float`, para não perder centavo.
+12. **O Máquina Certa compara custo de operar a maquininha, nunca custo de conta
+    digital** (decisão do Everton, 18/09/2026 — ver "Regra nova: Máquina Certa não
+    compara custo de conta digital" na seção da trava da marca). O lojista não é
+    obrigado a usar a conta digital da adquirente — pode receber na conta do próprio
+    banco, e nesse caso tarifa de saque, TED e Pix (recebido ou enviado) da
+    adquirente simplesmente não se aplicam a ele. Entram na conta: taxa de venda,
+    custo de adesão/aluguel do aparelho, mensalidade do plano (quando existe). Não
+    entram: tarifa de saque, TED, Pix recebido, Pix enviado — mesmo que a marca
+    publique esses números, o motor não os soma nem os cobra como dado obrigatório.
 
 ## Schema
 
@@ -3573,6 +3582,88 @@ teve a asserção invertida — confirma agora que marca vazia fica invisível,
 não mais o oposto. Suíte inteira rodada de novo por pasta depois de todos os
 ajustes: mesmo resultado de sempre, só o `MotorSobreACargaRealTest`
 pré-existente falhando.
+
+### Regra nova: Máquina Certa não compara custo de conta digital (18/09/2026)
+
+O Everton reportou "tarifa de Pix recebido" pendente pra Ton nos seis planos
+e achou, a princípio, que era o mesmo problema do campo de Pix duplicado por
+prazo (ver abaixo) — mas são duas coisas diferentes, e a investigação
+separou as duas.
+
+**A confusão real, e corrigida**: em `TabelaDoPlano.php` (`gradeDePrazos()`),
+o campo de Pix aparecia dentro de **cada** seção de prazo (Na hora, D+1,
+D+14, D+30, conforme as parcelas) — até 5 campos de Pix na mesma tela, como
+se a taxa dele variasse por prazo de recebimento. Ela não varia: Pix liquida
+na hora por natureza, e nenhuma marca do catálogo jamais publicou Pix em
+outro prazo (achado já registrado na revisão do comparador, mesma seção
+acima). Um campo em branco em "Em 1 dia útil" parecia dado faltando quando
+nunca houve o que preencher ali. **Corrigido**: o campo de Pix agora só
+existe uma vez, dentro da seção "Na hora" — `$ehNaHora` checa
+`$prazo->codigo === PrazoRecebimento::NA_HORA` antes de renderizar o
+`TextInput`. Teste de regressão:
+`TabelaDoPlanoTest::test_pix_so_tem_campo_na_secao_na_hora`.
+
+**A decisão maior, que veio da pergunta certa**: "tarifa de Pix recebido"
+(`Plano.tarifa_pix_recebimento`) é um campo genuinamente separado da taxa
+percentual do Pix — editado no formulário do Plano, não na Tabela do Plano —
+e representa uma tarifa fixa por receber Pix, cobrada pela **conta digital**
+da adquirente. O Everton decidiu que isso está fora do escopo do produto:
+**o lojista não é obrigado a usar a conta digital da adquirente** — pode
+receber o que a maquininha processa na conta do próprio banco. Nesse caso
+nenhuma tarifa de conta digital se aplica, e exigir esse dado (ou comparar
+por ele) seria comparar algo que a maioria dos lojistas nunca paga.
+
+**O Máquina Certa compara agora só três coisas**: taxa de venda (débito,
+crédito à vista, parcelado, Pix), custo de adesão/aluguel do aparelho, e
+mensalidade do plano (quando existe). Nada de conta digital — nem tarifa de
+saque, TED, Pix recebido, Pix enviado. (Antecipação avulsa,
+`taxa_antecipacao_mensal`, não entra nessa categoria — não é custo de conta
+digital, é opcional do lojista sobre a própria operação — e continua fora
+do escopo pelo motivo já registrado antes: saiu da tela pública na mesma
+revisão do comparador.)
+
+**Onde isso foi tocado — e onde não foi, de propósito:**
+
+- `MotorDeCalculo::custoDaConta()` (PHP) e o gêmeo `custoDaConta()` em
+  `motor.mjs`: pararam de ler `tarifa_saque`, `tarifa_ted`,
+  `tarifa_pix_recebimento`, `tarifa_pix_envio` e a função auxiliar
+  `recebimentosPix()` inteira foi removida — o método agora só soma
+  `mensalidade`. Assinatura mudou de `custoDaConta($plano, $cenario)` para
+  `custoDaConta($plano)` (o parâmetro `$cenario` não sobrou uso nenhum).
+- `App\Support\Saude\CompletudeDaMarca` **não precisou de nenhuma mudança**
+  — ela reaproveita o mesmo `avaliarPlano()`/`custoDaConta()` do motor
+  público, então a pendência "tarifa de Pix recebido" parou de aparecer de
+  graça. Essa é exatamente a razão de ter desenhado a trava reaproveitando o
+  motor em vez de duplicar a lista de campos obrigatórios — a correção
+  cascateou sem precisar tocar em dois lugares.
+- Formulário do Plano (`PlanoForm.php`): a seção "Custos da conta" (3
+  colunas: mensalidade, tarifa de saque, TED, Pix recebimento, Pix envio,
+  antecipação) virou "Mensalidade e antecipação" (2 colunas) — os quatro
+  campos de conta digital saíram do formulário. Manter um campo editável que
+  o motor não lê mais seria a mesma armadilha de confusão, só que ao
+  contrário.
+- **De propósito NÃO removido** (vestigial, sem custo de manter, evita
+  mexer em superfície grande sem necessidade real): as colunas
+  `planos.tarifa_saque/tarifa_ted/tarifa_pix_recebimento/tarifa_pix_envio`
+  continuam no banco e no `Plano::$fillable`; `CatalogoDoComparador` continua
+  exportando essas chaves no `conta` do JSON (só que agora sempre ignoradas
+  por quem lê); `Cenario::saquesMensais/tedsMensais/pixEnviosMensais`
+  continuam existindo (default 0, nunca lidos). Se um dia fizer sentido
+  reduzir a superfície de verdade, é uma migration + limpeza de schema à
+  parte — não urgente, e misturar isso com a mudança de comportamento de
+  hoje só aumentaria o risco à toa.
+- `resources/views/components/detalhe-do-resultado.blade.php`: o mapa de
+  rótulos da conta (`saques`, `teds`, `pix_envios`, `pix_recebimentos`) foi
+  limpo — só `mensalidade` pode aparecer ali agora.
+
+**Conferido:** reproduzido o bug relatado direto em produção antes de
+corrigir (`CompletudeDaMarca::avaliar()` contra a Ton real: "tarifa de Pix
+recebido" pendente nos 6 planos). Depois da correção, suíte inteira rodada
+de novo por pasta — 78 testes em `Admin` (68 + o novo
+`test_pix_so_tem_campo_na_secao_na_hora`), e todo o resto igual — nenhuma
+regressão, incluindo os testes de paridade PHP/JS (a mudança foi espelhada
+nos dois motores). O `MotorSobreACargaRealTest` pré-existente continua sendo
+o único caso vermelho, sem relação com esta mudança.
 
 ## Manual do administrador (etapa 18)
 

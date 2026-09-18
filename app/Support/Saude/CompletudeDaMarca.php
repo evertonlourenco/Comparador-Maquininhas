@@ -38,10 +38,16 @@ use App\Motor\VendaDoCenario;
  *   - todo plano com taxa publicada fecha a conta sem "falta dado" nenhum,
  *     rodando o cenário de referência através do próprio `MotorDeCalculo`.
  *
- * O que ela NÃO cobra, de propósito: tarifa de saque/TED/Pix enviado e
- * antecipação avulsa. A tela pública não pergunta mais isso ao lojista (saiu
- * na revisão de etapa 19) - exigir esse dado aqui travaria toda marca por um
- * campo que a pessoa nunca vai conseguir acionar.
+ * O que ela NÃO cobra, de propósito: tarifa de saque, TED e Pix (recebido ou
+ * enviado), e antecipação avulsa. Decisão do Everton em 17/09/2026: esses são
+ * custos da CONTA DIGITAL da adquirente, e o lojista não é obrigado a usá-la
+ * — pode receber o que a maquininha processa na conta do próprio banco. O
+ * Máquina Certa compara só o que é inescapável pra quem usa a maquininha:
+ * taxa de venda, custo de adesão/aluguel do aparelho e mensalidade (quando
+ * existe). `MotorDeCalculo::custoDaConta()` parou de ler esses campos
+ * inteiramente (não é só um "não bloquear" aqui — o motor não soma mais
+ * esse custo nenhum), e como esta classe roda o mesmo método, a mudança já
+ * vale aqui de graça, sem nada pra tocar.
  */
 final class CompletudeDaMarca
 {

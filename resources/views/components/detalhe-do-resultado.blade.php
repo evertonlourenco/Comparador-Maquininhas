@@ -82,19 +82,15 @@
             </table>
         </div>
 
-        {{-- Custo da conta: so aparece o que o cenario de fato usa. Tarifa nao
+        {{-- Custo da conta: so mensalidade (etapa 19, 17/09/2026 — saque, TED
+             e Pix da conta digital saíram do escopo do Máquina Certa, que
+             compara só custo direto de operar a maquininha). Tarifa nao
              usada nao vira linha de zero. --}}
         <template x-if="Object.keys(item.conta).length > 0">
             <dl class="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
                 <template x-for="[chave, valor] in Object.entries(item.conta)" :key="chave">
                     <div class="flex justify-between gap-3 border-b border-regua py-1">
-                        <dt class="text-tinta-suave" x-text="({
-                            mensalidade: 'Mensalidade do plano',
-                            saques: 'Saques no mês',
-                            teds: 'TEDs no mês',
-                            pix_envios: 'Pix enviados no mês',
-                            pix_recebimentos: 'Pix recebidos no mês',
-                        })[chave] ?? chave"></dt>
+                        <dt class="text-tinta-suave" x-text="({ mensalidade: 'Mensalidade do plano' })[chave] ?? chave"></dt>
                         <dd class="numero" x-text="real(valor)"></dd>
                     </div>
                 </template>

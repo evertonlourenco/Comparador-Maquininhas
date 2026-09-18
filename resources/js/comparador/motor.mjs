@@ -247,7 +247,7 @@ function avaliarComTaxasDivulgadas(catalogo, marca, plano, cenario) {
     );
   }
 
-  const conta = custoDaConta(plano, cenario);
+  const conta = custoDaConta(plano);
   const aparelho = custoDoAparelho(marca, plano, cenario);
   const antecipacao = custoDaAntecipacaoAvulsa(catalogo, plano, cenario, linhas);
 
@@ -346,7 +346,7 @@ function avaliarComFaixaReportada(catalogo, marca, plano, cenario) {
     });
   }
 
-  const conta = custoDaConta(plano, cenario);
+  const conta = custoDaConta(plano);
   const aparelho = custoDoAparelho(marca, plano, cenario);
   const fixo = conta.custo + aparelho.custo;
 
@@ -544,11 +544,24 @@ function faixaDaLinha(plano, venda, cenario) {
   return null;
 }
 
-/** Tarifa nula nao vira zero: ela e desconhecida. Mas so vira falta quando o cenario usa o servico. */
-function custoDaConta(plano, cenario) {
+/**
+ * Custo da conta. Mensalidade e o unico custo de conta que o Maquina Certa
+ * compara.
+ *
+ * Decisao do Everton em 17/09/2026: tarifa de saque, de TED e de Pix
+ * (recebido ou enviado) sao custos da CONTA DIGITAL da adquirente - o
+ * lojista nao e obrigado a usa-la, pode receber o que a maquininha processa
+ * na conta do proprio banco. O Maquina Certa compara so o que e inescapavel
+ * pra quem usa a maquininha: taxa de venda, custo de adesao/aluguel do
+ * aparelho e mensalidade (quando existe). Espelha
+ * App\Motor\MotorDeCalculo::custoDaConta() - os mesmos campos ficaram
+ * vestigiais no catalogo (`plano.conta.tarifa_*`) e no cenario
+ * (`saques_mensais`, `teds_mensais`, `pix_envios_mensais`), sem custo de
+ * manter, mas nenhum dos dois motores le mais nenhum deles.
+ */
+function custoDaConta(plano) {
   const conta = plano.conta;
   const faltando = [];
-  const avisos = [];
   const itens = {};
   let total = 0;
 
@@ -560,67 +573,7 @@ function custoDaConta(plano, cenario) {
     itens.mensalidade = mensalidade;
   }
 
-  const servicos = [
-    ['saques', 'tarifa_saque', cenario.saques_mensais, 'tarifa de saque'],
-    ['teds', 'tarifa_ted', cenario.teds_mensais, 'tarifa de TED'],
-    ['pix_envios', 'tarifa_pix_envio', cenario.pix_envios_mensais, 'tarifa de Pix enviado'],
-  ];
-
-  for (const [chave, campo, quantidade, rotulo] of servicos) {
-    if (quantidade <= 0) {
-      continue;
-    }
-
-    if (conta[campo] === null) {
-      faltando.push(rotulo);
-      continue;
-    }
-
-    const custo = arredondar(quantidade * Number(conta[campo]));
-    total += custo;
-    itens[chave] = custo;
-  }
-
-  const recebimentos = recebimentosPix(cenario);
-
-  if (recebimentos.tem_pix) {
-    if (conta.tarifa_pix_recebimento === null) {
-      faltando.push('tarifa de Pix recebido');
-    } else if (Number(conta.tarifa_pix_recebimento) !== 0) {
-      if (recebimentos.quantidade === null) {
-        faltando.push('quantidade de recebimentos em Pix no mês (o plano cobra tarifa por Pix recebido)');
-      } else {
-        const custo = arredondar(recebimentos.quantidade * Number(conta.tarifa_pix_recebimento));
-        total += custo;
-        itens.pix_recebimentos = custo;
-      }
-    }
-  }
-
-  return { custo: arredondar(total), itens, faltando, avisos };
-}
-
-function recebimentosPix(cenario) {
-  let temPix = false;
-  let quantidade = 0;
-  let conhecida = true;
-
-  for (const venda of cenario.vendas) {
-    if (venda.tipo_operacao !== 'pix') {
-      continue;
-    }
-
-    temPix = true;
-
-    if (venda.quantidade_mensal === null) {
-      conhecida = false;
-      continue;
-    }
-
-    quantidade += venda.quantidade_mensal;
-  }
-
-  return { tem_pix: temPix, quantidade: conhecida ? quantidade : null };
+  return { custo: arredondar(total), itens, faltando, avisos: [] };
 }
 
 /** Aluguel mensal + adesao amortizada no horizonte. Ver a nota longa no PHP. */

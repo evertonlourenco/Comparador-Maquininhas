@@ -2,7 +2,6 @@
 
 namespace App\Motor;
 
-use App\Enums\TipoOperacao;
 use App\Support\Dinheiro;
 
 /**
@@ -209,7 +208,7 @@ final class MotorDeCalculo
                 .implode(', ', $nomes).'). Confira se a marca vende essa combinação.';
         }
 
-        $conta = $this->custoDaConta($plano, $cenario);
+        $conta = $this->custoDaConta($plano);
         $aparelho = $this->custoDoAparelho($marca, $plano, $cenario);
         $antecipacao = $this->custoDaAntecipacaoAvulsa($catalogo, $plano, $cenario, $linhas);
 
@@ -330,7 +329,7 @@ final class MotorDeCalculo
             ];
         }
 
-        $conta = $this->custoDaConta($plano, $cenario);
+        $conta = $this->custoDaConta($plano);
         $aparelho = $this->custoDoAparelho($marca, $plano, $cenario);
         $fixo = $conta['custo'] + $aparelho['custo'];
 
@@ -564,17 +563,28 @@ final class MotorDeCalculo
     }
 
     /**
-     * Custo da conta (regra 6). Tarifa nula nao vira zero: ela e desconhecida.
-     * Mas so vira falta quando o cenario de fato usa o servico - quem nao faz
-     * TED nenhum no mes nao precisa saber a tarifa de TED para comparar.
-     * A mensalidade e a excecao: ela e cobrada sempre, entao nao saber quanto e
-     * bloqueia o total.
+     * Custo da conta (regra 6). Mensalidade e o unico custo de conta que o
+     * Maquina Certa compara.
+     *
+     * Decisao do Everton em 17/09/2026, revendo a etapa 19: tarifa de saque,
+     * de TED e de Pix (recebido ou enviado) sao custos da CONTA DIGITAL da
+     * adquirente - e o lojista nao e obrigado a usa-la. Ele pode cadastrar a
+     * conta do proprio banco pra receber o que a maquininha processa, e nesse
+     * caso nenhuma dessas tarifas se aplica. O Maquina Certa compara so o que
+     * e inescapavel pra quem usa a maquininha: taxa de venda, custo de
+     * adesao/aluguel do aparelho e mensalidade do plano (quando existe). Os
+     * quatro campos ficaram vestigiais no schema (`planos.tarifa_saque`,
+     * `tarifa_ted`, `tarifa_pix_recebimento`, `tarifa_pix_envio`) e no
+     * `Cenario` (`saquesMensais`, `tedsMensais`, `pixEnviosMensais`) -
+     * mantidos por nao terem custo de manter, mas o motor nao le mais nenhum
+     * deles. `App\Support\Saude\CompletudeDaMarca` reusa este mesmo metodo
+     * pra decidir o que falta numa marca, entao a mudanca vale nos dois
+     * lugares de graca, sem tocar em nenhum dos dois.
      */
-    private function custoDaConta(array $plano, Cenario $cenario): array
+    private function custoDaConta(array $plano): array
     {
         $conta = $plano['conta'];
         $faltando = [];
-        $avisos = [];
         $itens = [];
         $total = 0.0;
 
@@ -586,77 +596,12 @@ final class MotorDeCalculo
             $itens['mensalidade'] = $mensalidade;
         }
 
-        $servicos = [
-            ['saques', 'tarifa_saque', $cenario->saquesMensais, 'tarifa de saque'],
-            ['teds', 'tarifa_ted', $cenario->tedsMensais, 'tarifa de TED'],
-            ['pix_envios', 'tarifa_pix_envio', $cenario->pixEnviosMensais, 'tarifa de Pix enviado'],
-        ];
-
-        foreach ($servicos as [$chave, $campo, $quantidade, $rotulo]) {
-            if ($quantidade <= 0) {
-                continue;
-            }
-
-            if ($conta[$campo] === null) {
-                $faltando[] = $rotulo;
-
-                continue;
-            }
-
-            $custo = Dinheiro::arredondar($quantidade * (float) $conta[$campo]);
-            $total += $custo;
-            $itens[$chave] = $custo;
-        }
-
-        // Pix recebido e tarifa por transacao: precisa da quantidade de vendas
-        // em Pix, que o cenario pode nao ter informado.
-        $recebimentosPix = $this->recebimentosPix($cenario);
-
-        if ($recebimentosPix['tem_pix']) {
-            if ($conta['tarifa_pix_recebimento'] === null) {
-                $faltando[] = 'tarifa de Pix recebido';
-            } elseif ((float) $conta['tarifa_pix_recebimento'] != 0.0) {
-                if ($recebimentosPix['quantidade'] === null) {
-                    $faltando[] = 'quantidade de recebimentos em Pix no mês (o plano cobra tarifa por Pix recebido)';
-                } else {
-                    $custo = Dinheiro::arredondar($recebimentosPix['quantidade'] * (float) $conta['tarifa_pix_recebimento']);
-                    $total += $custo;
-                    $itens['pix_recebimentos'] = $custo;
-                }
-            }
-        }
-
         return [
             'custo' => Dinheiro::arredondar($total),
             'itens' => $itens,
             'faltando' => $faltando,
-            'avisos' => $avisos,
+            'avisos' => [],
         ];
-    }
-
-    private function recebimentosPix(Cenario $cenario): array
-    {
-        $temPix = false;
-        $quantidade = 0;
-        $conhecida = true;
-
-        foreach ($cenario->vendas as $venda) {
-            if ($venda->tipoOperacao !== TipoOperacao::Pix) {
-                continue;
-            }
-
-            $temPix = true;
-
-            if ($venda->quantidadeMensal === null) {
-                $conhecida = false;
-
-                continue;
-            }
-
-            $quantidade += $venda->quantidadeMensal;
-        }
-
-        return ['tem_pix' => $temPix, 'quantidade' => $conhecida ? $quantidade : null];
     }
 
     /**

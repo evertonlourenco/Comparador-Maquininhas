@@ -101,6 +101,21 @@ class TabelaDoPlanoTest extends TestCase
             ->assertSet("data.cells.{$this->naHora}.{$this->visaMaster}.debito", '1.5000');
     }
 
+    /**
+     * Achado do Everton em 17/09/2026: o campo de Pix aparecia dentro de
+     * CADA seção de prazo, como se a taxa dele variasse por prazo de
+     * recebimento — ela não varia (Pix liquida na hora por natureza). Um
+     * campo em branco em "Em 1 dia útil" parecia dado faltando quando nunca
+     * houve o que preencher ali. Agora só existe um campo, dentro de "Na
+     * hora".
+     */
+    public function test_pix_so_tem_campo_na_secao_na_hora(): void
+    {
+        Livewire::test(TabelaDoPlano::class, ['plano' => $this->plano])
+            ->assertFormFieldExists("cells.{$this->naHora}.pix")
+            ->assertFormFieldDoesNotExist("cells.{$this->d1}.pix");
+    }
+
     /** Só os grupos que a marca de fato usa aparecem - não todos que existem no banco. */
     public function test_so_mostra_os_grupos_de_bandeira_da_marca(): void
     {

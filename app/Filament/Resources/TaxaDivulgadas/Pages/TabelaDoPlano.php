@@ -228,6 +228,17 @@ class TabelaDoPlano extends Page
             ->statePath('data');
     }
 
+    /**
+     * Achado do Everton em 17/09/2026: Pix aparecia com um campo dentro de
+     * CADA secao de prazo (Na hora, Em 1 dia util, Em 14 dias...), como se a
+     * taxa do Pix variasse por prazo de recebimento — ela nao varia (Pix
+     * liquida na hora por natureza; nenhuma marca do catalogo jamais
+     * publicou Pix em nenhum outro prazo). Isso deixava a tela sugerindo uma
+     * dimensao que nao existe de verdade, e um campo em branco em "Em 1 dia
+     * util" parecia dado faltando quando na verdade nunca teve o que
+     * preencher ali. Agora o campo do Pix so existe uma vez, dentro da
+     * secao "Na hora" — a unica que qualquer marca ja usou pra ele.
+     */
     private function gradeDePrazos(): array
     {
         $temDadoPorPrazo = collect($this->celulasAtuais())->keys();
@@ -235,6 +246,7 @@ class TabelaDoPlano extends Page
         return $this->prazos
             ->map(function (PrazoRecebimento $prazo) use ($temDadoPorPrazo): Section {
                 $temDado = $temDadoPorPrazo->contains(fn (string $chave) => str_starts_with($chave, "{$prazo->id}."));
+                $ehNaHora = $prazo->codigo === PrazoRecebimento::NA_HORA;
 
                 return Section::make($prazo->nome_exibicao)
                     ->collapsible()
@@ -253,10 +265,12 @@ class TabelaDoPlano extends Page
                                     ->all(),
                             ]))
                             ->all(),
-                        TextInput::make("cells.{$prazo->id}.pix")
-                            ->label('Pix')
-                            ->numeric()->step(0.0001)->minValue(0)->maxValue(100)->suffix('%')
-                            ->helperText('Grupo de bandeiras não se aplica ao Pix (grupo técnico próprio).'),
+                        ...($ehNaHora ? [
+                            TextInput::make("cells.{$prazo->id}.pix")
+                                ->label('Pix')
+                                ->numeric()->step(0.0001)->minValue(0)->maxValue(100)->suffix('%')
+                                ->helperText('Um campo só: Pix liquida na hora por natureza, então não varia por prazo de recebimento (nem grupo de bandeiras — é grupo técnico próprio).'),
+                        ] : []),
                     ]);
             })
             ->all();

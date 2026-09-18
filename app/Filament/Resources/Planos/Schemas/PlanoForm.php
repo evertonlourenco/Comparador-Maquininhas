@@ -121,26 +121,10 @@ class PlanoForm
                         ->label('Compromisso de volume assumido pelo lojista')
                         ->rows(3),
                 ]),
-            Section::make('Custos da conta')
-                ->columns(3)
+            Section::make('Mensalidade e antecipação')
+                ->columns(2)
                 ->components([
                     TextInput::make('mensalidade')
-                        ->numeric()
-                        ->prefix('R$'),
-                    TextInput::make('tarifa_saque')
-                        ->label('Tarifa de saque')
-                        ->numeric()
-                        ->prefix('R$'),
-                    TextInput::make('tarifa_ted')
-                        ->label('Tarifa de TED')
-                        ->numeric()
-                        ->prefix('R$'),
-                    TextInput::make('tarifa_pix_recebimento')
-                        ->label('Tarifa de Pix (recebimento)')
-                        ->numeric()
-                        ->prefix('R$'),
-                    TextInput::make('tarifa_pix_envio')
-                        ->label('Tarifa de Pix (envio)')
                         ->numeric()
                         ->prefix('R$'),
                     TextInput::make('taxa_antecipacao_mensal')
@@ -152,7 +136,7 @@ class PlanoForm
             Section::make('Condição de isenção')
                 ->components([
                     Textarea::make('condicao_isencao')
-                        ->label('Condição de isenção de mensalidade/tarifas')
+                        ->label('Condição de isenção de mensalidade')
                         ->rows(3),
                 ]),
         ];
