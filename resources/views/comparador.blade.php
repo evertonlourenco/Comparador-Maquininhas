@@ -352,7 +352,7 @@
             {{-- O anuncio curto para leitor de tela. A tela inteira nao pode ser
                  aria-live: recalcular a cada arrasto de slider viraria ruido. --}}
             <p role="status" aria-live="polite" class="sr-only" x-text="resultado ? (resultado.resumo.melhor
-                ? 'Menor custo: ' + resultado.resumo.melhor.marca + ', ' + resultado.resumo.melhor.formatado.custo_mensal_total + ' por mês.'
+                ? 'Menor custo: ' + resultado.resumo.melhor.marca + ', ' + resultado.resumo.melhor.formatado.custo_mensal_recorrente + ' por mês.'
                 : 'Nenhuma marca fecha a conta com os dados publicados hoje.') : ''"></p>
 
             <template x-if="! carregando && ! erroDeCarga && ! resultado">
@@ -369,14 +369,14 @@
                     <div class="rounded-bloco border-[1.5px] border-acao bg-acao-fundo px-4 py-4">
                         <p class="text-etiqueta font-semibold uppercase text-acao">Menor custo</p>
                         <p class="mt-1 font-titulo text-cartao font-semibold" x-text="resultado.resumo.melhor.marca"></p>
-                        <p class="numero-destaque text-numero text-acao" x-text="resultado.resumo.melhor.formatado.custo_mensal_total + ' por mês'"></p>
+                        <p class="numero-destaque text-numero text-acao" x-text="resultado.resumo.melhor.formatado.custo_mensal_recorrente + ' por mês'"></p>
                         <p class="mt-1 text-miudo text-tinta" x-text="resultado.resumo.melhor.plano"></p>
                     </div>
 
                     <div class="rounded-bloco border border-regua bg-papel px-4 py-4">
                         <p class="text-etiqueta font-semibold uppercase text-tinta-suave">Mais caro</p>
                         <p class="mt-1 font-titulo text-cartao font-semibold" x-text="resultado.resumo.pior.marca"></p>
-                        <p class="numero-destaque text-numero" x-text="resultado.resumo.pior.formatado.custo_mensal_total + ' por mês'"></p>
+                        <p class="numero-destaque text-numero" x-text="resultado.resumo.pior.formatado.custo_mensal_recorrente + ' por mês'"></p>
                         <p class="mt-1 text-miudo text-tinta-suave" x-text="resultado.resumo.pior.plano"></p>
                     </div>
 
@@ -544,13 +544,20 @@
              validade e o plano sucessor aparecem — nunca no cartao principal,
              que e sempre o plano permanente. --}}
         <template x-if="itemDaPromocaoAberta">
+            {{-- Etapa 20: fecha no clique do fundo (.self), e nao com
+                 click.outside no painel. Num clique de mouse de verdade o
+                 Alpine renderiza o modal entre um listener e outro do MESMO
+                 evento; o click.outside recem-registrado recebia esse clique de
+                 abertura ao subir ate a window e fechava o modal na hora - o
+                 botao "parecia" nao clicavel. Por script (el.click()) nao
+                 acontecia, porque ai os microtasks so rodam no fim do evento. --}}
             <div
                 class="fixed inset-0 z-50 flex items-end justify-center bg-tinta/60 p-0 sm:items-center sm:p-4"
                 x-on:keydown.escape.window="fecharModalPromocao()"
+                x-on:click.self="fecharModalPromocao()"
             >
                 <div
                     class="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-t-bloco border border-regua bg-papel shadow-xl sm:rounded-bloco"
-                    x-on:click.outside="fecharModalPromocao()"
                     role="dialog"
                     aria-modal="true"
                     :aria-label="'Tabela de entrada da ' + itemDaPromocaoAberta.marca.nome"

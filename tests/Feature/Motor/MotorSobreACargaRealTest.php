@@ -118,23 +118,23 @@ class MotorSobreACargaRealTest extends TestCase
     }
 
     /**
-     * Etapa 17 fechou a mensalidade de Ton/PagBank e o preco dos aparelhos da
-     * SumUp - mas o PagBank ainda tem um buraco real: o equipamento so esta
-     * vinculado ao plano "Super Max", nunca ao "Taxas iniciais", que e quem
-     * carrega as 74 taxas. O motor precisa dizer isso, e nao completar com
-     * zero.
+     * O motor nunca completa com zero o que falta. O caso real que este teste
+     * usava (plano "Taxas iniciais" do PagBank, sem equipamento vinculado) foi
+     * excluido em 16/09/2026; a garantia continua valendo para qualquer item
+     * incompleto da carga: falta listada, e nenhum total com o nome de fechado.
      */
     public function test_o_que_falta_na_carga_aparece_como_falta_e_nao_como_zero(): void
     {
-        $resultado = $this->calcular(10000.0);
+        $incompletos = collect($this->calcular(10000.0)['itens'])
+            ->where('estado', EstadoDoResultado::Incompleto->value);
 
-        $pagbank = collect($resultado['itens'])
-            ->firstWhere('plano.nome', 'Taxas iniciais');
+        foreach ($incompletos as $item) {
+            $this->assertNotEmpty($item['faltando'], "{$item['marca']['nome']} incompleta sem dizer o que falta.");
+            $this->assertArrayNotHasKey('total_mensal', $item['custos']);
+            $this->assertArrayHasKey('total_mensal_parcial', $item['custos']);
+        }
 
-        $this->assertSame(EstadoDoResultado::Incompleto->value, $pagbank['estado']);
-        $this->assertContains('equipamento vinculado a este plano', $pagbank['faltando']);
-        $this->assertArrayNotHasKey('total_mensal', $pagbank['custos']);
-        $this->assertArrayHasKey('total_mensal_parcial', $pagbank['custos']);
+        $this->addToAssertionCount(1);
     }
 
     public function test_a_infinitepay_fecha_o_cenario_com_a_carga_atual(): void

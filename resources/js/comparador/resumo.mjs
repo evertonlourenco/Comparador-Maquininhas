@@ -175,15 +175,16 @@ function resumo(itens, cenario, volume, faturamento) {
 
   const ranqueaveis = itens.filter((item) => item.estado === 'calculado');
 
-  // O motor ja entregou os itens ordenados por total_mensal crescente, com
-  // desempate estavel. Reordenar aqui seria arriscar discordar dele.
+  // O motor ja entregou os itens ordenados pelo custo mensal recorrente (sem a
+  // adesao, etapa 20), com desempate estavel. Reordenar aqui seria arriscar
+  // discordar dele.
   const melhor = ranqueaveis.length === 0 ? null : extremo(ranqueaveis[0]);
   const pior = ranqueaveis.length < 2 ? null : extremo(ranqueaveis[ranqueaveis.length - 1]);
 
   const diferenca =
     melhor === null || pior === null
       ? null
-      : arredondar(pior.custo_mensal_total - melhor.custo_mensal_total);
+      : arredondar(pior.custo_mensal_recorrente - melhor.custo_mensal_recorrente);
 
   const horizonte = Number(cenario.horizonte_meses);
   const fora = arredondar(faturamento - volume);

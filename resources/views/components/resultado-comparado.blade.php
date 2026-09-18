@@ -198,7 +198,12 @@
                          quatro barras empilhadas (revisao de layout, etapa 19: o
                          cartao estava denso demais com uma faixa inteira para
                          cada frase). --}}
-                    <template x-if="item.motivo || (item.promocao && item.promocao.sucessor) || item.faltando.length > 0 || item.avisos.length > 0">
+                    {{-- Etapa 20: item.avisos nao sai mais na tela publica. Eram notas
+                         tecnicas do motor ("aparelho sem aluguel", mistura de prazo)
+                         que poluiam o cartao e, no caso do aluguel, diziam errado —
+                         o aparelho fica em comodato. Continuam no resultado do motor,
+                         para teste e diagnostico. --}}
+                    <template x-if="item.motivo || (item.promocao && item.promocao.sucessor) || item.faltando.length > 0">
                         <div class="space-y-3 border-b border-regua bg-superficie px-4 py-3">
                             <template x-if="item.motivo">
                                 <p class="text-miudo" :class="'{{ $tom }}' === 'reportado' ? 'text-reportado' : 'text-tinta-suave'" x-text="item.motivo"></p>
@@ -224,13 +229,6 @@
                                 </div>
                             </template>
 
-                            <template x-if="item.avisos.length > 0">
-                                <ul class="space-y-1 text-miudo text-reportado">
-                                    <template x-for="aviso in item.avisos" :key="aviso">
-                                        <li x-text="aviso"></li>
-                                    </template>
-                                </ul>
-                            </template>
                         </div>
                     </template>
 

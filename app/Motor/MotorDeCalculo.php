@@ -2,6 +2,7 @@
 
 namespace App\Motor;
 
+use App\Enums\TipoOperacao;
 use App\Support\Dinheiro;
 
 /**
@@ -177,35 +178,29 @@ final class MotorDeCalculo
     {
         $faltando = [];
         $avisos = [];
-        $linhas = [];
         $prazosUsados = [];
         $datasDeVerificacao = [];
 
-        foreach ($cenario->vendas as $venda) {
-            $linha = $this->resolverLinha($catalogo, $plano, $venda, $cenario);
-            $linhas[] = $linha;
+        // Etapa 20 (Everton, 18/09/2026): o lojista recebe os cartoes de um
+        // plano num prazo so - nao existe contratar debito na hora e credito
+        // em 1 dia util no mesmo plano. Pedido o prazo, e aquele; "tanto faz",
+        // o motor escolhe o prazo unico mais barato do plano. O Pix fica fora
+        // da escolha: ele cai sempre na hora, qualquer que seja o prazo.
+        $prazoDosCartoes = $cenario->prazo ?? $this->prazoMaisBaratoDoPlano($catalogo, $plano, $cenario);
+        $linhas = $this->resolverLinhas($catalogo, $plano, $cenario, $prazoDosCartoes);
 
+        foreach ($linhas as $linha) {
             if ($linha['falta'] !== null) {
                 $faltando[] = $linha['falta'];
 
                 continue;
             }
 
-            $prazosUsados[$linha['prazo']] = true;
+            if ($linha['venda']['tipo_operacao'] !== TipoOperacao::Pix->value) {
+                $prazosUsados[$linha['prazo']] = true;
+            }
+
             $datasDeVerificacao[] = $linha['data_verificacao'];
-        }
-
-        if (count($prazosUsados) > 1) {
-            // Pelo nome de exibicao da dimensao, e nao pelo codigo: este aviso
-            // sai direto na tela do lojista (etapa 07), e "d_1, na_hora" nao
-            // quer dizer nada para quem tem uma padaria.
-            $nomes = array_map(
-                fn (string $codigo): string => $catalogo['prazos'][$codigo]['nome'] ?? $codigo,
-                array_keys($prazosUsados),
-            );
-
-            $avisos[] = 'Este plano foi comparado usando mais de um prazo de recebimento ('
-                .implode(', ', $nomes).'). Confira se a marca vende essa combinação.';
         }
 
         $conta = $this->custoDaConta($plano);
@@ -217,12 +212,8 @@ final class MotorDeCalculo
 
         // Etapa 05: taxa publicada pode vir condicionada - o Pix a 0% que so
         // vale com a chave ativada no aplicativo, por exemplo. A condicao anda
-        // colada no numero, nunca sai como nota de rodape opcional.
-        foreach ($linhas as $linha) {
-            if (($linha['condicao'] ?? null) !== null) {
-                $avisos[] = $linha['condicao'];
-            }
-        }
+        // colada no numero, em vendas[].condicao, e a tela a mostra ali (etapa
+        // 20: o "?" ao lado da taxa) - nao mais como frase solta nos avisos.
 
         $custoVendas = Dinheiro::arredondar(array_sum(array_map(
             fn (array $l): float => $l['custo'] ?? 0.0,
@@ -492,14 +483,68 @@ final class MotorDeCalculo
      * senao escolher "o mais barato" premiaria o prazo longo e cobraria a
      * antecipacao depois.
      */
-    private function resolverLinha(array $catalogo, array $plano, VendaDoCenario $venda, Cenario $cenario): array
+    /**
+     * Etapa 20: todas as linhas de cartao no mesmo prazo; o Pix livre (null),
+     * porque cai sempre na hora e nao entra na escolha do prazo do plano.
+     */
+    private function resolverLinhas(array $catalogo, array $plano, Cenario $cenario, ?string $prazoDosCartoes): array
+    {
+        return array_map(
+            fn (VendaDoCenario $venda): array => $this->resolverLinha(
+                $catalogo,
+                $plano,
+                $venda,
+                $cenario,
+                $venda->tipoOperacao === TipoOperacao::Pix ? null : $prazoDosCartoes,
+            ),
+            $cenario->vendas,
+        );
+    }
+
+    /**
+     * "Tanto faz o prazo": o prazo unico do plano que fecha a conta com menos
+     * falta e, entre esses, o mais barato (vendas + antecipacao avulsa). Empate
+     * pela ordem da dimensao curada, para PHP e JavaScript escolherem igual.
+     * Sem taxa de cartao nenhuma no plano, devolve null - e as linhas faltam.
+     */
+    private function prazoMaisBaratoDoPlano(array $catalogo, array $plano, Cenario $cenario): ?string
+    {
+        $prazos = [];
+
+        foreach ($plano['taxas'] as $taxa) {
+            if ($taxa['tipo_operacao'] !== TipoOperacao::Pix->value) {
+                $prazos[$taxa['prazo']] = true;
+            }
+        }
+
+        $melhor = null;
+
+        foreach (array_keys($prazos) as $prazo) {
+            $linhas = $this->resolverLinhas($catalogo, $plano, $cenario, $prazo);
+            $faltas = count(array_filter($linhas, fn (array $l): bool => $l['falta'] !== null));
+            $custo = Dinheiro::arredondar(
+                array_sum(array_map(fn (array $l): float => $l['custo'] ?? 0.0, $linhas))
+                + $this->custoDaAntecipacaoAvulsa($catalogo, $plano, $cenario, $linhas)['custo'],
+            );
+            $ordem = $catalogo['prazos'][$prazo]['ordem'] ?? 0;
+            $candidato = [$faltas, $custo, $ordem, $prazo];
+
+            if ($melhor === null || [$faltas, $custo, $ordem] < array_slice($melhor, 0, 3)) {
+                $melhor = $candidato;
+            }
+        }
+
+        return $melhor[3] ?? null;
+    }
+
+    private function resolverLinha(array $catalogo, array $plano, VendaDoCenario $venda, Cenario $cenario, ?string $prazo): array
     {
         $candidatas = array_values(array_filter(
             $plano['taxas'],
             fn (array $taxa): bool => $taxa['tipo_operacao'] === $venda->tipoOperacao->value
                 && $taxa['grupo'] === $venda->grupo
                 && $taxa['parcelas'] === $venda->parcelas
-                && ($cenario->prazo === null || $taxa['prazo'] === $cenario->prazo),
+                && ($prazo === null || $taxa['prazo'] === $prazo),
         ));
 
         if ($candidatas === []) {
@@ -508,9 +553,9 @@ final class MotorDeCalculo
                 'prazo' => null,
                 'custo' => null,
                 'falta' => 'taxa de '.$venda->rotulo($catalogo['grupos'])
-                    .($cenario->prazo === null
+                    .($prazo === null
                         ? ''
-                        : ' no prazo '.($catalogo['prazos'][$cenario->prazo]['nome'] ?? $cenario->prazo)),
+                        : ' no prazo '.($catalogo['prazos'][$prazo]['nome'] ?? $prazo)),
             ];
         }
 
@@ -554,7 +599,9 @@ final class MotorDeCalculo
             if ($faixa['tipo_operacao'] === $venda->tipoOperacao->value
                 && $faixa['grupo'] === $venda->grupo
                 && $faixa['parcelas'] === $venda->parcelas
-                && ($cenario->prazo === null || $faixa['prazo'] === $cenario->prazo)) {
+                // Etapa 20: o Pix cai sempre na hora; o prazo pedido e dos cartoes.
+                && ($cenario->prazo === null || $venda->tipoOperacao === TipoOperacao::Pix
+                    || $faixa['prazo'] === $cenario->prazo)) {
                 return $faixa;
             }
         }
@@ -747,7 +794,14 @@ final class MotorDeCalculo
     private function cupomVigente(array $marca, Cenario $cenario): ?array
     {
         foreach ($marca['cupons'] as $cupom) {
-            if ($cupom['valido_de'] <= $cenario->hoje && $cupom['valido_ate'] >= $cenario->hoje) {
+            // Regra 5 (revista na etapa 17): valido_ate nulo e "sem data de
+            // fim", vigente ate alguem inativar no painel - nunca vencido.
+            // Antes da etapa 20 o motor comparava null >= hoje, que da falso:
+            // todo cupom sem data de fim sumia do resultado.
+            $comecou = $cupom['valido_de'] === null || $cupom['valido_de'] <= $cenario->hoje;
+            $naoAcabou = $cupom['valido_ate'] === null || $cupom['valido_ate'] >= $cenario->hoje;
+
+            if ($comecou && $naoAcabou) {
                 return $cupom;
             }
         }
@@ -987,7 +1041,17 @@ final class MotorDeCalculo
         return $itens;
     }
 
+    /**
+     * Etapa 20 (Everton, 18/09/2026): o ranking e pelo que sai todo mes -
+     * taxas, mensalidade e aluguel -, sem a adesao amortizada. A adesao e
+     * custo de entrada, aparece junto do cupom e nao decide quem ganha.
+     */
     private function chaveDeOrdenacao(array $item): float
+    {
+        return Dinheiro::arredondar($this->totalDoEstado($item) - (float) ($item['adesao']['por_mes'] ?? 0.0));
+    }
+
+    private function totalDoEstado(array $item): float
     {
         return match (EstadoDoResultado::from($item['estado'])) {
             EstadoDoResultado::Calculado => (float) $item['custos']['total_mensal'],

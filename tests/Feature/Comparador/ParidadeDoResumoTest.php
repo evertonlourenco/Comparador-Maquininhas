@@ -268,13 +268,15 @@ class ParidadeDoResumoTest extends TestCase
         $this->assertSame($ranqueaveis[0]['marca']['nome'], $resumo['melhor']['marca']);
         $this->assertSame(end($ranqueaveis)['marca']['nome'], $resumo['pior']['marca']);
 
+        // Etapa 20: o ranking e a diferenca olham o custo recorrente (sem a
+        // adesao amortizada), nao o total.
         $this->assertLessThanOrEqual(
-            $resumo['pior']['custo_mensal_total'],
-            $resumo['melhor']['custo_mensal_total'],
+            $resumo['pior']['custo_mensal_recorrente'],
+            $resumo['melhor']['custo_mensal_recorrente'],
         );
 
         $this->assertSame(
-            round($resumo['pior']['custo_mensal_total'] - $resumo['melhor']['custo_mensal_total'], 2),
+            round($resumo['pior']['custo_mensal_recorrente'] - $resumo['melhor']['custo_mensal_recorrente'], 2),
             $resumo['diferenca_mensal'],
         );
 

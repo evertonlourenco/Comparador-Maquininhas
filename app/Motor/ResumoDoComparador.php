@@ -219,14 +219,15 @@ final class ResumoDoComparador
             fn (array $item): bool => $item['estado'] === EstadoDoResultado::Calculado->value,
         ));
 
-        // O motor ja entregou os itens ordenados por total_mensal crescente,
-        // com desempate estavel. Reordenar aqui seria arriscar discordar dele.
+        // O motor ja entregou os itens ordenados pelo custo mensal recorrente
+        // (sem a adesao, etapa 20), com desempate estavel. Reordenar aqui seria
+        // arriscar discordar dele.
         $melhor = $ranqueaveis === [] ? null : $this->extremo($ranqueaveis[0]);
         $pior = count($ranqueaveis) < 2 ? null : $this->extremo($ranqueaveis[count($ranqueaveis) - 1]);
 
         $diferenca = $melhor === null || $pior === null
             ? null
-            : Dinheiro::arredondar($pior['custo_mensal_total'] - $melhor['custo_mensal_total']);
+            : Dinheiro::arredondar($pior['custo_mensal_recorrente'] - $melhor['custo_mensal_recorrente']);
 
         $horizonte = (int) $cenario['horizonte_meses'];
 

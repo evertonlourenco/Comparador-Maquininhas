@@ -215,36 +215,26 @@ function avaliarPlano(catalogo, marca, plano, cenario) {
 function avaliarComTaxasDivulgadas(catalogo, marca, plano, cenario) {
   let faltando = [];
   let avisos = [];
-  const linhas = [];
   const prazosUsados = [];
   const datasDeVerificacao = [];
 
-  for (const venda of cenario.vendas) {
-    const linha = resolverLinha(catalogo, plano, venda, cenario);
-    linhas.push(linha);
+  // Etapa 20 (Everton, 18/09/2026): os cartoes de um plano caem num prazo so.
+  // Pedido o prazo, e aquele; "tanto faz", o prazo unico mais barato do plano.
+  // O Pix fica fora da escolha: cai sempre na hora.
+  const prazoDosCartoes = cenario.prazo ?? prazoMaisBaratoDoPlano(catalogo, plano, cenario);
+  const linhas = resolverLinhas(catalogo, plano, cenario, prazoDosCartoes);
 
+  for (const linha of linhas) {
     if (linha.falta !== null) {
       faltando.push(linha.falta);
       continue;
     }
 
-    if (!prazosUsados.includes(linha.prazo)) {
+    if (linha.venda.tipo_operacao !== 'pix' && !prazosUsados.includes(linha.prazo)) {
       prazosUsados.push(linha.prazo);
     }
 
     datasDeVerificacao.push(linha.data_verificacao);
-  }
-
-  if (prazosUsados.length > 1) {
-    // Pelo nome de exibicao da dimensao, e nao pelo codigo: este aviso sai
-    // direto na tela do lojista (etapa 07), e "d_1, na_hora" nao quer dizer
-    // nada para quem tem uma padaria.
-    const nomes = prazosUsados.map((codigo) => catalogo.prazos[codigo]?.nome ?? codigo);
-
-    avisos.push(
-      `Este plano foi comparado usando mais de um prazo de recebimento (${nomes.join(', ')}). ` +
-        'Confira se a marca vende essa combinação.',
-    );
   }
 
   const conta = custoDaConta(plano);
@@ -255,12 +245,8 @@ function avaliarComTaxasDivulgadas(catalogo, marca, plano, cenario) {
   avisos = [...avisos, ...conta.avisos, ...aparelho.avisos, ...antecipacao.avisos];
 
   // Taxa publicada pode vir condicionada - o Pix a 0% que so vale com a chave
-  // ativada no aplicativo. A condicao anda colada no numero.
-  for (const linha of linhas) {
-    if ((linha.condicao ?? null) !== null) {
-      avisos.push(linha.condicao);
-    }
-  }
+  // ativada no aplicativo. A condicao anda colada no numero, em
+  // vendas[].condicao (etapa 20: o "?" ao lado da taxa), nao nos avisos.
 
   const custoVendas = arredondar(linhas.reduce((soma, l) => soma + (l.custo ?? 0), 0));
   const total = arredondar(custoVendas + conta.custo + aparelho.custo + antecipacao.custo);
@@ -470,14 +456,59 @@ function promocaoDoPlano(marca, plano, cenario) {
   return { dias: promocao.dias, valor_processado: promocao.valor_processado, sucessor };
 }
 
+/** Etapa 20: cartoes no mesmo prazo; Pix livre (null), cai sempre na hora. */
+function resolverLinhas(catalogo, plano, cenario, prazoDosCartoes) {
+  return cenario.vendas.map((venda) =>
+    resolverLinha(catalogo, plano, venda, cenario, venda.tipo_operacao === 'pix' ? null : prazoDosCartoes),
+  );
+}
+
+/**
+ * "Tanto faz o prazo": o prazo unico que fecha a conta com menos falta e,
+ * entre esses, o mais barato (vendas + antecipacao avulsa). Empate pela ordem
+ * da dimensao curada. Sem taxa de cartao no plano, null.
+ */
+function prazoMaisBaratoDoPlano(catalogo, plano, cenario) {
+  const prazos = [];
+
+  for (const taxa of plano.taxas) {
+    if (taxa.tipo_operacao !== 'pix' && !prazos.includes(taxa.prazo)) {
+      prazos.push(taxa.prazo);
+    }
+  }
+
+  let melhor = null;
+
+  for (const prazo of prazos) {
+    const linhas = resolverLinhas(catalogo, plano, cenario, prazo);
+    const faltas = linhas.filter((l) => l.falta !== null).length;
+    const custo = arredondar(
+      linhas.reduce((soma, l) => soma + (l.custo ?? 0), 0) +
+        custoDaAntecipacaoAvulsa(catalogo, plano, cenario, linhas).custo,
+    );
+    const ordem = catalogo.prazos[prazo]?.ordem ?? 0;
+
+    if (
+      melhor === null ||
+      faltas < melhor.faltas ||
+      (faltas === melhor.faltas && custo < melhor.custo) ||
+      (faltas === melhor.faltas && custo === melhor.custo && ordem < melhor.ordem)
+    ) {
+      melhor = { faltas, custo, ordem, prazo };
+    }
+  }
+
+  return melhor?.prazo ?? null;
+}
+
 /** Resolve a quinta dimensao da chave (o prazo) para uma linha de venda. */
-function resolverLinha(catalogo, plano, venda, cenario) {
+function resolverLinha(catalogo, plano, venda, cenario, prazo) {
   const candidatas = plano.taxas.filter(
     (taxa) =>
       taxa.tipo_operacao === venda.tipo_operacao &&
       taxa.grupo === venda.grupo &&
       taxa.parcelas === venda.parcelas &&
-      (cenario.prazo === null || taxa.prazo === cenario.prazo),
+      (prazo === null || taxa.prazo === prazo),
   );
 
   if (candidatas.length === 0) {
@@ -487,9 +518,7 @@ function resolverLinha(catalogo, plano, venda, cenario) {
       custo: null,
       falta:
         `taxa de ${rotuloDaVenda(venda, catalogo.grupos)}` +
-        (cenario.prazo === null
-          ? ''
-          : ` no prazo ${catalogo.prazos[cenario.prazo]?.nome ?? cenario.prazo}`),
+        (prazo === null ? '' : ` no prazo ${catalogo.prazos[prazo]?.nome ?? prazo}`),
     };
   }
 
@@ -535,7 +564,8 @@ function faixaDaLinha(plano, venda, cenario) {
       faixa.tipo_operacao === venda.tipo_operacao &&
       faixa.grupo === venda.grupo &&
       faixa.parcelas === venda.parcelas &&
-      (cenario.prazo === null || faixa.prazo === cenario.prazo)
+      // Etapa 20: o Pix cai sempre na hora; o prazo pedido e dos cartoes.
+      (cenario.prazo === null || venda.tipo_operacao === 'pix' || faixa.prazo === cenario.prazo)
     ) {
       return faixa;
     }
@@ -697,7 +727,13 @@ function orcamentoDoAparelho(equipamento, cupom, cenario) {
 /** Regra 5: cupom vence sozinho, contra o "hoje" do cenario. */
 function cupomVigente(marca, cenario) {
   for (const cupom of marca.cupons) {
-    if (cupom.valido_de <= cenario.hoje && cupom.valido_ate >= cenario.hoje) {
+    // Regra 5 (revista na etapa 17): valido_ate nulo e "sem data de fim",
+    // vigente. Antes da etapa 20, null >= hoje dava falso e todo cupom sem
+    // data de fim sumia do resultado.
+    const comecou = cupom.valido_de === null || cupom.valido_de <= cenario.hoje;
+    const naoAcabou = cupom.valido_ate === null || cupom.valido_ate >= cenario.hoje;
+
+    if (comecou && naoAcabou) {
       return cupom;
     }
   }
@@ -864,7 +900,15 @@ function ordenar(itens) {
   });
 }
 
+/**
+ * Etapa 20 (Everton, 18/09/2026): ranking pelo que sai todo mes, sem a adesao
+ * amortizada - ela e custo de entrada e aparece junto do cupom.
+ */
 function chaveDeOrdenacao(item) {
+  return arredondar(totalDoEstado(item) - Number(item.adesao?.por_mes ?? 0));
+}
+
+function totalDoEstado(item) {
   switch (item.estado) {
     case 'calculado':
       return Number(item.custos.total_mensal);

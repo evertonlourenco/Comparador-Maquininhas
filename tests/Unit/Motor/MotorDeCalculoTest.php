@@ -124,6 +124,51 @@ class MotorDeCalculoTest extends TestCase
         $this->assertNull($sem['cupom']);
     }
 
+    /**
+     * Regra 5, revista na etapa 17: cupom de afiliado via de regra nao tem data
+     * de fim. valido_ate nulo e vigente, nao vencido - ate a etapa 20 o motor
+     * comparava null >= hoje e o cupom da Ton sumia do resultado.
+     */
+    public function test_cupom_sem_data_de_fim_continua_vigente(): void
+    {
+        $this->catalogo['marcas'][0]['cupons'][0]['valido_ate'] = null;
+
+        $alfa = $this->item($this->calcular(['hoje' => '2027-06-01']), 'Alfa');
+
+        $this->assertSame(50.0, $alfa['adesao']['desconto_do_cupom']);
+        $this->assertSame('ALFA50', $alfa['cupom']['codigo']);
+    }
+
+    public function test_cupom_que_ainda_nao_comecou_nao_vale(): void
+    {
+        $antes = $this->item($this->calcular(['hoje' => '2026-08-31']), 'Alfa');
+
+        $this->assertNull($antes['cupom']);
+    }
+
+    /**
+     * Etapa 20 (Everton, 18/09/2026): o ranking e pelo que sai todo mes, sem a
+     * adesao amortizada. Adesao e custo de entrada, nao decide quem ganha.
+     */
+    public function test_ranking_ignora_a_adesao_amortizada(): void
+    {
+        $calculados = array_values(array_filter(
+            $this->calcular()['itens'],
+            fn (array $item): bool => $item['estado'] === EstadoDoResultado::Calculado->value,
+        ));
+
+        $chaves = array_map(
+            fn (array $item): float => round($item['custos']['total_mensal'] - ($item['adesao']['por_mes'] ?? 0.0), 2),
+            $calculados,
+        );
+
+        $ordenadas = $chaves;
+        sort($ordenadas);
+
+        $this->assertGreaterThanOrEqual(2, count($chaves));
+        $this->assertSame($ordenadas, $chaves);
+    }
+
     public function test_cupom_vencido_some_sozinho(): void
     {
         // O cupom da Alfa vale ate 30/09/2026.
@@ -160,15 +205,51 @@ class MotorDeCalculoTest extends TestCase
     // Prazo: a quinta dimensao da chave
     // ------------------------------------------------------------------
 
-    public function test_sem_prazo_pedido_o_motor_escolhe_o_mais_barato_e_avisa_da_mistura(): void
+    /**
+     * Etapa 20 (Everton, 18/09/2026): nao existe plano que receba debito num
+     * prazo e credito em outro. Sem prazo pedido, o motor escolhe UM prazo para
+     * todos os cartoes - o mais barato entre os que fecham a conta. A Alfa so
+     * vende debito em 1 dia util, entao o credito tambem fica em 1 dia util,
+     * mesmo existindo credito mais barato em 30 dias.
+     */
+    public function test_sem_prazo_pedido_os_cartoes_ficam_num_prazo_so(): void
     {
         $alfa = $this->item($this->calcular(['prazo' => null]), 'Alfa');
 
-        // Credito a vista: 3,15% em 1 dia util contra 2,00% em 30 dias.
-        // R$ 2.000,00 a 2% = R$ 40,00, contra R$ 63,00 no prazo curto.
-        $this->assertSame(10.0 + 40.0, $alfa['custos']['vendas']);
-        $this->assertSame(['d_1', 'd_30'], $alfa['prazos_usados']);
-        $this->assertNotEmpty($alfa['avisos']);
+        $this->assertSame(EstadoDoResultado::Calculado->value, $alfa['estado']);
+        // R$ 1.000,00 a 1,00% + R$ 2.000,00 a 3,15%, ambos em 1 dia util.
+        $this->assertSame(73.0, $alfa['custos']['vendas']);
+        $this->assertSame(['d_1'], $alfa['prazos_usados']);
+        $this->assertStringNotContainsString('prazo de recebimento', implode(' ', $alfa['avisos']));
+    }
+
+    public function test_sem_prazo_pedido_o_prazo_unico_e_o_mais_barato_que_fecha_a_conta(): void
+    {
+        // So credito a vista: 1 dia util (3,15%) e 30 dias (2,00%) fecham os
+        // dois. Vence o de 30 dias - R$ 40,00 contra R$ 63,00.
+        $alfa = $this->item($this->calcular(['prazo' => null, 'vendas' => [$this->creditoAVista()]]), 'Alfa');
+
+        $this->assertSame(40.0, $alfa['custos']['vendas']);
+        $this->assertSame(['d_30'], $alfa['prazos_usados']);
+    }
+
+    /**
+     * O Pix cai sempre na hora. Pedir "Em 1 dia util" e escolha para os
+     * cartoes - antes da etapa 20 o filtro de prazo derrubava o Pix e a marca
+     * inteira virava "incompleto" so por aceitar Pix.
+     */
+    public function test_pix_fica_fora_do_prazo_pedido(): void
+    {
+        $alfa = $this->item($this->calcular([
+            'prazo' => 'd_1',
+            'vendas' => [$this->debito(), ['tipo_operacao' => 'pix', 'valor_mensal' => '500,00', 'quantidade_mensal' => 30]],
+        ]), 'Alfa');
+
+        $this->assertSame(EstadoDoResultado::Calculado->value, $alfa['estado']);
+        $this->assertSame('na_hora', $alfa['vendas'][1]['prazo']);
+        // O prazo do plano e o dos cartoes; o Pix nao conta como "mais um prazo".
+        $this->assertSame(['d_1'], $alfa['prazos_usados']);
+        $this->assertStringNotContainsString('prazo de recebimento', implode(' ', $alfa['avisos']));
     }
 
     public function test_prazo_pedido_que_o_plano_nao_vende_vira_falta_e_nao_troca_de_prazo(): void
@@ -415,7 +496,9 @@ class MotorDeCalculoTest extends TestCase
         // O Pix a 0% da Alfa so vale com a chave ativada no aplicativo. O
         // numero e verdadeiro, mas nao vale sozinho.
         $this->assertSame(0.0, $alfa['custos']['vendas']);
-        $this->assertContains('Válido com a chave Pix ativada no aplicativo da marca.', $alfa['avisos']);
+        // Etapa 20: a condicao anda na linha (a tela a mostra no "?" ao lado da
+        // taxa), e nao repetida como frase solta nos avisos do cartao.
+        $this->assertNotContains('Válido com a chave Pix ativada no aplicativo da marca.', $alfa['avisos']);
         $this->assertSame(
             'Válido com a chave Pix ativada no aplicativo da marca.',
             $alfa['vendas'][0]['condicao'],

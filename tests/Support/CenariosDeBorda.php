@@ -73,6 +73,16 @@ final class CenariosDeBorda
                 'vendas' => [['tipo_operacao' => 'debito', 'grupo' => 'demais', 'parcelas' => 1,
                     'valor_mensal' => '107,00', 'quantidade_mensal' => 3]],
             ]],
+            // Etapa 20: prazo unico por plano, e o Pix fora da escolha do prazo.
+            'sintetico: prazo unico mais barato que fecha a conta' => ['sintetico', [
+                'faturamento_mensal' => '3.000,00', 'hoje' => '2026-09-08', 'prazo' => null,
+                'vendas' => [$vendasBasicas[1]],
+            ]],
+            'sintetico: Pix fora do prazo pedido' => ['sintetico', [
+                'faturamento_mensal' => '3.000,00', 'hoje' => '2026-09-08', 'prazo' => 'd_1',
+                'vendas' => [$vendasBasicas[0],
+                    ['tipo_operacao' => 'pix', 'valor_mensal' => '500,00', 'quantidade_mensal' => 30]],
+            ]],
             'sintetico: horizonte de 24 meses' => ['sintetico', [
                 'faturamento_mensal' => '3.000,00', 'hoje' => '2026-09-08', 'prazo' => 'd_1',
                 'horizonte_meses' => 24, 'vendas' => $vendasBasicas,
@@ -110,6 +120,16 @@ final class CenariosDeBorda
                         'valor_mensal' => '1.500,00', 'quantidade_mensal' => 80],
                     ['tipo_operacao' => 'credito_avista', 'grupo' => 'visa_master', 'parcelas' => 1,
                         'valor_mensal' => '1.500,00', 'quantidade_mensal' => 40],
+                ],
+            ]],
+            'real: cartao em 1 dia util com Pix' => ['real', [
+                'faturamento_mensal' => '15.000,00', 'hoje' => '2026-09-20', 'prazo' => 'd_1',
+                'vendas' => [
+                    ['tipo_operacao' => 'debito', 'grupo' => 'visa_master', 'parcelas' => 1,
+                        'valor_mensal' => '5.000,00', 'quantidade_mensal' => 200],
+                    ['tipo_operacao' => 'credito_parcelado', 'grupo' => 'visa_master', 'parcelas' => 3,
+                        'valor_mensal' => '4.000,00', 'quantidade_mensal' => 30],
+                    ['tipo_operacao' => 'pix', 'valor_mensal' => '6.000,00', 'quantidade_mensal' => 150],
                 ],
             ]],
             'real: Pix da InfinitePay' => ['real', [

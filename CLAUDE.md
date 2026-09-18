@@ -672,8 +672,11 @@ da marca para aquele faturamento).
 `taxas_divulgadas.condicao` é o que o lojista precisa **fazer** para o número
 valer — o Pix a 0% do Ton depende de ativar a chave Pix no aplicativo. Isso não
 vence, então não é promoção; e não é `observacao`, que é nota interna. A condição
-sai colada no número, sempre, e entra nos avisos do resultado. Pix a 0% **por 30
-dias** é outra coisa: isso é plano promocional.
+sai colada no número, sempre — desde a etapa 20 só em `vendas[].condicao`, que a
+tela mostra num "?" ao lado da taxa (hover no mouse, toque no celular). Não entra
+mais em `avisos`: como frase solta no cartão ela ficava sem contexto ("Grátis o
+quê?", Everton, 18/09/2026). Pix a 0% **por 30 dias** é outra coisa: isso é plano
+promocional.
 
 ### Parcela da marca ≠ amortização do motor
 
@@ -712,12 +715,28 @@ alguém lembrar de regerar.
 
 ### Prazo: a quinta dimensão da chave
 
-Com prazo pedido no cenário, é aquele ou nada — se o plano não vende débito na
-hora, o resultado diz que falta, não troca por outro prazo. Com `prazo: null`, o
-motor escolhe o mais barato entre os que o plano oferece, por linha de venda,
-somando a antecipação avulsa na comparação. Quando isso mistura prazos dentro do
-mesmo plano — o caso do "sem antecipação" da InfinitePay, em que débito é D+1 e
-crédito é D+30 —, o resultado registra os prazos usados e emite aviso.
+> **Revisto na etapa 20 (18/09/2026, Everton):** "é sempre um único prazo de
+> recebimento, não existe como combinar prazos no mesmo plano". O texto abaixo
+> é a regra atual; a anterior (escolher o prazo mais barato **por linha** e
+> avisar da mistura) foi removida — ela gerava a frase "comparado usando mais
+> de um prazo (Em 1 dia útil, Na hora)" na tela, e a causa era o Pix.
+
+- **Os cartões de um plano caem num prazo só.** Com prazo pedido, é aquele ou
+  nada — se o plano não vende débito naquele prazo, o resultado diz que falta.
+  Com `prazo: null` ("Tanto faz"), `prazoMaisBaratoDoPlano()` testa cada prazo
+  de cartão que o plano oferece e fica com o que fecha a conta com menos falta
+  e, entre esses, o mais barato (vendas + antecipação avulsa); empate pela
+  `ordem` da dimensão. Todas as linhas de cartão usam esse prazo.
+- **O Pix fica fora do prazo.** Ele cai sempre na hora: nunca é filtrado pelo
+  prazo pedido (antes, pedir "Em 1 dia útil" derrubava o Pix e a marca inteira
+  virava incompleta) e nunca conta em `prazos_usados`. Vale também para a
+  faixa reportada (`faixaDaLinha`).
+- **Pendência conhecida — InfinitePay "Sem antecipação"** (em rascunho): a
+  modalidade é uma só, mas a carga a gravou com débito `d_1` e crédito `d_30`/
+  `parcela_a_parcela`. Pela regra nova nenhum prazo único cobre as três
+  operações, então essa modalidade não é escolhida no "Tanto faz" (os prazos
+  "Na hora" e "1 dia útil" da marca seguem valendo). Resolver de verdade pede
+  modelar "modalidade de recebimento" — decidir antes de aprovar a InfinitePay.
 
 ### Por que a fórmula existe duas vezes (decisão 2)
 
@@ -3909,6 +3928,56 @@ ainda não usada em nenhum outro lugar do projeto **precisa de
 `theme-*.css` — exatamente a mesma disciplina que já valia para o
 `app.css` público desde a etapa 11, agora valendo também pro admin. Se uma
 tela nova do painel sair sem estilo, isso é o primeiro lugar a suspeitar.
+
+## Resultado que vende (etapa 20, 18/09/2026)
+
+Pedida pelo Everton olhando o cartão da Ton publicado. Plano completo, em seis
+blocos, no `PLANO.md` (etapa 20). O que já está feito fica registrado aqui.
+
+### Bloco 1 — motor (18/09/2026)
+
+**Cupom sem data de fim sumia do resultado.** `cupomVigente()` (PHP e JS)
+comparava `valido_ate >= hoje`; com `valido_ate = null`, `null >= '2026-09-18'`
+é falso nas duas linguagens. A regra 5 já dizia desde a etapa 17 que
+`valido_ate` é opcional — o motor nunca tinha sido atualizado. Todo cupom de
+afiliado sem data (o da Ton, `EVERTONLOURENCOBF20`, entre eles) aparecia como
+"Sem cupom disponível hoje". Agora nulo em `valido_de`/`valido_ate` é "sem
+limite" daquele lado.
+
+**Um prazo só por plano; Pix fora.** Ver "Prazo: a quinta dimensão da chave".
+
+**Ranking sem adesão.** Decisão do Everton: o comparador ordena pelo que sai
+todo mês (taxas + mensalidade + aluguel), sem a adesão amortizada — adesão é
+custo de entrada e vai aparecer junto do cupom, no bloco do botão de contratar.
+`chaveDeOrdenacao()` = total do estado − `adesao.por_mes`. `resumo.diferenca_mensal`
+e o topo "melhor/pior" passaram a usar `custo_mensal_recorrente`.
+
+**Avisos fora da tela pública.** `item.avisos` continua no resultado do motor
+(teste, diagnóstico), mas o cartão não o imprime mais: eram notas técnicas
+("aparelho sem aluguel mensal", que além de tudo diz errado — o aparelho fica
+em comodato). A condição da taxa foi para o "?" (ver "Taxa condicionada").
+
+**O botão da tabela promocional não abria com o mouse.** O modal usava
+`x-on:click.outside` no painel. Num clique de verdade o navegador roda os
+microtasks entre um listener e outro do mesmo evento: o Alpine renderizava o
+modal, registrava o `click.outside` na `window`, e o **mesmo** clique de
+abertura chegava lá e fechava o modal. Com `el.click()` por script não
+acontece (os microtasks só rodam no fim) — por isso o botão parecia funcionar
+em teste. Trocado por `x-on:click.self` no fundo escuro. **Vale para qualquer
+modal/popover novo: não abrir com clique e fechar com `click.outside` no
+elemento recém-criado.**
+
+**Teste que já estava quebrado:** `MotorSobreACargaRealTest` procurava o plano
+"Taxas iniciais" do PagBank, excluído em 16/09/2026. Reescrito para a garantia
+geral (item incompleto lista a falta e nunca tem `total_mensal`).
+
+**Suíte:** `php artisan test` estoura os 128 MB padrão num teste de upload de
+imagem; rodar `php -d memory_limit=2G vendor/bin/phpunit`.
+
+**Preview local sem Herd:** `/Users/Everton/Claude Code/.claude/launch.json`
+(fora do repo) sobe `php artisan serve --port=8765`. Para testar com dado real,
+copiar o JSON de produção: `curl -s https://maquinacerta.com.br/dados/comparador.json
+-o public/dados/comparador.json` (a pasta é ignorada pelo Git).
 
 ## Pendente ao fim da etapa 05
 

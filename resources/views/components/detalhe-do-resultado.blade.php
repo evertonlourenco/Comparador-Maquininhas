@@ -41,7 +41,35 @@
                             <td class="numero px-3 py-2 text-end">
                                 {{-- Classe A: o percentual publicado. --}}
                                 <template x-if="linha.percentual_formatado">
-                                    <span x-text="linha.percentual_formatado"></span>
+                                    <span class="inline-flex items-center justify-end gap-1.5">
+                                        <span x-text="linha.percentual_formatado"></span>
+                                        {{-- Etapa 20: a condicao da taxa (o Pix a 0% com a chave
+                                             cadastrada no app, por exemplo) anda colada no numero,
+                                             num "?" que abre no toque e no mouse - nunca como frase
+                                             solta no cartao. Vale para qualquer marca: o dado e
+                                             taxas_divulgadas.condicao. --}}
+                                        <template x-if="linha.condicao">
+                                            <span class="relative" x-data="{ aberta: false }" x-on:mouseenter="aberta = true" x-on:mouseleave="aberta = false" x-on:click.outside="aberta = false" x-on:keydown.escape="aberta = false">
+                                                <button
+                                                    type="button"
+                                                    class="inline-flex size-5 items-center justify-center rounded-full border border-contorno text-[0.7rem] font-semibold leading-none text-tinta-suave hover:border-link hover:text-link"
+                                                    {{-- So abre: no mouse o hover ja abriu, e alternar aqui
+                                                         fecharia no mesmo gesto. Fecha ao sair, ao tocar fora
+                                                         ou com Esc. --}}
+                                                    x-on:click="aberta = true"
+                                                    x-bind:aria-expanded="aberta"
+                                                    aria-label="Condição desta taxa"
+                                                >?</button>
+                                                <span
+                                                    x-cloak
+                                                    x-show="aberta"
+                                                    role="tooltip"
+                                                    class="absolute bottom-full right-0 z-10 mb-2 w-60 rounded-botao border border-regua bg-papel px-3 py-2 text-start font-sans text-miudo text-tinta shadow-lg"
+                                                    x-text="linha.condicao"
+                                                ></span>
+                                            </span>
+                                        </template>
+                                    </span>
                                 </template>
 
                                 {{-- Classe B: intervalo com a mediana rotulada e o
@@ -111,11 +139,5 @@
             </p>
         </template>
 
-        <template x-if="item.prazos_usados.length > 1">
-            <p class="text-miudo text-reportado">
-                Prazos usados nesta conta:
-                <span x-text="item.prazos_usados.map((codigo) => nomeDoPrazo(codigo)).join(', ')"></span>.
-            </p>
-        </template>
     </div>
 </details>
