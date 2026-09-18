@@ -101,26 +101,30 @@ final class CompletudeDaMarca
         foreach ($planos as $plano) {
             $rotulo = $plano['nome'];
 
-            if ($plano['equipamentos'] === []) {
-                $pendencias[] = "{$rotulo}: nenhum equipamento vinculado.";
-            } else {
-                foreach ($plano['equipamentos'] as $equipamento) {
-                    $idsDeEquipamento[$equipamento['id']] = $equipamento['nome'];
-                }
+            foreach ($plano['equipamentos'] as $equipamento) {
+                $idsDeEquipamento[$equipamento['id']] = $equipamento['nome'];
             }
 
             // Regra 4, classe B: plano so com faixa reportada nao tem "conta"
             // nem "aparelho" no sentido que o motor cobra pra taxa divulgada -
             // a faixa e o dado ali, e ele ja vem com o numero de relatos junto
             // (curadoria manual da propria tela de relatos, nao desta trava).
+            // `avaliarPlanoParaCompletude()` nunca roda pra este ramo, entao
+            // e o unico lugar que ainda cobra equipamento pra um plano assim.
             if ($plano['taxas'] === []) {
                 if ($plano['faixas'] === []) {
                     $pendencias[] = "{$rotulo}: nenhuma taxa nem faixa publicada.";
+                } elseif ($plano['equipamentos'] === []) {
+                    $pendencias[] = "{$rotulo}: nenhum equipamento vinculado.";
                 }
 
                 continue;
             }
 
+            // A partir daqui o plano tem taxa divulgada, e
+            // avaliarPlanoParaCompletude() (via custoDoAparelho()) ja cobra
+            // "equipamento vinculado a este plano" sozinho quando faltar -
+            // checar de novo aqui so duplicaria a mesma mensagem.
             $resultado = $motor->avaliarPlanoParaCompletude($catalogoMinimo, $marcaArr, $plano, $cenario);
 
             foreach ($resultado['faltando'] as $falta) {

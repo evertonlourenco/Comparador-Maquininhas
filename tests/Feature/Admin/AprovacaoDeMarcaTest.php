@@ -80,6 +80,15 @@ class AprovacaoDeMarcaTest extends TestCase
         $this->assertFalse($completude['completa']);
         $this->assertNotEmpty($completude['pendencias']);
 
+        // Achado do Everton em 18/09/2026: um plano com taxa mas sem
+        // equipamento gerava DUAS pendências pro mesmo fato (a checagem
+        // própria desta classe e o "faltando" que o motor já devolve via
+        // custoDoAparelho()). Confere que sobrou só uma.
+        $mencoesAEquipamento = collect($completude['pendencias'])
+            ->filter(fn (string $p): bool => str_contains($p, 'equipamento'))
+            ->count();
+        $this->assertSame(1, $mencoesAEquipamento, 'A pendência de equipamento não pode aparecer duplicada.');
+
         $catalogo = app(CatalogoDoComparador::class)->montar(incluirRascunhos: false);
         $slugsNoJson = collect($catalogo['marcas'])->pluck('slug')->all();
 
