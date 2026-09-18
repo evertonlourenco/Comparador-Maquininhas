@@ -51,7 +51,9 @@
                      aqui com isso, entao verde e sempre numero publicado. O mais
                      caro nao ganha cor: vermelho e de vencido. --}}
                 <article
-                    class="overflow-hidden rounded-bloco bg-papel"
+                    class="scroll-mt-4 overflow-hidden rounded-bloco bg-papel focus:outline-none"
+                    tabindex="-1"
+                    x-bind:id="idDoCartaoResultado(item)"
                     @if ($ranqueado)
                         x-bind:class="ehMelhor(item) ? 'border-[1.5px] border-acao' : 'border {{ $borda }}'"
                     @else

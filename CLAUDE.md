@@ -4042,6 +4042,50 @@ truncava o preço ao lado. Um `<div class="h-20 sm:hidden">` com o mesmo
 `x-show` reserva o espaço embaixo da página para a barra não tampar o
 rodapé.
 
+### Bloco C — segunda visualização "Tabela de taxas" (18/09/2026)
+
+Alternância **Cartões | Tabela** (`visualizacaoResultado`, sem entrar na URL —
+é só como a tela mostra o mesmo resultado, não muda cenário). A tabela é o
+cartão de resultado **transposto**: uma linha por forma de pagamento, colunas
+1ª, 2ª, 3ª… da menor para a maior taxa, com logo + nome + taxa em cada célula.
+
+**Casamento das linhas por índice, não por assinatura.** `cenario.vendas`
+(gerado uma vez, em `vendasDoMix()`) é mapeado 1 para 1 por `resolverLinhas()`
+(`motor.mjs`) para todo plano avaliado — a posição `i` do array `item.vendas`
+é sempre a mesma forma de pagamento em qualquer item. `linhasDaTabelaDeTaxas`
+(getter em `comparador.js`) usa isso para casar a mesma linha entre marcas só
+pelo índice, sem comparar `tipo_operacao`/`parcelas`/`grupo` na mão.
+
+**Pool da tabela: `calculado` + `incompleto`, nunca `promocional`.** Mesma
+regra do Everton (17/09/2026) de nunca favorecer o preço de entrada — a
+tabela não pode virar uma porta lateral para a promoção aparecer disputando
+posição. `faixa_reportada` também fica fora: nunca tem taxa exata por forma
+de pagamento, só mediana de relatos.
+
+**Rótulo da linha some com o grupo de bandeiras quando é redundante.**
+`rotuloDaVenda()` foi separado em `rotuloBaseDaVenda()` (nome sem o grupo) +
+o sufixo `— {grupo}`. A tabela só usa o sufixo quando o mix do lojista de
+fato gera duas linhas para a mesma forma de pagamento (Visa/Master e Demais);
+com `visaMaster = 100` (padrão da tela), a linha é só "Débito", não "Débito —
+Visa e Mastercard" em toda linha sem motivo.
+
+**Célula clicável = `irParaCartao()`**: troca `visualizacaoResultado` para
+`'cartoes'` e rola/foca no cartão certo via `id` (`idDoCartaoResultado()`,
+`cartao-resultado-{slug}-{plano_id}`, escrito no `<article>` de
+`resultado-comparado.blade.php`). Mesmo método usado tanto pela tabela quanto
+por qualquer chamador futuro — um id só por marca+plano em toda a tela.
+
+**Celular**: cada linha é seu próprio `overflow-x-auto`, com a célula da
+forma de pagamento `sticky left-0`. Testado em 375px arrastando a linha —
+a coluna da esquerda fica fixa e as colunas de marca passam por baixo dela.
+
+**Achado ao testar**: o `public/dados/comparador.json` de produção (18/09/2026,
+16h) só tem a Ton publicada — as outras marcas cujo painel dizia 100%
+publicado na curadoria da etapa 17 (FacilityPay, SidePay, Yelly, TrincaPay)
+não aparecem no JSON de hoje. Não investigado nesta sessão (fora do escopo do
+bloco C); vale conferir no início da próxima etapa antes de assumir que a
+curadoria de 17/09 ainda está no ar do jeito que foi registrada.
+
 ## Pendente ao fim da etapa 05
 
 O motor está pronto e testado, mas ele é honesto sobre o que não sabe — e isso

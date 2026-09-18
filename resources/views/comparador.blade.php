@@ -340,6 +340,29 @@
                 </div>
             </div>
 
+            {{-- Etapa 20 (bloco C): segunda visualizacao, so alterna a tela —
+                 mesmo cenario, mesmos itens, so troca como eles aparecem. --}}
+            <div role="group" aria-label="Como ver o resultado" class="flex gap-2" x-show="temAlgumResultado" x-cloak>
+                <button
+                    type="button"
+                    x-on:click="visualizacaoResultado = 'cartoes'"
+                    :aria-pressed="visualizacaoResultado === 'cartoes'"
+                    class="inline-flex min-h-11 items-center rounded-botao border-[1.5px] px-4 font-titulo text-sm font-semibold"
+                    :class="visualizacaoResultado === 'cartoes'
+                        ? 'border-tinta bg-tinta text-papel'
+                        : 'border-contorno bg-papel text-tinta hover:bg-superficie'"
+                >Cartões</button>
+                <button
+                    type="button"
+                    x-on:click="visualizacaoResultado = 'tabela'"
+                    :aria-pressed="visualizacaoResultado === 'tabela'"
+                    class="inline-flex min-h-11 items-center rounded-botao border-[1.5px] px-4 font-titulo text-sm font-semibold"
+                    :class="visualizacaoResultado === 'tabela'
+                        ? 'border-tinta bg-tinta text-papel'
+                        : 'border-contorno bg-papel text-tinta hover:bg-superficie'"
+                >Tabela</button>
+            </div>
+
             <p class="text-sm text-tinta-suave" x-show="carregando">Carregando a tabela de taxas…</p>
 
             <template x-if="! carregando && ! erroDeCarga && resultado && resultado.itens.length === 0">
@@ -391,6 +414,10 @@
                     </div>
                 </div>
             </template>
+
+            {{-- Etapa 20 (bloco C): visualizacao "Cartoes" — o que ja existia,
+                 so ganhou um x-show para poder alternar com a "Tabela". --}}
+            <div x-show="visualizacaoResultado === 'cartoes'" x-cloak class="space-y-8">
 
             {{-- Regra 4 no layout: so o bloco calculado e ranqueado por preco.
                  Os outros vem depois, em blocos proprios, com o motivo a vista —
@@ -529,6 +556,60 @@
                     </template>
                 </ul>
             </section>
+
+            </div>
+
+            {{-- Etapa 20 (bloco C): visualizacao "Tabela de taxas" — o cartao
+                 transposto. Uma linha por forma de pagamento, colunas 1a, 2a,
+                 3a... da menor para a maior taxa. So taxa, sem simulacao: sem
+                 promocional (nunca favorecer o preco de entrada) e sem faixa
+                 reportada (nunca tem taxa exata por forma de pagamento). --}}
+            <div x-show="visualizacaoResultado === 'tabela'" x-cloak class="space-y-4">
+                <p class="max-w-3xl text-miudo text-tinta-suave">
+                    Só a taxa de cada forma de pagamento, da mais barata para a mais cara — mesmo
+                    plano, prazo e faturamento do cenário acima. Toque numa marca para abrir o
+                    cartão dela, com o cupom e o link de contratar.
+                </p>
+
+                <template x-if="linhasDaTabelaDeTaxas.length === 0">
+                    <p class="rounded-bloco border border-reportado bg-reportado-fundo px-4 py-3 text-sm text-reportado">
+                        Nenhuma marca tem taxa publicada para este cenário ainda.
+                    </p>
+                </template>
+
+                <div class="space-y-3">
+                    <template x-for="linha in linhasDaTabelaDeTaxas" :key="linha.rotulo">
+                        <div class="overflow-hidden rounded-bloco border border-regua bg-papel">
+                            <div class="flex items-stretch overflow-x-auto">
+                                <div class="sticky left-0 z-10 flex min-w-[7rem] shrink-0 items-center border-e border-regua bg-superficie px-3 py-3">
+                                    <span class="text-sm font-medium text-tinta" x-text="linha.rotulo"></span>
+                                </div>
+
+                                <template x-for="(posicao, indice) in linha.posicoes" :key="posicao.item.marca.slug + '-' + (posicao.item.plano ? posicao.item.plano.id : 0)">
+                                    <button
+                                        type="button"
+                                        class="flex min-w-[8rem] shrink-0 flex-col items-center gap-1.5 border-e border-regua px-3 py-3 text-center last:border-e-0 hover:bg-superficie"
+                                        :class="indice === 0 ? 'bg-acao-fundo' : ''"
+                                        x-on:click="irParaCartao(posicao.item)"
+                                    >
+                                        <span class="numero text-etiqueta font-semibold text-tinta-suave" x-text="(indice + 1) + 'ª'"></span>
+                                        <span class="flex size-8 items-center justify-center rounded-botao border border-regua bg-papel">
+                                            <template x-if="posicao.item.marca.logo_url">
+                                                <img :src="posicao.item.marca.logo_url" :alt="posicao.item.marca.nome" class="max-h-5 max-w-6 object-contain" width="24" height="20" loading="lazy" decoding="async">
+                                            </template>
+                                            <template x-if="! posicao.item.marca.logo_url">
+                                                <span class="font-titulo text-sm font-semibold text-tinta-suave" aria-hidden="true" x-text="posicao.item.marca.nome.charAt(0)"></span>
+                                            </template>
+                                        </span>
+                                        <span class="max-w-[7.5rem] truncate text-miudo font-medium text-tinta" x-text="posicao.item.marca.nome"></span>
+                                        <span class="numero text-sm font-semibold" :class="indice === 0 ? 'text-acao' : 'text-tinta'" x-text="posicao.percentual_formatado"></span>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
 
             <template x-if="resultado && resultado.catalogo.contem_rascunhos">
                 {{-- Regra 10: arquivo de conferencia nunca passa por definitivo. --}}

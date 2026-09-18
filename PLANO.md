@@ -365,7 +365,9 @@ O bug do modal promocional (bloco B) foi resolvido junto.
   passam para as regulares do plano X".
 - No celular: CTA do 1º colocado fixo no rodapé da tela ao rolar o resultado.
 
-**C. Segunda visualização: "Tabela de taxas"** (alternância Cartões | Tabela)
+**C. Segunda visualização: "Tabela de taxas"** (alternância Cartões | Tabela) —
+**concluído em 18/09/2026**, ver `CLAUDE.md`, "Resultado que vende (etapa 20)",
+bloco C.
 - Uma linha por forma de pagamento (Débito, Crédito 1x, 2x, 6x, 12x, Pix e as
   parcelas do mix informado); colunas 1ª, 2ª, 3ª… com **logo + nome + taxa**,
   da menor para a maior, como o rascunho do Everton.

@@ -109,6 +109,9 @@ function comparador(caminhoDoJson) {
     detalhesMixAbertos: false,
     // Slug da marca cujo modal de promocao esta aberto, ou null.
     promocaoAberta: null,
+    // Etapa 20 (bloco C): a segunda visualizacao do resultado, so alterna a
+    // tela — nao muda cenario nem entra na URL.
+    visualizacaoResultado: 'cartoes',
     temporizador: null,
     // Etapa 12: debounce proprio para o evento de uso do GA4, separado do
     // debounce do calculo (120ms — pensado para o motor, nao para analytics).
@@ -713,8 +716,8 @@ function comparador(caminhoDoJson) {
         .sort((a, b) => a.ordem - b.ordem);
     },
 
-    /** A linha de venda pelo nome que o lojista reconhece. */
-    rotuloDaVenda(venda) {
+    /** O nome da forma de pagamento, sem o grupo de bandeiras. */
+    rotuloBaseDaVenda(venda) {
       const nomes = {
         debito: 'Débito',
         credito_avista: 'Crédito à vista',
@@ -722,7 +725,12 @@ function comparador(caminhoDoJson) {
         pix: 'Pix',
       };
 
-      const base = nomes[venda.tipo_operacao] ?? venda.tipo_operacao;
+      return nomes[venda.tipo_operacao] ?? venda.tipo_operacao;
+    },
+
+    /** A linha de venda pelo nome que o lojista reconhece. */
+    rotuloDaVenda(venda) {
+      const base = this.rotuloBaseDaVenda(venda);
 
       return venda.tipo_operacao === 'pix' ? base : `${base} — ${this.nomeDoGrupo(venda.grupo)}`;
     },
@@ -744,6 +752,72 @@ function comparador(caminhoDoJson) {
     /** O item de menor custo do bloco calculado — o CTA fixo do celular usa este. */
     get melhorItem() {
       return this.itensNoEstado('calculado')[0] ?? null;
+    },
+
+    /**
+     * Etapa 20 (bloco C): a "Tabela de taxas" e o cartao de resultado
+     * transpostos — uma linha por forma de pagamento, colunas 1a, 2a, 3a...
+     * da menor para a maior taxa. So taxa: sem promocional (regra do
+     * Everton, 17/09/2026, de nunca favorecer o preco de entrada) e sem
+     * faixa reportada (que nunca tem uma taxa exata por forma de pagamento).
+     *
+     * item.vendas vem de cenario.vendas mapeado 1 a 1 (resolverLinhas, em
+     * motor.mjs) - a mesma posicao do array e sempre a mesma forma de
+     * pagamento em todo item, entao o indice basta para casar as linhas
+     * entre marcas, sem comparar tipo_operacao/parcelas/grupo na mao.
+     */
+    get linhasDaTabelaDeTaxas() {
+      const pool = [...this.itensNoEstado('calculado'), ...this.itensNoEstado('incompleto')];
+
+      if (pool.length === 0) {
+        return [];
+      }
+
+      const vendasDeReferencia = pool[0].vendas.map((linha) => linha.venda);
+
+      return vendasDeReferencia
+        .map((vendaDeReferencia, indice) => {
+          const posicoes = pool
+            .map((item) => ({ item, linha: item.vendas[indice] }))
+            .filter(({ linha }) => linha && linha.falta === null)
+            .sort((a, b) => a.linha.percentual - b.linha.percentual)
+            .map(({ item, linha }) => ({
+              item,
+              percentual_formatado: linha.percentual_formatado,
+            }));
+
+          // O nome da forma de pagamento basta na maioria dos cenarios; so
+          // ganha o grupo de bandeiras quando o mix do lojista de fato separa
+          // Visa/Mastercard de "demais" em duas linhas para a mesma forma de
+          // pagamento — senao "Visa e Mastercard" apareceria em toda linha
+          // sem motivo, ja que 100% e o padrao da tela.
+          const mesmoTipo = vendasDeReferencia.filter(
+            (v) => v.tipo_operacao === vendaDeReferencia.tipo_operacao && v.parcelas === vendaDeReferencia.parcelas,
+          );
+          const rotulo =
+            mesmoTipo.length > 1
+              ? `${this.rotuloBaseDaVenda(vendaDeReferencia)} — ${this.nomeDoGrupo(vendaDeReferencia.grupo)}`
+              : this.rotuloBaseDaVenda(vendaDeReferencia);
+
+          return { rotulo, posicoes };
+        })
+        .filter((linha) => linha.posicoes.length > 0);
+    },
+
+    /** O mesmo id em toda tela — a tabela usa para levar ao cartao certo. */
+    idDoCartaoResultado(item) {
+      return `cartao-resultado-${item.marca.slug}-${item.plano ? item.plano.id : 0}`;
+    },
+
+    /** Clique numa celula da tabela: volta para Cartoes e rola até o dela. */
+    irParaCartao(item) {
+      this.visualizacaoResultado = 'cartoes';
+
+      this.$nextTick(() => {
+        const elemento = document.getElementById(this.idDoCartaoResultado(item));
+        elemento?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        elemento?.focus({ preventScroll: true });
+      });
     },
 
     real,
