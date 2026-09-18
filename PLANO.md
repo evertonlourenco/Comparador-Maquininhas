@@ -376,7 +376,8 @@ bloco C.
 - No celular: cada linha vira faixa com rolagem horizontal e a coluna da
   forma de pagamento fixa.
 
-**D. Home e navegação**
+**D. Home e navegação** — **concluído em 18/09/2026**, ver `CLAUDE.md`,
+"Resultado que vende (etapa 20)", bloco D.
 - Faixa de logos das marcas comparadas logo abaixo do título, que vira
   pergunta direta ("Qual maquininha cobra menos de você?"), sem parágrafo.
 - Formulário em passos com contraste de verdade: campos com fundo e borda

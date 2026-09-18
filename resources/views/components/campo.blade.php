@@ -26,7 +26,11 @@
     $descritores = collect([$ajuda ? $idAjuda : null, $erro ? $idErro : null])->filter()->implode(' ');
 
     $controle = trim(implode(' ', [
-        'block w-full min-h-12 rounded-botao border bg-papel px-3 py-2 text-base text-tinta',
+        // Etapa 20 (bloco D): fundo em superficie, nao papel — o campo vive
+        // dentro de um cartao branco (bg-papel), e um campo da mesma cor que
+        // o cartao so tinha a borda para se distinguir. Combinacao ja validada
+        // em scripts/verifica-contraste.mjs ("contorno de campo na superficie").
+        'block w-full min-h-12 rounded-botao border-2 bg-superficie px-3 py-2 text-base text-tinta',
         'placeholder:text-tinta-suave',
         $erro ? 'border-vencido' : 'border-contorno',
         $prefixo ? 'ps-10' : '',

@@ -313,6 +313,17 @@ function comparador(caminhoDoJson) {
       });
     },
 
+    /**
+     * Etapa 20 (bloco D): o botao "Comparar agora" que fecha o formulario.
+     * O calculo em si e reativo (agendar(), a cada mudanca de campo) — este
+     * metodo so leva ate o resultado que ja existe, sem mexer em `marcas`.
+     */
+    irParaResultado() {
+      const alvo = document.getElementById('resultado');
+      alvo?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      alvo?.focus({ preventScroll: true });
+    },
+
     get quantasMarcas() {
       return this.marcas === TODAS_AS_MARCAS ? this.todasAsMarcas.length : this.marcas.length;
     },

@@ -47,21 +47,14 @@
             </nav>
         @endif
 
-        {{-- As tres frases que sustentam o portal (regras 5, 6 e 4). Elas ficam
-             no rodape de toda pagina porque valem para toda pagina. --}}
-        <div class="space-y-2 border-t border-sobre-marca/20 pt-6 text-miudo text-sobre-marca-suave">
-            <p>
-                Ganhamos comissão quando alguém contrata por um link daqui.
-                <strong class="font-semibold text-sobre-marca">A taxa pelo nosso link é a mesma do site oficial</strong> — o que muda é o cupom de desconto na adesão, quando existe.
-            </p>
-            <p>
-                Nenhuma taxa é publicada sem a página de origem e a data em que foi conferida. O selo de verificação degrada sozinho depois de
-                <span class="numero">{{ \App\Models\TaxaDivulgada::DIAS_ATE_DEGRADAR }}</span> dias.
-            </p>
-            <p>
-                Marcas que não publicam tabela aparecem com faixa de valores relatados por lojistas, sempre identificada como tal — nunca como número exato.
-            </p>
-            <p class="pt-2">© <span class="numero">{{ now()->year }}</span> {{ config('app.name') }} · by Monetizando.</p>
-        </div>
+        {{-- Etapa 20 (bloco D): as tres frases de transparencia que moravam
+             aqui (comissao, selo de verificacao, faixa reportada) saíram —
+             elas ja estao, com mais detalhe, em /metodologia (secoes
+             "Comissão e independência do número", "O que o selo de frescor
+             significa" e "Por que ... aparecem como faixa"). O rodape fica
+             so com logo, links e a data acima, e o copyright abaixo. --}}
+        <p class="border-t border-sobre-marca/20 pt-6 text-miudo text-sobre-marca-suave">
+            © <span class="numero">{{ now()->year }}</span> {{ config('app.name') }} · by Monetizando.
+        </p>
     </div>
 </footer>

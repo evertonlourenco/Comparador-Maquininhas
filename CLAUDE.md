@@ -4086,6 +4086,60 @@ não aparecem no JSON de hoje. Não investigado nesta sessão (fora do escopo do
 bloco C); vale conferir no início da próxima etapa antes de assumir que a
 curadoria de 17/09 ainda está no ar do jeito que foi registrada.
 
+### Bloco D — home e navegação (18/09/2026)
+
+Título da home (`resources/views/comparador.blade.php`) virou a pergunta
+direta do diagnóstico do Everton — "Qual maquininha cobra menos de você?" —
+e o parágrafo abaixo dele saiu. No lugar, uma faixa decorativa com o logo de
+cada marca do catálogo (`todasAsMarcas`, a mesma lista do passo 4), cada
+`<img>` com `x-on:error` escondendo o próprio item (`x-data="{ logoComErro
+}"` por marca, mesmo padrão do grid de marcas) — uma URL de logo quebrada
+some da faixa em vez de aparecer como ícone de imagem partida. `aria-hidden`
+no contêiner e `alt=""` nas imagens: é decorativo, as mesmas marcas já têm
+nome e checkbox acessíveis no passo 4, então a faixa não duplica conteúdo
+para leitor de tela.
+
+**Contraste de verdade nos campos.** Até aqui todo campo (`x-campo`, e os
+dois `<select>` nativos de parcelas/prazo) tinha `bg-papel` — a mesma cor do
+cartão branco que o envolve, então só a borda de 1px (`border-contorno`)
+separava campo de cartão. Trocado para `bg-superficie` (o cinza claro da
+página) com `border-2`: a combinação já era validada em
+`scripts/verifica-contraste.mjs` ("contorno de campo na superficie", 3.55:1
+no claro e 5.21:1 no escuro — ambos acima do mínimo de 3:1 da 1.4.11) porque
+o `<details>` do passo 2 já a usava, só não tinha chegado aos campos em si.
+Mesma troca nos chips de segmento não selecionados (eram `bg-papel`, viraram
+`bg-superficie` com `hover:bg-superficie-forte` — o hover antigo,
+`hover:bg-superficie`, teria ficado igual ao estado de repouso novo). Os
+chips selecionados (`bg-tinta`) e os botões Cartões/Tabela do bloco C não
+mudaram — não são "campo" e o diagnóstico do Everton não os citou.
+
+**Botão "Comparar agora"**, `variante="principal"` (a cor de ação, o mesmo
+verde de "Escolha por mim") e `tamanho="grande"`, fecha o formulário depois
+do passo 4. O cálculo já é reativo — `agendar()` recalcula a cada mudança de
+campo, com debounce de 120ms — então o botão não dispara cálculo nenhum;
+`irParaResultado()` (novo método em `comparador.js`, ao lado de
+`escolhaPorMim()`) só rola até `#resultado` e move o foco para lá, para quem
+preencheu tudo ter um lugar óbvio para clicar em vez de descobrir sozinho que
+o resultado já está pronto mais abaixo. `class="w-full sm:w-auto"` na
+própria tag: largura total no celular, do tamanho do texto a partir de `sm`.
+
+**Rodapé enxuto** (`resources/views/components/rodape.blade.php`): as três
+frases de transparência (comissão, degradação do selo, faixa reportada) que
+ficavam no fim de todo rodapé saíram — elas já existem com mais detalhe em
+`/metodologia` (seções "Comissão e independência do número", "O que o selo
+de frescor significa" e "Por que Cielo, Rede, GetNet e Stone aparecem como
+faixa", todas de etapas anteriores; nenhum texto novo precisou entrar lá). O
+rodapé fica só com logo, data de atualização, links institucionais e a linha
+de copyright. A linha curta de divulgação de afiliado que substitui as três
+frases perto do CTA já existia desde o bloco B ("Link de parceiro. A taxa é
+a mesma do site oficial.", no cartão de resultado) — nada novo precisou
+entrar ali.
+
+Testado no navegador local (porta 8765) contra o JSON real de produção
+(cenário padrão e com a Ton selecionada), em 375px e desktop, com
+`node scripts/verifica-contraste.mjs` passando nos dois temas.
+`npm run build` rodado depois da troca de classes Tailwind.
+
 ## Pendente ao fim da etapa 05
 
 O motor está pronto e testado, mas ele é honesto sobre o que não sabe — e isso

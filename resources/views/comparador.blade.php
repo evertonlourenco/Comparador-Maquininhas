@@ -27,13 +27,27 @@
     :scripts="['resources/js/comparador.js']"
 >
     <div x-data="comparador('{{ $caminhoDoJson }}')" class="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
-        <header class="max-w-3xl space-y-3">
-            <h1 class="text-manchete">Quanto a maquininha custa para o seu negócio</h1>
-            <p class="text-subtitulo text-tinta-suave">
-                Responda quatro perguntas e veja o custo mensal de cada marca para o
-                <em>seu</em> faturamento e o <em>seu</em> mix de vendas — não para a média de ninguém.
-                Toda taxa vem com a página de origem e a data em que foi conferida.
-            </p>
+        <header class="max-w-3xl space-y-4">
+            <h1 class="text-manchete">Qual maquininha cobra menos de você?</h1>
+
+            {{-- Etapa 20 (bloco D): faixa visual com os logos das marcas
+                 comparadas no lugar do parágrafo explicativo. Decorativa —
+                 as mesmas marcas já aparecem, com nome e checkbox, no passo 4
+                 do formulário — por isso aria-hidden e alt vazio aqui. --}}
+            <div class="flex flex-wrap items-center gap-2" aria-hidden="true">
+                <template x-for="marca in todasAsMarcas.filter((m) => m.logo_url)" :key="marca.slug">
+                    <span x-data="{ logoComErro: false }" x-show="! logoComErro" class="flex h-8 items-center rounded-botao border border-regua bg-papel px-2">
+                        <img
+                            :src="marca.logo_url"
+                            alt=""
+                            class="max-h-5 max-w-20 object-contain"
+                            loading="lazy"
+                            decoding="async"
+                            x-on:error="logoComErro = true"
+                        >
+                    </span>
+                </template>
+            </div>
         </header>
 
         @unless ($jsonExiste)
@@ -96,10 +110,10 @@
                                     type="button"
                                     x-on:click="escolherSegmento(s.chave)"
                                     :aria-pressed="segmento === s.chave"
-                                    class="inline-flex min-h-12 items-center rounded-botao border-[1.5px] px-4 py-2 font-titulo text-[0.9375rem] font-semibold"
+                                    class="inline-flex min-h-12 items-center rounded-botao border-2 px-4 py-2 font-titulo text-[0.9375rem] font-semibold"
                                     :class="segmento === s.chave
                                         ? 'border-tinta bg-tinta text-papel'
-                                        : 'border-contorno bg-papel text-tinta hover:bg-superficie'"
+                                        : 'border-contorno bg-superficie text-tinta hover:bg-superficie-forte'"
                                     x-text="s.rotulo"
                                 ></button>
                             </template>
@@ -179,7 +193,7 @@
                                     <label for="campo-parcelas" class="block text-sm font-medium text-tinta">Parcelas mais comuns</label>
                                     <select
                                         id="campo-parcelas"
-                                        class="block min-h-12 w-full rounded-botao border border-contorno bg-papel px-3 py-2 text-base text-tinta"
+                                        class="block min-h-12 w-full rounded-botao border-2 border-contorno bg-superficie px-3 py-2 text-base text-tinta"
                                         aria-describedby="campo-parcelas-ajuda"
                                         x-model.number="parcelas"
                                     >
@@ -235,7 +249,7 @@
                     <label for="campo-prazo" class="block text-sm font-medium text-tinta">Prazo de recebimento desejado</label>
                     <select
                         id="campo-prazo"
-                        class="block min-h-12 w-full max-w-md rounded-botao border border-contorno bg-papel px-3 py-2 text-base text-tinta"
+                        class="block min-h-12 w-full max-w-md rounded-botao border-2 border-contorno bg-superficie px-3 py-2 text-base text-tinta"
                         aria-describedby="campo-prazo-ajuda"
                         x-model="prazo"
                     >
@@ -324,6 +338,15 @@
                 </div>
             </section>
 
+            {{-- Etapa 20 (bloco D): a acao que fecha o formulario. O calculo
+                 ja roda sozinho a cada mudanca (agendar()); este botao so
+                 rola ate o resultado, para quem preencheu tudo e quer um
+                 lugar obvio para clicar em vez de descobrir isso sozinho. --}}
+            <div class="flex justify-center sm:justify-start">
+                <x-botao tamanho="grande" x-on:click="irParaResultado()" class="w-full sm:w-auto">
+                    Comparar agora
+                </x-botao>
+            </div>
         </form>
 
         {{-- Resultado --------------------------------------------------------- --}}
