@@ -316,6 +316,131 @@ Plano, etapa 17).
   — a IA pré-preenche as células, a pessoa só corrige o que estiver errado
   antes de salvar
 
+### 22 — Resultado que vende: simplificação, CTAs e reforma de UX
+
+Pedida pelo Everton em 18/09/2026, olhando o cartão da Ton no resultado
+publicado. O diagnóstico dele, que vira a regra desta etapa: **o comparador
+existe para mostrar a marca de menor taxa e levar o lojista a contratar pelo
+link com cupom.** O resultado de hoje mostra conta demais, explica demais e
+não tem nenhum botão de contratar.
+
+**Três bugs reais achados no diagnóstico (18/09/2026), não são gosto:**
+
+| O que aparece | Causa no código |
+|---|---|
+| "Sem cupom disponível hoje" na Ton, que tem o cupom `EVERTONLOURENCOBF20` (20%) ativo | `cupomVigente()` compara `valido_ate >= hoje`; o cupom da Ton tem `valido_ate = null` (sem data de fim), e `null >= '2026-09-18'` é falso em JS **e** em PHP. Todo cupom sem data de fim é tratado como vencido. `resources/js/comparador/motor.mjs:698` e `app/Motor/MotorDeCalculo.php:750` |
+| "Comparado usando mais de um prazo (Em 1 dia útil, Na hora)" | O aviso conta o prazo do Pix, que é sempre na hora. Não existe plano com dois prazos de cartão; o Pix tem que ficar fora dessa contagem. `motor.mjs:238` e o gêmeo em PHP |
+| "Tem tabela de entrada por tempo limitado" não abre nada ao clicar | O modal existe (`comparador.blade.php:546`, `abrirModalPromocao`), mas não abre para o Everton em produção. Reproduzir no navegador antes de mexer |
+
+**Decisões do Everton em 18/09/2026:**
+
+- **Adesão sai do ranking e dos números do cartão.** O ranking passa a ser
+  só pelo custo das taxas (+ mensalidade, quando houver). Adesão aparece
+  uma vez só, no bloco do CTA, como "Adesão a partir de R$ X" com o cupom.
+  Muda a regra de ordenação registrada no `CLAUDE.md`, que tem que ser
+  atualizado junto.
+- **Avisos técnicos saem da tela pública**: prazo usado, "aparelho sem
+  aluguel mensal" (errado, além de tudo — as marcas cedem em comodato),
+  "Verificada em" (já está no rodapé), linha de adesão diluída, "Prazos
+  usados nesta conta". Continuam no motor para o admin/diagnóstico.
+- **Condição de taxa vira "?" ao lado do número**, não frase solta. O dado já
+  existe por taxa (`taxas.condicao`, ex.: Pix da Ton 0% com chave no app):
+  toda marca com condição ganha o mesmo tratamento sem código novo.
+- **Rodapé e topo sem texto explicativo.** Os três parágrafos de
+  transparência do rodapé vão só para `/metodologia` (fica uma linha curta de
+  divulgação de afiliado perto do CTA — obrigação de publicidade, não
+  enfeite). O parágrafo sob o título da home sai; entra uma faixa visual com
+  os logos das marcas comparadas.
+
+#### Blocos, na ordem de execução
+
+**A. Correções do motor** (PHP e JS juntos, com teste de paridade)
+1. Cupom sem `valido_ate` = sem data de fim, vigente.
+2. Pix fora da contagem de prazos.
+3. Avisos técnicos marcados como internos, fora do cartão público.
+4. Ranking sem adesão diluída.
+
+**B. Cartão de resultado enxuto**
+- Cabeçalho: posição, logo, nome, plano. Selo "Menor taxa" no primeiro.
+- Dois números só: **custo mensal em taxas** e **taxa média**. Sem "sobra no
+  mês", sem "taxa efetiva combinada" (a combinada mistura adesão e
+  mensalidade no percentual — é exatamente a confusão que o Everton apontou).
+- Linha de taxas por forma de pagamento como chips legíveis (Débito 1,22% ·
+  Crédito 3,02% · 3x 6,11% · Pix 0,49% ⓘ).
+- **Bloco de CTA**, padrão dos grandes comparadores:
+  - Primário, cor de ação cheia: **"Contratar com 20% de desconto"** → rota
+    própria de saída (`/ir/{marca}?origem=comparador`) que registra o clique
+    em `eventos_cupom` e redireciona para o link de afiliado; sem parceria,
+    "Ir para o site da {marca}" → `site_url`. `rel="sponsored nofollow"`.
+  - Código do cupom visível com botão copiar, e "Adesão a partir de R$ X".
+  - Secundário, contorno: **"Conhecer a {marca}"** → `/maquininha/{slug}`.
+  - Uma linha pequena: "Link de parceiro. A taxa é a mesma do site oficial."
+- "Ver a conta aberta" → **"Ver simulação"**, recolhido por padrão, só com
+  as linhas de venda (sem data, sem adesão, sem prazos usados).
+- Selo promocional vira botão **"Oferece taxas promocionais"**, abrindo
+  modal com: nome e duração da promoção, tabela promocional × regular lado a
+  lado, regras de elegibilidade, e destaque "depois do período, as taxas
+  passam para as regulares do plano X".
+- No celular: CTA do 1º colocado fixo no rodapé da tela ao rolar o resultado.
+
+**C. Segunda visualização: "Tabela de taxas"** (alternância Cartões | Tabela)
+- Uma linha por forma de pagamento (Débito, Crédito 1x, 2x, 6x, 12x, Pix e as
+  parcelas do mix informado); colunas 1ª, 2ª, 3ª… com **logo + nome + taxa**,
+  da menor para a maior, como o rascunho do Everton.
+- Só taxa, sem simulação. Mesmo plano/prazo/faixa de faturamento do cenário.
+- Menor taxa de cada linha destacada; célula clicável leva ao cartão da marca.
+- No celular: cada linha vira faixa com rolagem horizontal e a coluna da
+  forma de pagamento fixa.
+
+**D. Home e navegação**
+- Faixa de logos das marcas comparadas logo abaixo do título, que vira
+  pergunta direta ("Qual maquininha cobra menos de você?"), sem parágrafo.
+- Formulário em passos com contraste de verdade: campos com fundo e borda
+  visíveis, chips de segmento com estado selecionado cheio, botão de
+  comparar grande, na cor de ação.
+- Rodapé: logo, links, data de atualização. Os três parágrafos vão para
+  `/metodologia`.
+
+**E. Reforma visual** (tokens, não reescrita — ver tabela da etapa 14)
+- Sombras em camadas nos cartões, elevação no hover, raio maior (~12px
+  cartão, ~10px botão), transições de 150–200ms.
+- Fundo da página levemente acinzentado para os cartões brancos saltarem;
+  cor de ação reservada ao que é clicável.
+- Canal de cor de estado do dado (regras 4/6/8) preservado; o verde de
+  ação continua só no que é clicável e no destaque do 1º lugar.
+- `node scripts/verifica-contraste.mjs` passando; conferido em 375px e desktop.
+
+**F. Perguntas frequentes** — página própria `/perguntas-frequentes`, com
+`FAQPage` em schema.org, linkada no cabeçalho e no rodapé; um bloco com 4
+delas no fim da home. Separada da metodologia: metodologia responde "posso
+confiar nos números?", FAQ responde "como contrato e o que acontece
+depois?" — públicos e buscas diferentes. As 10 propostas:
+
+1. A taxa pelo link do Máquina Certa é a mesma do site oficial?
+2. Como uso o cupom de desconto?
+3. O Máquina Certa cobra alguma coisa? Como vocês ganham dinheiro?
+4. Qual a diferença entre receber na hora e em 1 dia útil?
+5. Taxa promocional: o que acontece quando o período acaba?
+6. A maquininha fica comigo? O que acontece se quebrar ou se eu cancelar?
+7. Preciso de CNPJ ou dá para usar CPF?
+8. Tem mensalidade ou aluguel?
+9. O Pix na maquininha é grátis?
+10. Por que algumas marcas aparecem com faixa de taxa em vez de número exato?
+
+Respostas por marca (6 e 7 variam) conferidas contra o contrato de cada uma
+antes de publicar — regra 10 vale para texto também.
+
+**Referências consultadas (18/09/2026):** NerdWallet (cartões com CTA
+primário à direita e ícone de link externo, selo "melhor para", tabela
+comparativa filtrável), maquininhacerta.com.br (CTA "Solicitar {marca}",
+selo "cupom já aplicado", gráfico por forma de pagamento) e a própria página
+`/maquininha/ton` do portal como modelo de CTA com cupom.
+
+**Pronto quando:** o lojista entende quem ganhou e clica em contratar sem
+ler nenhum parágrafo; cupom aparece em toda marca que tem; nenhum aviso
+técnico na tela pública; tabela de taxas alternável; testes de paridade
+PHP/JS passando; conferido em produção em celular e desktop.
+
 ---
 
 ## A decisão que reorganizou o plano
