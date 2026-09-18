@@ -17,6 +17,7 @@ final class Navegacao
             ['rotulo' => 'Marcas', 'href' => route('maquininhas.index'), 'atual' => $secaoAtual === 'marcas'],
             ['rotulo' => 'Cupons', 'href' => route('cupons.index'), 'atual' => $secaoAtual === 'cupons'],
             ['rotulo' => 'Metodologia', 'href' => route('metodologia'), 'atual' => $secaoAtual === 'metodologia'],
+            ['rotulo' => 'Perguntas frequentes', 'href' => route('faq'), 'atual' => $secaoAtual === 'faq'],
         ];
     }
 
@@ -31,6 +32,7 @@ final class Navegacao
     {
         return [
             ['rotulo' => 'Metodologia', 'href' => route('metodologia')],
+            ['rotulo' => 'Perguntas frequentes', 'href' => route('faq')],
             ['rotulo' => 'Enviar proposta recebida', 'href' => route('propostas.create')],
             ['rotulo' => 'Política de privacidade', 'href' => route('privacidade')],
             ['rotulo' => 'Termos de uso', 'href' => route('termos')],

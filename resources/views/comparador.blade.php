@@ -19,6 +19,9 @@
     de /dados/comparador.json e a conta roda no navegador, nos gemeos em
     JavaScript do motor da etapa 05.
 --}}
+@php
+    $perguntasFrequentes = \App\Support\PerguntasFrequentes::destaque();
+@endphp
 <x-layouts.site
     titulo="Comparador de taxas de maquininhas"
     descricao="Compare o custo real das maquininhas de cartão para o seu faturamento e o seu mix de vendas. Taxas com a fonte e a data em que foram conferidas."
@@ -777,5 +780,28 @@
                 </div>
             </div>
         </template>
+
+        {{-- Etapa 20 (bloco F): 4 das 10 perguntas frequentes, para quem
+             chegou ate aqui e ainda tem duvida antes de clicar em
+             "Contratar". As 10 moram em /perguntas-frequentes — mesma fonte
+             (App\Support\PerguntasFrequentes), sem texto duplicado a mao. --}}
+        <section aria-labelledby="titulo-faq" class="mt-16 space-y-4">
+            <h2 id="titulo-faq" class="text-titulo">Perguntas frequentes</h2>
+
+            <div class="divide-y divide-regua rounded-bloco border border-regua bg-papel shadow-cartao">
+                @foreach ($perguntasFrequentes as $p)
+                    <details class="px-4 py-4 sm:px-6">
+                        <summary class="cursor-pointer font-titulo text-base font-semibold text-tinta">
+                            {{ $p['pergunta'] }}
+                        </summary>
+                        <div class="mt-3 max-w-2xl text-tinta">{!! $p['resposta'] !!}</div>
+                    </details>
+                @endforeach
+            </div>
+
+            <a href="{{ route('faq') }}" class="inline-flex min-h-11 items-center text-sm text-link underline underline-offset-4 hover:no-underline">
+                Ver todas as perguntas frequentes
+            </a>
+        </section>
     </div>
 </x-layouts.site>

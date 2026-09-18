@@ -47,6 +47,11 @@ Route::view('/metodologia', 'metodologia')->name('metodologia');
 Route::view('/privacidade', 'privacidade')->name('privacidade');
 Route::view('/termos', 'termos')->name('termos');
 
+// Etapa 20 (bloco F): pagina propria de FAQ, separada da metodologia —
+// metodologia responde "posso confiar nos numeros?", esta responde "como eu
+// contrato e o que acontece depois?".
+Route::view('/perguntas-frequentes', 'perguntas-frequentes')->name('faq');
+
 Route::get('/enviar-proposta', [PropostaController::class, 'create'])->name('propostas.create');
 Route::post('/enviar-proposta', [PropostaController::class, 'store'])
     ->middleware('throttle:propostas')->name('propostas.store');

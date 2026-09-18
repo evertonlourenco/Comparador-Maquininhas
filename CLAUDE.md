@@ -4208,6 +4208,58 @@ sai vazia localmente). O navegador embutido do Claude não dispara `:hover`
 de CSS: o estado elevado foi conferido pela regra compilada no
 `public/build` e aplicando o mesmo estilo à mão no cartão.
 
+### Bloco F — perguntas frequentes (18/09/2026)
+
+Página própria `/perguntas-frequentes` com as 10 perguntas do `PLANO.md`
+(etapa 20), `FAQPage` em schema.org, e um bloco com 4 delas no fim da home.
+Separada da metodologia de propósito: metodologia responde "posso confiar
+nos números?"; esta responde "como eu contrato e o que acontece depois?" —
+público e busca diferentes.
+
+| Arquivo | Papel |
+|---|---|
+| `App\Support\PerguntasFrequentes` | As 10 perguntas/respostas (HTML curto) e o `schema()` do FAQPage — fonte única entre a página e o bloco da home |
+| `resources/views/perguntas-frequentes.blade.php` | A página, via `Route::view` (conteúdo fixo, sem controller) |
+| `resources/views/comparador.blade.php` | O bloco final, com `PerguntasFrequentes::destaque()` |
+
+**Conteúdo fixo mora em código, não em tabela** — mesmo critério já usado
+para os presets de segmento (etapa 07): não é dado de catálogo, é texto do
+produto. `destaque: bool` por pergunta marca quais das 10 repetem na home,
+sem duplicar texto — a home lê o mesmo array, filtrado.
+
+**O `FAQPage` reduz a resposta a texto puro** (`strip_tags` + espaços
+colapsados) para o `acceptedAnswer.text` — a tela mostra HTML curto (link
+para `/metodologia` ou `/cupons` em duas respostas), o schema não. Testado
+que as 10 perguntas do schema batem com as 10 da tela
+(`PerguntasFrequentesTest::test_a_pagina_tem_o_faqpage_em_schema_org`).
+
+**Perguntas 6 (a maquininha fica comigo?) e 7 (CNPJ ou CPF?) ficaram
+deliberadamente gerais.** O `PLANO.md` pedia resposta conferida contra o
+contrato de cada marca parceira — sem esse contrato em mãos nesta sessão, a
+resposta virou "isso varia de marca para marca, confirme antes de
+contratar" em vez de uma afirmação única que poderia não valer para todas
+(regra 6 aplicada a texto, não só a taxa). Registrado como pendência no
+`PLANO.md` para uma sessão que releia os contratos.
+
+**Nenhuma rota nova entrou no `sitemap.xml`** — `/metodologia`,
+`/privacidade` e `/termos` já não entravam antes desta etapa (só home,
+`/maquininhas`, `/cupons` e as páginas por marca/cupom), então
+`/perguntas-frequentes` seguiu o mesmo padrão institucional, sem mudar
+`SitemapController`.
+
+`Navegacao::principal()` e `Navegacao::rodape()` ganharam a entrada
+"Perguntas frequentes" — aparece no cabeçalho de toda página e no rodapé,
+como pedido.
+
+**Conferido:** suíte inteira (316/316, `php -d memory_limit=2G vendor/bin/
+phpunit` — o mesmo contorno de sempre para o vazamento de memória
+pré-existente do `ImagemSeguraWebp`), `npm run build` e
+`node scripts/verifica-contraste.mjs` sem alteração de paleta (nenhuma
+classe nova fora do vocabulário já existente). Navegador local (porta
+8765): página e bloco da home em desktop, 375px (`scrollWidth` = 375) e tema
+escuro; accordion abre e fecha; link da resposta 1 para `/metodologia#s-
+comissao` funcionando.
+
 ## Pendente ao fim da etapa 05
 
 O motor está pronto e testado, mas ele é honesto sobre o que não sabe — e isso

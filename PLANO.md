@@ -397,11 +397,13 @@ bloco E.
   ação continua só no que é clicável e no destaque do 1º lugar.
 - `node scripts/verifica-contraste.mjs` passando; conferido em 375px e desktop.
 
-**F. Perguntas frequentes** — página própria `/perguntas-frequentes`, com
-`FAQPage` em schema.org, linkada no cabeçalho e no rodapé; um bloco com 4
-delas no fim da home. Separada da metodologia: metodologia responde "posso
-confiar nos números?", FAQ responde "como contrato e o que acontece
-depois?" — públicos e buscas diferentes. As 10 propostas:
+**F. Perguntas frequentes** — **concluído em 18/09/2026**, ver `CLAUDE.md`,
+"Resultado que vende (etapa 20)", bloco F. Página própria
+`/perguntas-frequentes`, com `FAQPage` em schema.org, linkada no cabeçalho e
+no rodapé; um bloco com 4 delas no fim da home. Separada da metodologia:
+metodologia responde "posso confiar nos números?", FAQ responde "como
+contrato e o que acontece depois?" — públicos e buscas diferentes. As 10
+propostas:
 
 1. A taxa pelo link do Máquina Certa é a mesma do site oficial?
 2. Como uso o cupom de desconto?
@@ -416,6 +418,14 @@ depois?" — públicos e buscas diferentes. As 10 propostas:
 
 Respostas por marca (6 e 7 variam) conferidas contra o contrato de cada uma
 antes de publicar — regra 10 vale para texto também.
+
+**Implementado em 18/09/2026 com uma ressalva nas perguntas 6 e 7:** sem o
+contrato de cada marca em mãos nesta sessão, as duas respostas ficaram
+deliberadamente gerais ("isso varia de marca para marca, confirme antes de
+contratar") em vez de inventar uma resposta única que não valeria para
+todas — a mesma regra 6 ("nada sem fonte") aplicada a texto. Pendência para
+uma sessão futura: reler o contrato de cada marca parceira e, se a resposta
+for igual em todas, trocar o texto genérico por uma afirmação direta.
 
 **Referências consultadas (18/09/2026):** NerdWallet (cartões com CTA
 primário à direita e ícone de link externo, selo "melhor para", tabela
