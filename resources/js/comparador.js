@@ -51,11 +51,26 @@ const GRUPOS_PADRAO = ['visa_master', 'geral'];
 /** Ordem de exibicao das formas de pagamento no modal "Ver todas as taxas". */
 const ORDEM_TIPO_OPERACAO = { debito: 0, credito_avista: 1, credito_parcelado: 2, pix: 3 };
 
+/** O parcelado "simples" compara sempre em 12x, a taxa mais divulgada pelas marcas. */
+const PARCELAS_DO_MODO_SIMPLES = 12;
+
+function mixDoModoSimples(modo) {
+  return {
+    debito: modo === 'debito' ? 100 : 0,
+    credito_avista: modo === 'credito_avista' ? 100 : 0,
+    credito_parcelado: modo === 'credito_parcelado' ? 100 : 0,
+    pix: 0,
+  };
+}
+
 function estadoInicial() {
   const segmento = SEGMENTOS[SEGMENTO_PADRAO];
 
   return {
     faturamento: FATURAMENTO_PADRAO,
+    // Sem palpite de negocio por padrao: o passo 2 compara uma forma de pagar
+    // de cada vez, e o segmento so entra na simulacao avancada.
+    modo: 'credito_avista',
     segmento: SEGMENTO_PADRAO,
     mix: {
       debito: segmento.debito,
@@ -133,20 +148,17 @@ function comparador(caminhoDoJson) {
     // Texto dos campos de dinheiro, em pt-BR (regra 11). O numero so existe
     // depois de doUsuario(); a tela nunca mostra "10000.00".
     faturamentoTexto: '',
-    ticketTexto: '',
 
     init() {
       const inicial = daUrl(window.location.search, estadoInicial(), presetDoSegmento);
 
       Object.assign(this, inicial);
       this.faturamentoTexto = formatarNumero(this.faturamento, 2);
-      this.ticketTexto = formatarNumero(this.ticket, 2);
 
       // O texto do campo e a fonte; o numero e derivado dele. Um $watch em vez
       // de um x-on:input no markup porque a ordem entre o x-model e o listener
       // do proprio elemento nao e garantida, e o campo leria o valor anterior.
       this.$watch('faturamentoTexto', () => this.lerFaturamento());
-      this.$watch('ticketTexto', () => this.lerTicket());
 
       this.$watch('assinatura', () => {
         this.agendar();
@@ -180,6 +192,7 @@ function comparador(caminhoDoJson) {
     get assinatura() {
       return JSON.stringify([
         this.faturamento,
+        this.modo,
         this.segmento,
         this.mix,
         this.parcelas,
@@ -195,14 +208,13 @@ function comparador(caminhoDoJson) {
       this.faturamento = Math.max(0, doUsuario(this.faturamentoTexto) ?? 0);
     },
 
-    lerTicket() {
-      this.ticket = Math.max(0, doUsuario(this.ticketTexto) ?? 0);
-    },
-
     /** Regra 11 tambem na saida do campo: o que ficou escrito volta em pt-BR. */
     formatarCampos() {
       this.faturamentoTexto = formatarNumero(this.faturamento, 2);
-      this.ticketTexto = formatarNumero(this.ticket, 2);
+    },
+
+    escolherModo(modo) {
+      this.modo = modo;
     },
 
     escolherSegmento(chave) {
@@ -216,7 +228,6 @@ function comparador(caminhoDoJson) {
       this.mix = { ...preset.mix };
       this.parcelas = preset.parcelas;
       this.ticket = preset.ticket;
-      this.ticketTexto = formatarNumero(this.ticket, 2);
 
       window.gtag?.('event', 'segmento_selecionado', { segmento: chave });
     },
@@ -357,13 +368,23 @@ function comparador(caminhoDoJson) {
     get cenario() {
       return {
         faturamento_mensal: this.faturamento,
-        vendas: vendasDoMix({
-          faturamento: this.faturamento,
-          mix: this.mix,
-          parcelas: this.parcelas,
-          ticket: this.ticket,
-          visaMaster: this.visaMaster,
-        }),
+        vendas: vendasDoMix(
+          this.modo === 'avancado'
+            ? {
+                faturamento: this.faturamento,
+                mix: this.mix,
+                parcelas: this.parcelas,
+                ticket: this.ticket,
+                visaMaster: this.visaMaster,
+              }
+            : {
+                faturamento: this.faturamento,
+                mix: mixDoModoSimples(this.modo),
+                parcelas: PARCELAS_DO_MODO_SIMPLES,
+                ticket: this.ticket,
+                visaMaster: 100,
+              },
+        ),
         prazo: this.prazo === '' ? null : this.prazo,
         aplicar_cupom: this.aplicarCupom,
         hoje: new Date().toISOString().slice(0, 10),

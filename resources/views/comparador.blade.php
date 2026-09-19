@@ -98,12 +98,36 @@
                         <span class="numero-destaque inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-marca text-base text-sobre-marca">2</span> Como seus clientes pagam
                     </h2>
                     <p class="mt-1 text-miudo text-tinta-suave">
-                        É o que mais mexe no resultado: a mesma marca ganha ou perde conforme você
-                        venda mais em débito ou mais em parcelado.
+                        Escolha a forma de pagamento que você quer comparar. Para misturar formas de
+                        pagamento, use a simulação avançada.
                     </p>
                 </div>
 
                 <div class="space-y-4 px-4 py-4">
+                    {{-- Revisao pos-lancamento (Everton, 19/09/2026): o "tipo de negocio"
+                         e um palpite nosso, nao dado — entao o padrao compara uma forma de
+                         pagar de cada vez, e segmento + mix manual ficam na simulacao
+                         avancada. Parcelado simples e sempre 12x. --}}
+                    <div role="group" aria-label="Forma de pagamento a comparar" class="flex flex-wrap gap-2">
+                        @foreach ([
+                            ['debito', 'Débito'],
+                            ['credito_avista', 'Crédito à vista'],
+                            ['credito_parcelado', 'Crédito parcelado (12x)'],
+                            ['avancado', 'Simulação avançada'],
+                        ] as [$chaveModo, $rotuloModo])
+                            <button
+                                type="button"
+                                x-on:click="escolherModo('{{ $chaveModo }}')"
+                                :aria-pressed="modo === '{{ $chaveModo }}'"
+                                class="inline-flex min-h-12 items-center rounded-botao border-2 px-4 py-2 font-titulo text-[0.9375rem] font-semibold"
+                                :class="modo === '{{ $chaveModo }}'
+                                    ? 'border-tinta bg-tinta text-papel'
+                                    : 'border-contorno bg-superficie text-tinta hover:bg-superficie-forte'"
+                            >{{ $rotuloModo }}</button>
+                        @endforeach
+                    </div>
+
+                    <div x-show="modo === 'avancado'" x-cloak class="space-y-4">
                     <div role="group" aria-labelledby="rotulo-segmento" class="space-y-2">
                         <p id="rotulo-segmento" class="text-sm font-medium text-tinta">Escolha o mais parecido com o seu negócio</p>
 
@@ -180,18 +204,7 @@
                                 Subir uma faixa reduz as outras na mesma proporção.
                             </p>
 
-                            <div class="grid gap-4 border-t border-regua pt-4 sm:grid-cols-2">
-                                <x-campo
-                                    rotulo="Ticket médio"
-                                    nome="ticket"
-                                    id="campo-ticket"
-                                    prefixo="R$"
-                                    inputmode="decimal"
-                                    ajuda="Quanto vale uma venda típica. É daqui que sai o número de transações do mês, que algumas taxas cobram por unidade."
-                                    x-model="ticketTexto"
-                                    x-on:blur="formatarCampos()"
-                                />
-
+                            <div class="border-t border-regua pt-4">
                                 <div class="space-y-1.5">
                                     <label for="campo-parcelas" class="block text-sm font-medium text-tinta">Parcelas mais comuns</label>
                                     <select
@@ -227,13 +240,12 @@
                                     x-model.number="visaMaster"
                                 >
                                 <p id="campo-visa-master-ajuda" class="col-span-2 mt-1 text-miudo text-tinta-suave">
-                                    O resto vai para Elo, Amex e as demais. Várias marcas cobram diferente
-                                    fora de Visa e Mastercard, e a SumUp não publica taxa para elas — então
-                                    baixar isto pode mandar alguma marca para o bloco “falta dado”.
+                                    O resto vai para Elo, Amex e as demais.
                                 </p>
                             </div>
                         </div>
                     </details>
+                    </div>
                 </div>
             </section>
 
@@ -623,10 +635,10 @@
                                     <button
                                         type="button"
                                         class="flex min-w-[8rem] shrink-0 flex-col items-center gap-1.5 border-e border-regua px-3 py-3 text-center last:border-e-0 hover:bg-superficie"
-                                        :class="indice === 0 ? 'bg-acao-fundo' : ''"
+                                        :class="indice === 0 ? 'bg-acao-fundo shadow-[inset_0_3px_0_var(--cor-acao)]' : ''"
                                         x-on:click="irParaCartao(posicao.item)"
                                     >
-                                        <span class="numero text-etiqueta font-semibold text-tinta-suave" x-text="(indice + 1) + 'ª'"></span>
+                                        <span class="numero text-etiqueta font-semibold" :class="indice === 0 ? 'text-acao' : 'text-tinta-suave'" x-text="indice === 0 ? '1ª · Menor taxa' : (indice + 1) + 'ª'"></span>
                                         <span class="flex size-8 items-center justify-center rounded-botao border border-regua bg-papel">
                                             <template x-if="posicao.item.marca.logo_url">
                                                 <img :src="posicao.item.marca.logo_url" :alt="posicao.item.marca.nome" class="max-h-5 max-w-6 object-contain" width="24" height="20" loading="lazy" decoding="async">

@@ -28,6 +28,7 @@
 
 export const TODAS_AS_MARCAS = '*';
 const NENHUMA_MARCA = '0';
+const MODOS = ['debito', 'credito_avista', 'credito_parcelado', 'avancado'];
 
 /**
  * Le a barra de enderecos por cima dos padroes.
@@ -44,6 +45,16 @@ export function daUrl(busca, padrao, presetDoSegmento) {
   const estado = { ...padrao, mix: { ...padrao.mix } };
 
   numero(p, 'f', (v) => (estado.faturamento = v));
+
+  // Links antigos (segmento, mix, parcelas ou bandeiras na URL) so fazem
+  // sentido na simulacao avancada; `pg` explicito vale por cima.
+  if (['s', 'mix', 'px', 'vm'].some((chave) => p.has(chave))) {
+    estado.modo = 'avancado';
+  }
+
+  if (p.has('pg') && MODOS.includes(p.get('pg'))) {
+    estado.modo = p.get('pg');
+  }
 
   texto(p, 's', (chave) => {
     const preset = presetDoSegmento(chave);
@@ -119,27 +130,36 @@ export function paraUrl(estado, padrao, caminho = window.location.pathname) {
     p.set('f', formatarNumero(estado.faturamento));
   }
 
-  if (estado.segmento !== padrao.segmento) {
-    p.set('s', estado.segmento);
+  if (estado.modo !== padrao.modo) {
+    p.set('pg', estado.modo);
   }
 
-  if (!mixIgual(estado.mix, padrao.mix)) {
-    p.set(
-      'mix',
-      [
-        estado.mix.debito,
-        estado.mix.credito_avista,
-        estado.mix.credito_parcelado,
-        estado.mix.pix,
-      ]
-        .map(formatarNumero)
-        .join('-'),
-    );
-  }
+  // Segmento, mix, parcelas e bandeiras so contam na simulacao avancada; fora
+  // dela ficariam na URL e reabririam o link como avancado.
+  if (estado.modo === 'avancado') {
+    if (estado.segmento !== padrao.segmento) {
+      p.set('s', estado.segmento);
+    }
 
-  parDiferente(p, 'px', estado.parcelas, padrao.parcelas);
-  parDiferente(p, 't', estado.ticket, padrao.ticket);
-  parDiferente(p, 'vm', estado.visaMaster, padrao.visaMaster);
+    if (!mixIgual(estado.mix, padrao.mix)) {
+      p.set(
+        'mix',
+        [
+          estado.mix.debito,
+          estado.mix.credito_avista,
+          estado.mix.credito_parcelado,
+          estado.mix.pix,
+        ]
+          .map(formatarNumero)
+          .join('-'),
+      );
+    }
+
+    parDiferente(p, 'px', estado.parcelas, padrao.parcelas);
+    parDiferente(p, 't', estado.ticket, padrao.ticket);
+    parDiferente(p, 'vm', estado.visaMaster, padrao.visaMaster);
+
+  }
 
   if (estado.prazo !== padrao.prazo) {
     p.set('pz', estado.prazo);
