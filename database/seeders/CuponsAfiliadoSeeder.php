@@ -74,6 +74,10 @@ class CuponsAfiliadoSeeder extends Seeder
                 'descricao' => null,
                 'link' => 'https://checkout.yelly.com.br/monetizando/?cupom=AFILIADOS10',
                 'termos' => null,
+                // Everton, 19/09/2026: AFILIADOS10 e um cupom generico de todos
+                // os afiliados - digitado no site oficial nao credita a
+                // comissao. O desconto vale so pelo link; o codigo nao aparece.
+                'codigo_generico' => true,
             ],
             [
                 'marca' => 'sidepay',
@@ -123,6 +127,7 @@ class CuponsAfiliadoSeeder extends Seeder
                 'incide_sobre' => IncideSobre::Adesao,
                 'valor' => $dados['valor'],
                 'desconto_ja_no_preco' => $dados['desconto_ja_no_preco'] ?? false,
+                'codigo_generico' => $dados['codigo_generico'] ?? false,
                 'valido_de' => now()->toDateString(),
                 'valido_ate' => null,
                 'link_afiliado' => $dados['link'],

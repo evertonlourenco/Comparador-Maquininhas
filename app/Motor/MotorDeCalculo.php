@@ -58,6 +58,12 @@ final class MotorDeCalculo
             }
 
             foreach ($planos as $plano) {
+                // Pedido do Everton (19/09/2026): quem escolheu "na hora" nao
+                // ve plano que so recebe em 1 dia - nem como "falta dado".
+                if (! $this->planoOfereceOPrazo($plano, $cenario)) {
+                    continue;
+                }
+
                 $itens[] = $this->avaliarPlano($catalogo, $marca, $plano, $cenario);
             }
         }
@@ -137,6 +143,36 @@ final class MotorDeCalculo
             return ($minimo === null || $cenario->faturamentoMensal >= $minimo)
                 && ($maximo === null || $cenario->faturamentoMensal <= $maximo);
         }));
+    }
+
+    /**
+     * Prazo pedido no cenario: o plano que nao vende cartao nesse prazo nao
+     * compete, e nao e "falta dado" - ele simplesmente nao serve para quem
+     * escolheu aquele prazo. "Falta dado" fica para o plano que oferece o
+     * prazo mas nao publicou uma taxa especifica. O Pix cai sempre na hora e
+     * por isso nao conta como prazo do plano; cenario so de Pix nem chega a
+     * ter prazo a respeitar. Plano so com faixa reportada segue a regra
+     * propria da faixa.
+     */
+    private function planoOfereceOPrazo(array $plano, Cenario $cenario): bool
+    {
+        $temCartao = false;
+
+        foreach ($cenario->vendas as $venda) {
+            $temCartao = $temCartao || $venda->tipoOperacao !== TipoOperacao::Pix;
+        }
+
+        if ($cenario->prazo === null || ! $temCartao || $plano['taxas'] === []) {
+            return true;
+        }
+
+        foreach ($plano['taxas'] as $taxa) {
+            if ($taxa['tipo_operacao'] !== TipoOperacao::Pix->value && $taxa['prazo'] === $cenario->prazo) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -743,8 +779,15 @@ final class MotorDeCalculo
         // numero - PagBank e Mercado Pago) nao entra na conta: 0 mentiria
         // "sem desconto", quando o certo e "desconto existe, sem numero".
         $desconto = 0.0;
+        $precoNoLink = $equipamento['preco_adesao_no_link'] ?? null;
 
-        if ($cupom !== null && $cupom['valor'] !== null
+        if ($cupom !== null && $precoNoLink !== null && $adesaoVigente !== null
+            && ($cupom['equipamento_id'] === null || $cupom['equipamento_id'] === $equipamento['id'])) {
+            // Pedido do Everton (19/09/2026): a adesao mostrada e a que o
+            // cliente paga pelo link. Quando a pagina do link tem preco
+            // proprio, ele e o valor final - nao o site menos um percentual.
+            $desconto = max(0.0, Dinheiro::arredondar($adesaoCheia - (float) $precoNoLink));
+        } elseif ($cupom !== null && $cupom['valor'] !== null
             && ($cupom['equipamento_id'] === null || $cupom['equipamento_id'] === $equipamento['id'])) {
             $desconto = $cupom['tipo_desconto'] === 'percentual'
                 ? Dinheiro::arredondar($adesaoCheia * (float) $cupom['valor'] / 100)

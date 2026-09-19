@@ -105,6 +105,11 @@ class CupomForm
                         ->required()
                         ->maxLength(500)
                         ->helperText('Regra 5: a taxa é a mesma do site oficial — a vantagem do link é este cupom.'),
+                    Toggle::make('codigo_generico')
+                        ->label('Código genérico de afiliados')
+                        ->helperText('Marque quando o código vale para qualquer afiliado (ex.: AFILIADOS10 da '
+                            .'Yelly): quem o digita direto no site oficial não credita a comissão. O portal '
+                            .'deixa de exibir e de mandar copiar o código — o desconto vale só pelo link.'),
                     Toggle::make('link_confirmado_manualmente')
                         ->label('Confirmado manualmente')
                         ->helperText('Marque só se você mesmo abriu o link e viu que funciona, mesmo que o '

@@ -22,6 +22,7 @@ class EquipamentoPlano extends Pivot
         return [
             'preco_adesao' => 'decimal:2',
             'preco_adesao_promocional' => 'decimal:2',
+            'preco_adesao_no_link' => 'decimal:2',
             'parcelas_adesao' => 'integer',
             'aluguel_mensal' => 'decimal:2',
             'status' => StatusItem::class,

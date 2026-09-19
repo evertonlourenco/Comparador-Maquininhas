@@ -24,7 +24,7 @@ use Illuminate\Support\Carbon;
 #[Fillable([
     'marca_id', 'equipamento_id', 'codigo', 'descricao',
     'tipo_desconto', 'incide_sobre', 'valor', 'desconto_ja_no_preco',
-    'valido_de', 'valido_ate', 'link_afiliado', 'termos', 'status', 'ordem',
+    'codigo_generico', 'valido_de', 'valido_ate', 'link_afiliado', 'termos', 'status', 'ordem',
     'link_ultimo_status', 'link_ultima_falha', 'link_quebrado', 'link_verificado_em',
     'link_confirmado_manualmente',
 ])]
@@ -37,6 +37,7 @@ class Cupom extends Model
             'incide_sobre' => IncideSobre::class,
             'valor' => 'decimal:2',
             'desconto_ja_no_preco' => 'boolean',
+            'codigo_generico' => 'boolean',
             'valido_de' => 'date',
             'valido_ate' => 'date',
             'status' => StatusItem::class,

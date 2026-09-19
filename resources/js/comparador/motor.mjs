@@ -132,6 +132,12 @@ export function calcular(catalogo, cenarioCru) {
     }
 
     for (const plano of planos) {
+      // Quem escolheu "na hora" nao ve plano que so recebe em 1 dia - nem
+      // como "falta dado". Espelho de MotorDeCalculo::planoOfereceOPrazo.
+      if (!planoOfereceOPrazo(plano, cenario)) {
+        continue;
+      }
+
       itens.push(avaliarPlano(catalogo, marca, plano, cenario));
     }
   }
@@ -193,6 +199,17 @@ function planosElegiveis(marca, cenario) {
       (maximo === null || cenario.faturamento_mensal <= maximo)
     );
   });
+}
+
+/** O Pix cai sempre na hora e por isso nao conta como prazo do plano. */
+function planoOfereceOPrazo(plano, cenario) {
+  const temCartao = cenario.vendas.some((venda) => venda.tipo_operacao !== 'pix');
+
+  if (cenario.prazo === null || !temCartao || plano.taxas.length === 0) {
+    return true;
+  }
+
+  return plano.taxas.some((taxa) => taxa.tipo_operacao !== 'pix' && taxa.prazo === cenario.prazo);
 }
 
 function avaliarPlano(catalogo, marca, plano, cenario) {
@@ -679,8 +696,18 @@ function orcamentoDoAparelho(equipamento, cupom, cenario) {
   // Etapa 17: cupom com valor nao informado (desconto real, mas sem numero -
   // PagBank e Mercado Pago) nao entra na conta: 0 mentiria "sem desconto".
   let desconto = 0;
+  const precoNoLink = equipamento.preco_adesao_no_link ?? null;
 
   if (
+    cupom !== null &&
+    precoNoLink !== null &&
+    adesaoVigente !== null &&
+    (cupom.equipamento_id === null || cupom.equipamento_id === equipamento.id)
+  ) {
+    // A adesao mostrada e a que o cliente paga pelo link: quando a pagina do
+    // link tem preco proprio, ele e o valor final.
+    desconto = Math.max(0, arredondar(adesaoCheia - Number(precoNoLink)));
+  } else if (
     cupom !== null &&
     cupom.valor !== null &&
     (cupom.equipamento_id === null || cupom.equipamento_id === equipamento.id)

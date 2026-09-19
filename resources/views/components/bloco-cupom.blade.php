@@ -25,6 +25,10 @@
     // Numa grade de cupons, ou quando a pagina ja tem o seu CTA verde, o
     // botao do bloco sai em navy (`marca`).
     'varianteBotao' => 'principal',
+    // Codigo generico de todos os afiliados (Yelly): digitado no site oficial
+    // nao credita a comissao, entao nao se exibe nem se manda copiar — o
+    // desconto vale so pelo link.
+    'generico' => false,
 ])
 
 @php
@@ -70,7 +74,7 @@
     ]) }} aria-labelledby="cupom-{{ Str::slug($codigo) }}">
         <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-regua px-4 py-3">
             <h3 id="cupom-{{ Str::slug($codigo) }}" class="text-cartao">
-                Cupom{{ $marca ? ' '.$marca : '' }}
+                {{ $generico ? 'Desconto' : 'Cupom' }}{{ $marca ? ' '.$marca : '' }}
             </h3>
             <div class="flex flex-wrap items-center gap-1.5">
                 {{-- Manual de marca: "desconto parceiro" e obrigatorio sempre que
@@ -93,6 +97,7 @@
                 <p class="font-titulo text-numero font-bold {{ $vencido ? 'text-tinta-suave' : 'text-tinta' }}">{{ $desconto }}</p>
             @endif
 
+            @unless ($generico)
             <div class="flex flex-wrap items-center gap-2">
                 <code class="numero rounded-botao border border-dashed border-contorno bg-superficie px-3 py-2.5 text-base font-semibold tracking-wider {{ $vencido ? 'line-through text-tinta-suave' : '' }}">{{ $codigo }}</code>
 
@@ -110,6 +115,9 @@
                     >Copiar código</x-botao>
                 @endunless
             </div>
+            @else
+                <p class="text-miudo text-tinta-suave">O desconto vale só entrando pelo botão abaixo — não há código para digitar.</p>
+            @endunless
 
             <p class="text-miudo {{ $vencido ? 'text-vencido' : 'text-tinta-suave' }}">
                 @if ($limite === null)

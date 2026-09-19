@@ -51,7 +51,7 @@ class MotorSobreACargaRealTest extends TestCase
 
     public function test_nenhuma_marca_ativa_some_do_resultado(): void
     {
-        $resultado = $this->calcular(10000.0);
+        $resultado = $this->calcular(10000.0, prazo: null);
 
         $nomes = collect($resultado['itens'])->pluck('marca.nome')->unique()->sort()->values();
 
@@ -86,7 +86,7 @@ class MotorSobreACargaRealTest extends TestCase
     public function test_o_enquadramento_do_motor_bate_com_o_scope_do_model(): void
     {
         foreach ([1500.0, 3000.0, 7000.0, 25000.0, 90000.0] as $faturamento) {
-            $doMotor = collect($this->calcular($faturamento)['itens'])
+            $doMotor = collect($this->calcular($faturamento, prazo: null)['itens'])
                 ->pluck('plano.id')->filter()->sort()->values()->all();
 
             $doBanco = Plano::query()->ativos()->paraFaturamento($faturamento)->pluck('id')
@@ -222,12 +222,12 @@ class MotorSobreACargaRealTest extends TestCase
         $this->assertSame('12x de R$ 16,58', $item['formatado']['adesao']['parcela_da_marca']);
     }
 
-    private function calcular(float $faturamento, ?string $hoje = null): array
+    private function calcular(float $faturamento, ?string $hoje = null, ?string $prazo = 'd_1'): array
     {
         return (new MotorDeCalculo)->calcular($this->catalogo, Cenario::deArray([
             'faturamento_mensal' => $faturamento,
             'hoje' => $hoje ?? '2026-09-20',
-            'prazo' => 'd_1',
+            'prazo' => $prazo,
             'vendas' => [
                 ['tipo_operacao' => 'debito', 'grupo' => 'visa_master', 'parcelas' => 1,
                     'valor_mensal' => '4.000,00', 'quantidade_mensal' => 200],

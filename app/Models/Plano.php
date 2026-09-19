@@ -77,7 +77,7 @@ class Plano extends Model
         return $this->belongsToMany(Equipamento::class, 'equipamento_plano')
             ->using(EquipamentoPlano::class)
             ->withPivot([
-                'id', 'preco_adesao', 'preco_adesao_promocional', 'parcelas_adesao',
+                'id', 'preco_adesao', 'preco_adesao_promocional', 'preco_adesao_no_link', 'parcelas_adesao',
                 'aluguel_mensal', 'observacao', 'status',
             ])
             ->withTimestamps();

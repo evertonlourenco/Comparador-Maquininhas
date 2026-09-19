@@ -252,22 +252,68 @@ class MotorDeCalculoTest extends TestCase
         $this->assertStringNotContainsString('prazo de recebimento', implode(' ', $alfa['avisos']));
     }
 
-    public function test_prazo_pedido_que_o_plano_nao_vende_vira_falta_e_nao_troca_de_prazo(): void
+    public function test_adesao_com_preco_proprio_no_link_vale_como_valor_final(): void
     {
-        $alfa = $this->item($this->calcular(['prazo' => 'd_30']), 'Alfa');
+        // Pedido do Everton (19/09/2026): a adesao mostrada e a do link. Aqui
+        // a pagina do link cobra R$ 120,00 pelo aparelho de R$ 199,00 - e nao
+        // R$ 149,00 (199 menos o cupom de R$ 50,00).
+        $this->catalogo['marcas'][0]['planos'][0]['equipamentos'][0]['preco_adesao_no_link'] = 120.0;
 
-        // A Alfa so publica debito em 1 dia util: pedir 30 dias falta o dado.
-        // A falta sai pelo nome de exibicao das dimensoes, e nao pelo codigo:
-        // ela vai direto para a tela do lojista (etapa 07).
+        $adesao = $this->item($this->calcular(), 'Alfa')['adesao'];
+
+        $this->assertSame(199.0, $adesao['vigente']);
+        $this->assertSame(120.0, $adesao['valor_final']);
+        $this->assertSame(79.0, $adesao['desconto_do_cupom']);
+    }
+
+    public function test_preco_no_link_nao_vale_sem_cupom_aplicado(): void
+    {
+        $this->catalogo['marcas'][0]['planos'][0]['equipamentos'][0]['preco_adesao_no_link'] = 120.0;
+
+        $adesao = $this->item($this->calcular(['aplicar_cupom' => false]), 'Alfa')['adesao'];
+
+        $this->assertSame(199.0, $adesao['valor_final']);
+        $this->assertSame(0.0, $adesao['desconto_do_cupom']);
+    }
+
+    public function test_plano_que_nao_vende_cartao_no_prazo_pedido_nem_aparece(): void
+    {
+        // Pedido do Everton (19/09/2026): quem escolheu um prazo nao ve plano
+        // que nao recebe nele - nem como "falta dado". A Alfa nao vende
+        // cartao na hora (so o Pix cai na hora); pedir esse prazo tira o
+        // plano dela do resultado.
+        $resultado = $this->calcular(['prazo' => 'na_hora']);
+
+        $this->assertSame([], array_values(array_filter(
+            $resultado['itens'],
+            fn (array $item): bool => $item['marca']['nome'] === 'Alfa' && ($item['plano']['nome'] ?? null) !== null
+                && ($item['plano']['tipo_enquadramento'] ?? null) !== 'promocional',
+        )));
+    }
+
+    public function test_plano_que_oferece_o_prazo_mas_nao_publica_a_taxa_continua_como_falta_dado(): void
+    {
+        $alfa = $this->item($this->calcular([
+            'prazo' => 'd_1',
+            'vendas' => [[
+                'tipo_operacao' => 'credito_parcelado', 'grupo' => 'visa_master', 'parcelas' => 9,
+                'valor_mensal' => '1.000,00', 'quantidade_mensal' => 10,
+            ]],
+        ]), 'Alfa');
+
         $this->assertSame(EstadoDoResultado::Incompleto->value, $alfa['estado']);
-        $this->assertStringContainsString(
-            'taxa de Débito (Visa e Mastercard) no prazo Em 30 dias',
-            implode(' ', $alfa['faltando']),
-        );
-
-        // Total parcial nunca se chama total_mensal.
         $this->assertArrayNotHasKey('total_mensal', $alfa['custos']);
         $this->assertArrayHasKey('total_mensal_parcial', $alfa['custos']);
+    }
+
+    public function test_prazo_pedido_nao_esconde_plano_num_cenario_so_de_pix(): void
+    {
+        $resultado = $this->calcular([
+            'prazo' => 'na_hora',
+            'vendas' => [['tipo_operacao' => 'pix', 'valor_mensal' => '500,00', 'quantidade_mensal' => 30]],
+        ]);
+
+        $this->assertNotNull($this->item($resultado, 'Alfa'));
     }
 
     // ------------------------------------------------------------------

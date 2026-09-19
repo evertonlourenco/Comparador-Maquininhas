@@ -253,7 +253,10 @@
                             >Conhecer a <span x-text="item.marca.nome"></span></a>
                         </div>
 
-                        <template x-if="temCupomParaContratar(item)">
+                        {{-- Cupom generico de afiliados (Yelly): o codigo digitado no site
+                             oficial nao credita a comissao, entao nem aparece — o
+                             desconto vale so pelo botao acima. --}}
+                        <template x-if="temCupomParaContratar(item) && ! item.cupom.codigo_generico">
                             <div class="flex flex-wrap items-center gap-2">
                                 <span class="text-miudo text-tinta-suave">Cupom:</span>
                                 <code class="numero rounded-botao border border-dashed border-contorno bg-papel px-2.5 py-1.5 text-sm font-semibold tracking-wider" x-text="item.cupom.codigo"></code>
@@ -268,34 +271,39 @@
                             </div>
                         </template>
 
+                        {{-- A nota do Reclame Aqui mora na mesma linha, em negrito, do
+                             "Link de parceiro" — ou da adesao, quando nao ha link de
+                             parceiro (pedido do Everton, 19/09/2026). --}}
                         <template x-if="item.comparacao && item.comparacao.custo_inicial">
-                            <p class="text-miudo text-tinta-suave">
+                            <p class="text-miudo" :class="temCupomParaContratar(item) ? 'text-tinta-suave' : 'font-semibold text-tinta'">
                                 Adesão a partir de
                                 <span class="numero font-medium text-tinta" x-text="item.comparacao.custo_inicial.formatado.com_cupom"></span>
                                 <template x-if="temCupomParaContratar(item)">
                                     <span> — sem cupom, <span class="numero line-through" x-text="item.comparacao.custo_inicial.formatado.sem_cupom"></span></span>
                                 </template>
+                                <template x-if="! temCupomParaContratar(item)">
+                                    <x-nota-reclame-aqui />
+                                </template>
                             </p>
                         </template>
                         <template x-if="! (item.comparacao && item.comparacao.custo_inicial)">
                             {{-- Preco ausente e ausente: zero aqui seria mentira. --}}
-                            <p class="text-miudo text-tinta-suave">A marca não publicou o preço do aparelho neste plano.</p>
+                            <p class="text-miudo" :class="temCupomParaContratar(item) ? 'text-tinta-suave' : 'font-semibold text-tinta'">
+                                A marca não publicou o preço do aparelho neste plano.
+                                <template x-if="! temCupomParaContratar(item)">
+                                    <x-nota-reclame-aqui />
+                                </template>
+                            </p>
                         </template>
 
                         <template x-if="temCupomParaContratar(item)">
-                            <p class="text-miudo text-tinta-suave">
-                                Link de parceiro. <strong class="font-semibold text-tinta">A taxa é a mesma do site oficial.</strong>
+                            <p class="text-miudo font-semibold text-tinta">
+                                Link de parceiro. A taxa é a mesma do site oficial.
+                                <x-nota-reclame-aqui />
                             </p>
                         </template>
                         <template x-if="! temCupomParaContratar(item)">
                             <p class="text-miudo text-tinta-suave">Sem parceria com esta marca — link direto para o site oficial.</p>
-                        </template>
-
-                        <template x-if="notaRaTexto(item)">
-                            <p class="text-end text-miudo text-tinta-suave">
-                                <a x-show="item.marca.reclame_aqui.url" :href="item.marca.reclame_aqui.url" target="_blank" rel="noopener noreferrer nofollow" class="numero underline underline-offset-2 hover:no-underline" x-text="notaRaTexto(item)"></a>
-                                <span x-show="! item.marca.reclame_aqui.url" class="numero" x-text="notaRaTexto(item)"></span>
-                            </p>
                         </template>
                     </div>
                 </article>

@@ -198,6 +198,7 @@ final class CatalogoDoComparador
                 // Regra 5: nao existe cupom que mexa em percentual de taxa.
                 'incide_sobre' => $cupom->incide_sobre->value,
                 'valor' => Dinheiro::doBanco($cupom->valor),
+                'codigo_generico' => (bool) $cupom->codigo_generico,
                 'valido_de' => $cupom->valido_de?->toDateString(),
                 'valido_ate' => $cupom->valido_ate?->toDateString(),
                 'equipamento_id' => $cupom->equipamento_id,
@@ -236,6 +237,7 @@ final class CatalogoDoComparador
                     'tipo' => $equipamento->tipo->value,
                     'preco_adesao' => Dinheiro::doBanco($equipamento->pivot->preco_adesao),
                     'preco_adesao_promocional' => Dinheiro::doBanco($equipamento->pivot->preco_adesao_promocional),
+                    'preco_adesao_no_link' => Dinheiro::doBanco($equipamento->pivot->preco_adesao_no_link),
                     'parcelas_adesao' => $equipamento->pivot->parcelas_adesao,
                     'aluguel_mensal' => Dinheiro::doBanco($equipamento->pivot->aluguel_mensal),
                 ])->values()->all(),

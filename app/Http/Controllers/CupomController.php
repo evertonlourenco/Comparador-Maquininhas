@@ -107,12 +107,15 @@ class CupomController extends Controller
         // validade so entra quando ha data de verdade pra citar.
         $validade = $cupom->valido_ate ? ', válido até '.$cupom->valido_ate->format('d/m/Y') : '';
 
+        // Codigo generico de afiliados nao e divulgado: o desconto vale so pelo link.
+        $rotulo = $cupom->codigo_generico ? 'Desconto' : "Cupom {$cupom->codigo}";
+
         if ($economia) {
-            return "Cupom {$cupom->codigo} da {$marca->nome}: economize {$economia['formatado']} na "
+            return "{$rotulo} da {$marca->nome}: economize {$economia['formatado']} na "
                 ."adesão{$validade}. A taxa é a mesma do site oficial.";
         }
 
-        return "Cupom {$cupom->codigo} da {$marca->nome}{$validade}. A taxa é a mesma do site oficial "
+        return "{$rotulo} da {$marca->nome}{$validade}. A taxa é a mesma do site oficial "
             .'— o cupom só desconta a adesão.';
     }
 
@@ -121,7 +124,7 @@ class CupomController extends Controller
         $schema = [
             '@context' => 'https://schema.org',
             '@type' => 'Offer',
-            'name' => "Cupom {$marca->nome}: {$cupom->codigo}",
+            'name' => $cupom->codigo_generico ? "Desconto {$marca->nome}" : "Cupom {$marca->nome}: {$cupom->codigo}",
             'description' => self::metaDescricao($marca, $cupom, $economia),
             'url' => $url,
             'seller' => ['@type' => 'Organization', 'name' => $marca->nome],

@@ -122,8 +122,18 @@
                                 class="inline-flex min-h-12 items-center rounded-botao border-2 px-4 py-2 font-titulo text-[0.9375rem] font-semibold"
                                 :class="modo === '{{ $chaveModo }}'
                                     ? 'border-tinta bg-tinta text-papel'
-                                    : 'border-contorno bg-superficie text-tinta hover:bg-superficie-forte'"
-                            >{{ $rotuloModo }}</button>
+                                    : '{{ $chaveModo === 'avancado'
+                                        ? 'gap-2 border-link bg-papel text-link shadow-botao hover:bg-superficie-forte'
+                                        : 'border-contorno bg-superficie text-tinta hover:bg-superficie-forte' }}'"
+                            >
+                                @if ($chaveModo === 'avancado')
+                                    {{-- Destaque proprio (pedido do Everton, 19/09/2026): e a
+                                         unica saida para misturar formas de pagamento, e nao
+                                         pode passar despercebida entre os outros tres. --}}
+                                    <svg aria-hidden="true" class="size-4 shrink-0" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M3 5.5h8M15 5.5h2M3 14.5h2M9 14.5h8"/><circle cx="13" cy="5.5" r="2"/><circle cx="7" cy="14.5" r="2"/></svg>
+                                @endif
+                                {{ $rotuloModo }}
+                            </button>
                         @endforeach
                     </div>
 
@@ -785,13 +795,6 @@
                                 </table>
                             </div>
                         </div>
-
-                        <template x-if="itemDaPromocaoAberta.comparacao && itemDaPromocaoAberta.comparacao.custo_inicial">
-                            <p class="text-sm text-tinta-suave">
-                                Custo inicial nesta tabela:
-                                <span class="numero font-medium text-tinta" x-text="itemDaPromocaoAberta.comparacao.custo_inicial.formatado.com_cupom + ' à vista'"></span>.
-                            </p>
-                        </template>
                     </div>
 
                     <div class="border-t border-regua px-5 py-4">

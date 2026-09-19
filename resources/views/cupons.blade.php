@@ -37,6 +37,7 @@
                     <li class="flex flex-col gap-2">
                         <x-bloco-cupom
                             :codigo="$cupom->codigo"
+                            :generico="$cupom->codigo_generico"
                             :marca="$marca->nome"
                             :marca-slug="$marca->slug"
                             origem="cupons"

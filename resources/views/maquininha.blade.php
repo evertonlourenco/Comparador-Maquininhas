@@ -80,6 +80,7 @@
             @if ($cupomDestaque)
                 <x-bloco-cupom
                     :codigo="$cupomDestaque->codigo"
+                    :generico="$cupomDestaque->codigo_generico"
                     :marca="$marca->nome"
                     :marca-slug="$marca->slug"
                     origem="marca"
@@ -309,7 +310,12 @@
                 <x-etiqueta tom="parceiro">Desconto parceiro</x-etiqueta>
                 <h2 id="s-cta" class="mt-3 text-titulo">Pronto para contratar a {{ $marca->nome }}?</h2>
                 <p class="mx-auto mt-3 max-w-prose leading-loose text-tinta">
-                    @if ($economia)
+                    @if ($cupomDestaque->codigo_generico)
+                        Entre pelo botão abaixo e o desconto na adesão já vem aplicado
+                        @if ($economia)
+                            — economia de <span class="numero-destaque text-tinta">{{ $economia['formatado'] }}</span>{{ $economia['base'] ? ' '.$economia['base'] : '' }}
+                        @endif.
+                    @elseif ($economia)
                         Use o cupom
                         <code class="numero rounded-botao border border-dashed border-contorno bg-papel px-2 py-1 font-semibold tracking-wider">{{ $cupomDestaque->codigo }}</code>
                         e economize <span class="numero-destaque text-tinta">{{ $economia['formatado'] }}</span>{{ $economia['base'] ? ' '.$economia['base'] : '' }}.

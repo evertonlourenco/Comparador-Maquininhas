@@ -135,6 +135,13 @@ class FacilityPaySeeder extends SeederDeMarca
      * decisão com o Everton foi manter os três planos com preço próprio,
      * não simplificar para um preço único "da parceria".
      *
+     * **Resolvido em 19/09/2026 (`preco_adesao_no_link`):** o Everton mandou
+     * a página do link (Facility Mini, planos D1PLUS e EXPRESS, os dois a
+     * R$ 55,50) e pediu que a adesão mostrada seja SEMPRE a do link. O preço
+     * do link é o valor final, não "site menos 10%" - Mini 55,50 (confirmado
+     * na captura), Pro 119,90 e Smart 221,90 (da leitura de 16/09, não
+     * reconferidos por plano). O parágrafo abaixo é o histórico da dúvida.
+     *
      * **O link de indicação do Everton
      * (`https://app.facilitypay.com.br/indicacao/EVERTON10`) mostrou um
      * terceiro preço, ainda mais baixo** (R$ 55,50/119,90/221,90, sob os
@@ -165,6 +172,7 @@ class FacilityPaySeeder extends SeederDeMarca
                 'ordem' => 0,
                 'precoCheio' => 359.90,
                 'precoPorPlano' => ['express' => 104.90, 'profit' => 194.90, 'light' => 64.90],
+                'precoNoLink' => 55.50,
             ],
             [
                 'nome' => 'Facility Pro',
@@ -177,6 +185,7 @@ class FacilityPaySeeder extends SeederDeMarca
                 'ordem' => 1,
                 'precoCheio' => 649.90,
                 'precoPorPlano' => ['express' => 198.90, 'profit' => 299.90, 'light' => 119.90],
+                'precoNoLink' => 119.90,
             ],
             [
                 'nome' => 'Facility Smart',
@@ -189,6 +198,7 @@ class FacilityPaySeeder extends SeederDeMarca
                 'ordem' => 2,
                 'precoCheio' => 749.90,
                 'precoPorPlano' => ['express' => 319.90, 'profit' => 469.90, 'light' => 209.90],
+                'precoNoLink' => 221.90,
             ],
         ];
 
@@ -223,6 +233,8 @@ class FacilityPaySeeder extends SeederDeMarca
                     $plano->getKey() => [
                         'preco_adesao' => $dados['precoCheio'],
                         'preco_adesao_promocional' => $dados['precoPorPlano'][$codigoPlano],
+                        // 19/09/2026: a adesao mostrada e a do link do Everton.
+                        'preco_adesao_no_link' => $dados['precoNoLink'],
                         'aluguel_mensal' => null,
                         // Etapa 17, dito pelo Everton: adesão parcela em 12x sem
                         // juros sobre o preço à vista, em todas as marcas.

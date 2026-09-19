@@ -21,7 +21,9 @@
 
         <h1 class="mt-2 text-manchete">Cupom {{ $marca->nome }}</h1>
         <p class="mt-2 max-w-prose text-subtitulo text-tinta-suave">
-            @if ($economia)
+            @if ($cupom->codigo_generico)
+                Entre pelo botão abaixo e o desconto na adesão da {{ $marca->nome }} já vem aplicado{{ $economia ? ' — economia de '.$economia['formatado'].($economia['base'] ? ' '.$economia['base'] : '') : '' }}.
+            @elseif ($economia)
                 Economize {{ $economia['formatado'] }}{{ $economia['base'] ? ' '.$economia['base'] : '' }} usando o código abaixo na adesão da {{ $marca->nome }}.
             @else
                 Use o código abaixo na adesão da {{ $marca->nome }}.
@@ -36,6 +38,7 @@
         <div class="mt-6">
             <x-bloco-cupom
                 :codigo="$cupom->codigo"
+                :generico="$cupom->codigo_generico"
                 :marca="$marca->nome"
                 :marca-slug="$marca->slug"
                 origem="cupom_marca"
@@ -52,11 +55,15 @@
         <section aria-labelledby="s-como-usar" class="mt-10 space-y-3">
             <h2 id="s-como-usar" class="text-titulo">Como usar</h2>
             <ol class="list-decimal space-y-3 ps-5 leading-relaxed text-tinta">
-                <li>Copie o código <code class="numero rounded-botao border border-dashed border-contorno bg-papel px-2 py-1 text-sm font-semibold tracking-wider">{{ $cupom->codigo }}</code>.</li>
+                @unless ($cupom->codigo_generico)
+                    <li>Copie o código <code class="numero rounded-botao border border-dashed border-contorno bg-papel px-2 py-1 text-sm font-semibold tracking-wider">{{ $cupom->codigo }}</code>.</li>
+                @endunless
                 <li>Clique em "Abrir {{ $marca->nome }} com o cupom" — o link já leva para a página de contratação da marca.</li>
                 <li>
                     Complete o cadastro
-                    @if ($cupom->incide_sobre?->value === 'equipamento')
+                    @if ($cupom->codigo_generico)
+                        e confira o desconto na adesão — ele já vem aplicado pelo link.
+                    @elseif ($cupom->incide_sobre?->value === 'equipamento')
                         e informe o código na compra do aparelho, se o site pedir.
                     @else
                         e informe o código na adesão, se o site pedir.

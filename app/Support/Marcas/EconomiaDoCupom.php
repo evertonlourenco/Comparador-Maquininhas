@@ -57,6 +57,21 @@ final class EconomiaDoCupom
         }
 
         [$equipamento, $plano] = $par;
+
+        // Pedido do Everton (19/09/2026): quando a pagina do link cobra preco
+        // proprio, a economia e a diferenca para o preco do site.
+        if ($equipamento->pivot->preco_adesao_no_link !== null) {
+            $valor = max(0.0, Dinheiro::arredondar(
+                (float) $equipamento->pivot->preco_adesao_vigente - (float) $equipamento->pivot->preco_adesao_no_link,
+            ));
+
+            return [
+                'valor' => $valor,
+                'formatado' => Dinheiro::real($valor),
+                'base' => "sobre a adesão de {$equipamento->nome} no plano {$plano->nome}",
+            ];
+        }
+
         $precoBase = (float) $equipamento->pivot->preco_adesao_vigente;
         $valor = Dinheiro::arredondar($precoBase * (float) $cupom->valor / 100);
 

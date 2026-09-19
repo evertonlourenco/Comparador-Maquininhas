@@ -36,6 +36,13 @@ class EquipamentosRelationManager extends RelationManager
                     ->label('Adesão promocional')
                     ->numeric()
                     ->prefix('R$'),
+                TextInput::make('preco_adesao_no_link')
+                    ->label('Adesão pelo link de afiliado')
+                    ->numeric()
+                    ->prefix('R$')
+                    ->helperText('Só quando a página do link cobra um preço próprio, diferente do site menos o '
+                        .'percentual do cupom (ex.: FacilityPay). O comparador mostra este valor como a adesão '
+                        .'com desconto. Vazio = vale a conta pelo cupom.'),
                 TextInput::make('parcelas_adesao')
                     ->label('Adesão parcelada em')
                     ->numeric()
@@ -71,6 +78,9 @@ class EquipamentosRelationManager extends RelationManager
                 TextColumn::make('pivot.preco_adesao_promocional')
                     ->label('Adesão promo.')
                     ->money('BRL', locale: 'pt_BR'),
+                TextColumn::make('pivot.preco_adesao_no_link')
+                    ->label('Adesão no link')
+                    ->money('BRL', locale: 'pt_BR'),
                 TextColumn::make('pivot.parcelas_adesao')
                     ->label('Parcelas')
                     ->formatStateUsing(fn (?int $state): string => $state ? "{$state}x" : '—'),
@@ -90,6 +100,7 @@ class EquipamentosRelationManager extends RelationManager
                         $action->getRecordSelect(),
                         TextInput::make('preco_adesao')->label('Adesão')->numeric()->prefix('R$'),
                         TextInput::make('preco_adesao_promocional')->label('Adesão promocional')->numeric()->prefix('R$'),
+                        TextInput::make('preco_adesao_no_link')->label('Adesão pelo link')->numeric()->prefix('R$'),
                         TextInput::make('parcelas_adesao')->label('Adesão em')->numeric()->minValue(1)->maxValue(24)->suffix('x'),
                         TextInput::make('aluguel_mensal')->label('Aluguel mensal')->numeric()->prefix('R$'),
                     ]),
