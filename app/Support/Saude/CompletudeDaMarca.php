@@ -31,7 +31,7 @@ use App\Motor\VendaDoCenario;
  * Zero regra nova: é a mesma regra do motor, aplicada mais cedo.
  *
  * O que ela cobra, por marca:
- *   - logo cadastrado;
+ *   - logo cadastrado e nota do Reclame Aqui (com data da consulta);
  *   - todo plano tem pelo menos um equipamento vinculado, e nenhum deles está
  *     sem foto (`imagem_path`) — isso o motor não cobra, porque preço e foto
  *     são coisas diferentes pra ele; aqui são as duas;
@@ -77,6 +77,16 @@ final class CompletudeDaMarca
 
         if (($marcaArr['logo_url'] ?? null) === null) {
             $pendencias[] = 'Logo da marca não cadastrado.';
+        }
+
+        // Regra 8 (revista em 19/09/2026): nota do Reclame Aqui e manual, mensal,
+        // e toda marca so vai ao ar com ela preenchida e com a data da consulta.
+        $ra = $marcaArr['reclame_aqui'] ?? [];
+
+        if (($ra['nota'] ?? null) === null) {
+            $pendencias[] = 'Nota do Reclame Aqui não preenchida.';
+        } elseif (($ra['consultado_em'] ?? null) === null) {
+            $pendencias[] = 'Data da consulta da nota do Reclame Aqui não preenchida.';
         }
 
         $planos = $marcaArr['planos'] ?? [];

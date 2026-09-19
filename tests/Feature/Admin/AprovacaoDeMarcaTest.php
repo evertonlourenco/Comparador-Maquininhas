@@ -112,6 +112,31 @@ class AprovacaoDeMarcaTest extends TestCase
         $this->assertNotContains($marca->slug, $slugsNoJson, 'Completa não é suficiente — precisa do clique em "Aprovar marca".');
     }
 
+    public function test_marca_sem_nota_do_reclame_aqui_nao_fecha_completude_nem_aparece_no_json(): void
+    {
+        $marca = $this->criarMarcaCompleta();
+        $marca->update(['aprovada_em' => now(), 'reclame_aqui_nota' => null]);
+
+        $completude = CompletudeDaMarca::avaliar($marca);
+
+        $this->assertFalse($completude['completa']);
+        $this->assertContains('Nota do Reclame Aqui não preenchida.', $completude['pendencias']);
+
+        $slugs = collect(app(CatalogoDoComparador::class)->montar(incluirRascunhos: false)['marcas'])->pluck('slug')->all();
+        $this->assertNotContains($marca->slug, $slugs);
+    }
+
+    public function test_nota_sem_data_de_consulta_tambem_e_pendencia(): void
+    {
+        $marca = $this->criarMarcaCompleta();
+        $marca->update(['reclame_aqui_consultado_em' => null]);
+
+        $this->assertContains(
+            'Data da consulta da nota do Reclame Aqui não preenchida.',
+            CompletudeDaMarca::avaliar($marca)['pendencias'],
+        );
+    }
+
     public function test_marca_completa_e_aprovada_aparece_no_json(): void
     {
         $marca = $this->criarMarcaCompleta();
@@ -214,6 +239,8 @@ class AprovacaoDeMarcaTest extends TestCase
             'nome' => 'Marca Completa',
             'slug' => 'marca-completa-'.uniqid(),
             'logo_path' => 'marcas/logos/teste.webp',
+            'reclame_aqui_nota' => 8.4,
+            'reclame_aqui_consultado_em' => now()->toDateString(),
             'publica_tabela' => true,
             'status' => StatusMarca::Ativa,
         ]);

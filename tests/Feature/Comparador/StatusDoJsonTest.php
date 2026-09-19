@@ -67,6 +67,8 @@ class StatusDoJsonTest extends TestCase
             'nome' => 'Marca Teste JSON',
             'slug' => 'marca-teste-json',
             'logo_path' => 'marcas/logos/teste.webp',
+            'reclame_aqui_nota' => 8.4,
+            'reclame_aqui_consultado_em' => now()->toDateString(),
             'publica_tabela' => true,
             'status' => StatusMarca::Ativa,
             'aprovada_em' => now(),
