@@ -27,6 +27,10 @@
     "file": "assets/fonts-BLnF2WQe.css",
     "src": "_fonts-BLnF2WQe.css"
   },
+  "_module.esm-DcYUMeEN.js": {
+    "file": "assets/module.esm-DcYUMeEN.js",
+    "name": "module.esm"
+  },
   "_saira-400-normal-6Q3FbzbH.woff2": {
     "file": "assets/saira-400-normal-6Q3FbzbH.woff2",
     "src": "_saira-400-normal-6Q3FbzbH.woff2"
@@ -52,7 +56,7 @@
     "src": "_saira-700-normal-CWqLIJDh.woff"
   },
   "resources/css/app.css": {
-    "file": "assets/app-vhHsCWat.css",
+    "file": "assets/app-CM0a4Ff4.css",
     "name": "app",
     "names": [
       "app.css"
@@ -76,9 +80,21 @@
     "isEntry": true
   },
   "resources/js/comparador.js": {
-    "file": "assets/comparador-CRkTXyqx.js",
+    "file": "assets/comparador-CUzmu0em.js",
     "name": "comparador",
     "src": "resources/js/comparador.js",
-    "isEntry": true
+    "isEntry": true,
+    "imports": [
+      "_module.esm-DcYUMeEN.js"
+    ]
+  },
+  "resources/js/marca.js": {
+    "file": "assets/marca-DK2KfRjb.js",
+    "name": "marca",
+    "src": "resources/js/marca.js",
+    "isEntry": true,
+    "imports": [
+      "_module.esm-DcYUMeEN.js"
+    ]
   }
 }

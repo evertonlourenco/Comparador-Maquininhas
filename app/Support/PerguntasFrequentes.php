@@ -3,7 +3,7 @@
 namespace App\Support;
 
 /**
- * As 10 perguntas frequentes do Máquina Certa (etapa 20, bloco F, 18/09/2026).
+ * As perguntas frequentes do Máquina Certa (etapa 20, bloco F, 18/09/2026).
  *
  * Conteúdo fixo, não dado de catálogo — por isso mora aqui como código, não
  * como tabela. Fonte única entre a página própria (/perguntas-frequentes, as
@@ -29,6 +29,18 @@ final class PerguntasFrequentes
         $cupons = route('cupons.index');
 
         return [
+            [
+                'pergunta' => 'Eu pago ao Máquina Certa? Quem entrega a maquininha e dá suporte?',
+                'resposta' => 'Você não paga nada ao Máquina Certa — nós não vendemos maquininha, '
+                    .'não recebemos pagamento seu e não cobramos nada de você. A adesão, a compra do '
+                    .'aparelho e todas as taxas são pagas diretamente à marca que você escolher, pelo '
+                    .'site dela. Por isso a responsabilidade pelo contrato, pela entrega do '
+                    .'equipamento, pelo suporte, pela troca em caso de defeito e por qualquer '
+                    .'cobrança é sempre da marca, nunca nossa. Nosso papel é só comparar e indicar; '
+                    .'se algo der errado depois da contratação, o canal certo é o atendimento da '
+                    .'própria marca.',
+                'destaque' => false,
+            ],
             [
                 'pergunta' => 'A taxa pelo link do Máquina Certa é a mesma do site oficial?',
                 'resposta' => 'Sim, sempre. A taxa que você vê aqui é exatamente a mesma taxa '

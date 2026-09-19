@@ -50,7 +50,14 @@ final class TabelaDeTaxasDaMarca
                 'percentual' => (float) $t->percentual,
                 'fixo' => (float) $t->valor_fixo > 0 ? (float) $t->valor_fixo : null,
                 // Pix cai sempre na hora, mas nunca vira um "prazo" a parte do plano.
-                'prazo' => $t->tipo_operacao === TipoOperacao::Pix ? null : $t->prazoRecebimento->nome_exibicao,
+                // O prazo nao e mais coluna: virou seletor da pagina da marca
+                // (19/09/2026), entao a linha so carrega o codigo dele e o da
+                // bandeira para o filtro.
+                'prazo' => null,
+                'prazo_codigo' => $t->tipo_operacao === TipoOperacao::Pix ? null : $t->prazoRecebimento->codigo,
+                'prazo_nome' => $t->tipo_operacao === TipoOperacao::Pix ? null : $t->prazoRecebimento->nome_exibicao,
+                'bandeira_padrao' => in_array($t->grupoBandeira->codigo, ['visa_master', 'geral'], true),
+                'eh_pix' => $t->tipo_operacao === TipoOperacao::Pix,
                 'condicao' => $t->condicao,
                 'data_verificacao' => $t->data_verificacao,
                 'url_fonte' => $t->url_fonte,

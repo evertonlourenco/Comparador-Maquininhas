@@ -31,6 +31,33 @@
             </p>
         </section>
 
+        <section aria-labelledby="s-conta" class="space-y-3">
+            <h2 id="s-conta" class="text-titulo">Como calculamos o custo mensal</h2>
+            <p class="text-tinta">
+                Você escolhe uma forma de pagamento (débito, crédito à vista, crédito parcelado em
+                12x ou uma mistura, na simulação avançada), o valor vendido na maquininha por mês e
+                o prazo de recebimento. Aplicamos a taxa publicada de cada plano sobre esse valor e
+                ordenamos do menor para o maior custo mensal em taxas — a adesão do aparelho não
+                entra na ordenação, aparece à parte em cada cartão.
+            </p>
+            <p class="text-tinta">
+                Quem escolhe um prazo de recebimento só vê planos que recebem nesse prazo. Marcas
+                sem plano nesse prazo, ou sem a taxa que a sua conta exige, não somem em silêncio:
+                aparecem no fim da lista com o motivo. O Pix cai sempre na hora, então ele é
+                mostrado igual em qualquer prazo e bandeira.
+            </p>
+            <p class="text-tinta">
+                A adesão exibida é a que você paga entrando pelo nosso link, já com o desconto do
+                parceiro quando a marca tem um. Se você desmarcar "Considerar cupons de desconto",
+                a comparação passa a usar a adesão sem desconto, mas o botão de contratar continua
+                levando ao link de parceiro.
+            </p>
+            <p class="text-tinta">
+                A nota do Reclame Aqui mostrada em cada cartão é conferida à mão, uma vez por mês,
+                com a data da consulta ao lado.
+            </p>
+        </section>
+
         <section aria-labelledby="s-frequencia" class="space-y-3">
             <h2 id="s-frequencia" class="text-titulo">Com que frequência conferimos</h2>
             <p class="text-tinta">
@@ -57,14 +84,16 @@
         </section>
 
         <section aria-labelledby="s-faixa" class="space-y-3">
-            <h2 id="s-faixa" class="text-titulo">Por que Cielo, Rede, GetNet e Stone aparecem como faixa</h2>
+            <h2 id="s-faixa" class="text-titulo">Por que Cielo, Rede, GetNet e Stone só aparecem como faixa</h2>
             <p class="text-tinta">
                 Essas quatro marcas não publicam uma tabela de taxas aberta ao público — o preço
                 sai só numa proposta comercial, negociada caso a caso. Não temos como citar uma
                 fonte que não existe, então não fingimos ter um número exato: mostramos a
                 <x-etiqueta tom="reportado">faixa reportada</x-etiqueta> — mínimo, mediana e máximo
                 do que lojistas de verdade relataram ter recebido, com o número de relatos ao lado.
-                Nunca é exibida como se fosse tabela oficial.
+                Nunca é exibida como se fosse tabela oficial. Enquanto uma marca ainda não tem
+                relatos suficientes, ela não entra na comparação — só voltamos a listá-la quando
+                houver número que possamos sustentar.
             </p>
             <p class="text-tinta">
                 Esse dado só existe porque lojistas como você enviam a proposta que receberam.
@@ -82,6 +111,13 @@
                 número exibido. A comissão também não muda a ordem do resultado: o comparador
                 ranqueia sempre pelo menor custo mensal calculado, e uma marca que paga comissão
                 maior não sobe de posição por isso.
+            </p>
+            <p class="text-tinta">
+                O pagamento é sempre feito direto à marca, no site dela: não cobramos nada de você,
+                e a entrega do equipamento, o suporte e qualquer cobrança são responsabilidade da
+                marca. Quando o código de um cupom vale para qualquer afiliado (e por isso não
+                creditaria a nossa comissão se digitado no site oficial), não o exibimos: o
+                desconto vale pelo botão de contratar.
             </p>
         </section>
     </div>

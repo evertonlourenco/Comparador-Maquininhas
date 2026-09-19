@@ -29,6 +29,9 @@
     // nao credita a comissao, entao nao se exibe nem se manda copiar — o
     // desconto vale so pelo link.
     'generico' => false,
+    // Logo da marca no cabecalho do cartao (pagina /cupons), para achar a marca
+    // de relance. Sem logo, nada — nunca uma imagem generica.
+    'logo' => null,
 ])
 
 @php
@@ -73,7 +76,12 @@
         $vencido ? 'border border-vencido' : ($vencendo ? 'border border-dashed border-reportado' : 'border border-regua'),
     ]) }} aria-labelledby="cupom-{{ Str::slug($codigo) }}">
         <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-regua px-4 py-3">
-            <h3 id="cupom-{{ Str::slug($codigo) }}" class="text-cartao">
+            <h3 id="cupom-{{ Str::slug($codigo) }}" class="flex items-center gap-3 text-cartao">
+                @if ($logo)
+                    <span class="flex size-11 shrink-0 items-center justify-center rounded-botao border border-regua bg-superficie">
+                        <img src="{{ $logo }}" alt="" class="max-h-8 max-w-8 object-contain" width="32" height="32" loading="lazy" decoding="async">
+                    </span>
+                @endif
                 {{ $generico ? 'Desconto' : 'Cupom' }}{{ $marca ? ' '.$marca : '' }}
             </h3>
             <div class="flex flex-wrap items-center gap-1.5">

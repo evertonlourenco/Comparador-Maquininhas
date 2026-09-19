@@ -438,15 +438,37 @@ function comparador(caminhoDoJson) {
      * da marca" (direto, sem parceria a rastrear).
      */
     temCupomParaContratar(item) {
-      return Boolean(item.comparacao?.custo_inicial?.tem_cupom && item.cupom);
+      return this.cupomDaMarca(item) !== null;
+    },
+
+    /**
+     * O cupom vigente da marca, tenha ele entrado na conta ou nao. Desmarcar
+     * "Considerar cupons de desconto" muda o NUMERO da comparacao, nunca o
+     * destino do botao: onde ha link de afiliado, o CTA vai sempre por ele
+     * (Everton, 19/09/2026), com o mesmo texto no computador e no celular.
+     */
+    cupomDaMarca(item) {
+      if (item.cupom) {
+        return item.cupom;
+      }
+
+      const marca = this.catalogo?.marcas?.find((m) => m.slug === item.marca.slug);
+      const hoje = new Date().toISOString().slice(0, 10);
+
+      return (
+        marca?.cupons?.find(
+          (c) =>
+            (c.valido_de === null || c.valido_de <= hoje) && (c.valido_ate === null || c.valido_ate >= hoje),
+        ) ?? null
+      );
     },
 
     textoContratar(item) {
-      if (! this.temCupomParaContratar(item)) {
+      const cupom = this.cupomDaMarca(item);
+
+      if (cupom === null) {
         return `Ir para o site da ${item.marca.nome}`;
       }
-
-      const cupom = item.cupom;
 
       if (cupom.tipo_desconto === 'percentual' && cupom.valor !== null) {
         return `Contratar com ${percentual(Number(cupom.valor))} de desconto`;
@@ -455,17 +477,14 @@ function comparador(caminhoDoJson) {
       return 'Contratar com desconto';
     },
 
-    /** A versao curta do texto, para a barra fixa do celular — sem espaço para a frase inteira. */
-    textoContratarCurto(item) {
-      return this.temCupomParaContratar(item) ? 'Contratar' : `Ir para ${item.marca.nome}`;
-    },
-
     hrefContratar(item) {
-      if (! this.temCupomParaContratar(item)) {
+      const cupom = this.cupomDaMarca(item);
+
+      if (cupom === null) {
         return item.marca.site_url;
       }
 
-      return `/ir/${item.marca.slug}?origem=comparador&cupom=${encodeURIComponent(item.cupom.codigo)}`;
+      return `/ir/${item.marca.slug}?origem=comparador&cupom=${encodeURIComponent(cupom.codigo)}`;
     },
 
     /**
@@ -481,7 +500,7 @@ function comparador(caminhoDoJson) {
 
       window.gtag?.('event', 'clique_afiliado', {
         marca: item.marca.slug,
-        cupom: item.cupom.codigo,
+        cupom: this.cupomDaMarca(item).codigo,
         pagina_origem: 'comparador',
       });
     },
@@ -601,6 +620,53 @@ function comparador(caminhoDoJson) {
       return this.itensNoEstado('promocional').filter(
         (promo) => ! this.resultado.itens.some((outro) => outro.marca.slug === promo.marca.slug && outro.estado !== 'promocional'),
       );
+    },
+
+    /**
+     * As marcas escolhidas que nao geraram cartao nenhum, cada uma com o
+     * motivo (Everton, 19/09/2026: "Falta dado" como cartao confundia). Tres
+     * motivos, do mais especifico ao mais geral: a marca so tem plano que nao
+     * recebe no prazo pedido (o motor nem avalia); tem plano no prazo mas falta
+     * uma taxa ou o preco do aparelho (`faltando`); ou nao publica taxa nenhuma.
+     */
+    get marcasSemResultado() {
+      if (this.resultado === null || this.catalogo === null) {
+        return [];
+      }
+
+      const escolhidas = this.marcas;
+      const marcas =
+        escolhidas === TODAS_AS_MARCAS
+          ? this.catalogo.marcas
+          : this.catalogo.marcas.filter((m) => escolhidas.includes(m.slug));
+      const itens = this.resultado.itens;
+      const comCartao = new Set(
+        itens
+          .filter((i) => ['calculado', 'promocional', 'faixa_reportada'].includes(i.estado))
+          .map((i) => i.marca.slug),
+      );
+      const prazo = this.prazo === '' ? null : this.prazo;
+      const nomeDoPrazo = prazo === null ? '' : this.nomeDoPrazo(prazo);
+      const minusculo = nomeDoPrazo.charAt(0).toLowerCase() + nomeDoPrazo.slice(1);
+
+      return marcas
+        .filter((marca) => ! comCartao.has(marca.slug))
+        .map((marca) => {
+          const daMarca = itens.filter((i) => i.marca.slug === marca.slug);
+          const incompletos = daMarca.filter((i) => i.estado === 'incompleto');
+
+          if (incompletos.length > 0) {
+            const faltas = [...new Set(incompletos.flatMap((i) => i.faltando))];
+
+            return { marca, motivo: `Sem dado publicado para este cenário: ${faltas.join('; ')}.` };
+          }
+
+          if (daMarca.length === 0 && prazo !== null) {
+            return { marca, motivo: `Não oferece plano de recebimento ${minusculo}.` };
+          }
+
+          return { marca, motivo: daMarca[0]?.motivo ?? 'Ainda não publicou taxas que possamos comparar.' };
+        });
     },
 
     abrirModalPromocao(slug) {
@@ -1020,7 +1086,7 @@ function comparador(caminhoDoJson) {
      * entre marcas, sem comparar tipo_operacao/parcelas/grupo na mao.
      */
     get linhasDaTabelaDeTaxas() {
-      const pool = [...this.itensNoEstado('calculado'), ...this.itensNoEstado('incompleto')];
+      const pool = this.itensNoEstado('calculado');
 
       if (pool.length === 0) {
         return [];

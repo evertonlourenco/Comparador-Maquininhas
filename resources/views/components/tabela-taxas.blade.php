@@ -99,7 +99,21 @@
 
             <tbody>
                 @foreach ($linhas as $linha)
-                    <tr class="border-b border-regua last:border-b-0 odd:bg-papel even:bg-superficie">
+                    @php
+                        // Pagina da marca (19/09/2026): a linha carrega o prazo e a
+                        // bandeira e o Alpine da pagina (`prazo`, `bandeira`) filtra.
+                        // O Pix aparece sempre, com qualquer prazo e bandeira. Sem
+                        // esses dados (guia visual) a linha e fixa, como antes.
+                        $filtro = isset($linha['prazo_codigo']) || isset($linha['bandeira_padrao'])
+                            ? (($linha['eh_pix'] ?? false)
+                                ? 'true'
+                                : "prazo === '".($linha['prazo_codigo'] ?? '')."' && bandeira === '".(($linha['bandeira_padrao'] ?? true) ? 'padrao' : 'outras')."'")
+                            : null;
+                    @endphp
+                    <tr
+                        class="border-b border-regua last:border-b-0 {{ $filtro ? 'bg-papel' : 'odd:bg-papel even:bg-superficie' }}"
+                        @if ($filtro) x-show="{{ $filtro }}" @endif
+                    >
                         {{-- bg-inherit faz a coluna fixa herdar a zebra da linha. --}}
                         <th scope="row" class="{{ $celula }} sticky left-0 bg-inherit numero font-medium whitespace-nowrap">
                             {{ $linha['rotulo'] }}

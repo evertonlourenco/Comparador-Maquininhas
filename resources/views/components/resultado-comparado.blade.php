@@ -256,16 +256,16 @@
                         {{-- Cupom generico de afiliados (Yelly): o codigo digitado no site
                              oficial nao credita a comissao, entao nem aparece — o
                              desconto vale so pelo botao acima. --}}
-                        <template x-if="temCupomParaContratar(item) && ! item.cupom.codigo_generico">
+                        <template x-if="temCupomParaContratar(item) && ! cupomDaMarca(item).codigo_generico">
                             <div class="flex flex-wrap items-center gap-2">
                                 <span class="text-miudo text-tinta-suave">Cupom:</span>
-                                <code class="numero rounded-botao border border-dashed border-contorno bg-papel px-2.5 py-1.5 text-sm font-semibold tracking-wider" x-text="item.cupom.codigo"></code>
+                                <code class="numero rounded-botao border border-dashed border-contorno bg-papel px-2.5 py-1.5 text-sm font-semibold tracking-wider" x-text="cupomDaMarca(item).codigo"></code>
                                 <button
                                     type="button"
                                     class="inline-flex min-h-8 items-center rounded-botao border border-tinta px-3 text-etiqueta font-semibold uppercase text-tinta hover:bg-superficie-forte"
-                                    x-bind:data-copiar="item.cupom.codigo"
+                                    x-bind:data-copiar="cupomDaMarca(item).codigo"
                                     x-bind:data-marca="item.marca.slug"
-                                    x-bind:data-cupom="item.cupom.codigo"
+                                    x-bind:data-cupom="cupomDaMarca(item).codigo"
                                     data-origem="comparador"
                                 >Copiar código</button>
                             </div>
@@ -273,23 +273,28 @@
 
                         {{-- A nota do Reclame Aqui mora na mesma linha, em negrito, do
                              "Link de parceiro" — ou da adesao, quando nao ha link de
-                             parceiro (pedido do Everton, 19/09/2026). --}}
+                             parceiro —, alinhada a direita (Everton, 19/09/2026). O
+                             "sem cupom, R$ x" so aparece quando o cupom entrou na conta. --}}
                         <template x-if="item.comparacao && item.comparacao.custo_inicial">
-                            <p class="text-miudo" :class="temCupomParaContratar(item) ? 'text-tinta-suave' : 'font-semibold text-tinta'">
-                                Adesão a partir de
-                                <span class="numero font-medium text-tinta" x-text="item.comparacao.custo_inicial.formatado.com_cupom"></span>
-                                <template x-if="temCupomParaContratar(item)">
-                                    <span> — sem cupom, <span class="numero line-through" x-text="item.comparacao.custo_inicial.formatado.sem_cupom"></span></span>
-                                </template>
-                                <template x-if="! temCupomParaContratar(item)">
-                                    <x-nota-reclame-aqui />
-                                </template>
-                            </p>
+                            <div class="space-y-3">
+                                <p class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-miudo" :class="temCupomParaContratar(item) ? 'text-tinta-suave' : 'font-semibold text-tinta'">
+                                    <span>
+                                        Adesão a partir de
+                                        <span class="numero font-medium text-tinta" x-text="item.comparacao.custo_inicial.formatado.com_cupom"></span>
+                                        <template x-if="item.comparacao.custo_inicial.tem_cupom">
+                                            <span> — sem cupom, <span class="numero line-through" x-text="item.comparacao.custo_inicial.formatado.sem_cupom"></span></span>
+                                        </template>
+                                    </span>
+                                    <template x-if="! temCupomParaContratar(item)">
+                                        <x-nota-reclame-aqui />
+                                    </template>
+                                </p>
+                            </div>
                         </template>
                         <template x-if="! (item.comparacao && item.comparacao.custo_inicial)">
                             {{-- Preco ausente e ausente: zero aqui seria mentira. --}}
-                            <p class="text-miudo" :class="temCupomParaContratar(item) ? 'text-tinta-suave' : 'font-semibold text-tinta'">
-                                A marca não publicou o preço do aparelho neste plano.
+                            <p class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-miudo" :class="temCupomParaContratar(item) ? 'text-tinta-suave' : 'font-semibold text-tinta'">
+                                <span>A marca não publicou o preço do aparelho neste plano.</span>
                                 <template x-if="! temCupomParaContratar(item)">
                                     <x-nota-reclame-aqui />
                                 </template>
@@ -297,8 +302,8 @@
                         </template>
 
                         <template x-if="temCupomParaContratar(item)">
-                            <p class="text-miudo font-semibold text-tinta">
-                                Link de parceiro. A taxa é a mesma do site oficial.
+                            <p class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-miudo font-semibold text-tinta">
+                                <span>Link de parceiro. A taxa é a mesma do site oficial.</span>
                                 <x-nota-reclame-aqui />
                             </p>
                         </template>

@@ -583,25 +583,20 @@
                 </ol>
             </section>
 
-            <x-resultado-comparado
-                estado="incompleto"
-                tom="apagado"
-                titulo="Falta dado para este cenário"
-                descricao="O total sai parcial porque alguma peça da conta ainda não foi publicada. Preferimos dizer o que falta a chutar o que falta."
-            />
-
-            {{-- Marca sem dado nenhum nao some do resultado (regra 4): ela
-                 aparece com o motivo, e sem numero. Zero seria mentira. --}}
-            <section x-cloak x-show="itensNoEstado('sem_dado_publicado').length > 0" class="space-y-3">
-                <h3 class="text-cartao sm:text-2xl">
-                    Sem dado publicado
-                    <span class="numero font-normal text-tinta-suave" x-text="'(' + itensNoEstado('sem_dado_publicado').length + ')'"></span>
-                </h3>
+            {{-- Marcas que nao geraram cartao, cada uma com o motivo (Everton,
+                 19/09/2026): substitui os antigos blocos "Falta dado" e "Sem dado
+                 publicado", que confundiam. Marca nunca some sem explicacao
+                 (regra 4) — so o lugar da explicacao mudou. --}}
+            <section x-cloak x-show="marcasSemResultado.length > 0" class="space-y-3">
+                <div class="space-y-1">
+                    <h3 class="text-cartao sm:text-2xl">Marcas que não retornaram resultado</h3>
+                    <p class="max-w-3xl text-miudo text-tinta-suave">Estas marcas estão na sua comparação, mas não aparecem nos cartões acima. O motivo de cada uma:</p>
+                </div>
                 <ul class="divide-y divide-regua rounded-bloco border border-regua bg-papel shadow-cartao">
-                    <template x-for="item in itensNoEstado('sem_dado_publicado')" :key="item.marca.slug">
+                    <template x-for="linha in marcasSemResultado" :key="linha.marca.slug">
                         <li class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-4 py-3">
-                            <span class="font-medium" x-text="item.marca.nome"></span>
-                            <span class="min-w-0 flex-1 text-miudo text-tinta-suave sm:text-end" x-text="item.motivo"></span>
+                            <span class="font-medium" x-text="linha.marca.nome"></span>
+                            <span class="min-w-0 flex-1 text-miudo text-tinta-suave sm:text-end" x-text="linha.motivo"></span>
                         </li>
                     </template>
                 </ul>
@@ -691,12 +686,12 @@
                         <p class="numero-destaque truncate text-base text-tinta" x-text="campoTexto(melhorItem, 'custo_mensal_recorrente') + '/mês'"></p>
                     </div>
                     <a
-                        class="inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-botao border-[1.5px] border-acao bg-acao px-4 text-center font-titulo text-sm font-semibold leading-tight text-sobre-acao shadow-botao transition-colors duration-150 hover:border-acao-forte hover:bg-acao-forte"
+                        class="inline-flex min-h-11 max-w-[60%] shrink-0 items-center justify-center gap-1.5 rounded-botao border-[1.5px] border-acao bg-acao px-4 py-1.5 text-center font-titulo text-sm font-semibold leading-tight text-sobre-acao shadow-botao transition-colors duration-150 hover:border-acao-forte hover:bg-acao-forte"
                         target="_blank"
                         x-bind:href="hrefContratar(melhorItem)"
                         x-bind:rel="temCupomParaContratar(melhorItem) ? 'sponsored nofollow noopener noreferrer' : 'noopener noreferrer'"
                         x-on:click="registrarCliqueContratar(melhorItem)"
-                        x-text="textoContratarCurto(melhorItem)"
+                        x-text="textoContratar(melhorItem)"
                     ></a>
                 </div>
             </div>

@@ -16,9 +16,6 @@
     <div class="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
         <header class="max-w-3xl space-y-3">
             <h1 class="text-manchete">Cupons de desconto</h1>
-            <p class="text-subtitulo text-tinta-suave">
-                Todo cupom de adesão vigente hoje, por marca, ordenado pelo maior desconto em reais.
-            </p>
         </header>
 
         {{-- Pedido explícito: esta frase não pode ficar implícita em lugar nenhum. --}}
@@ -38,6 +35,7 @@
                         <x-bloco-cupom
                             :codigo="$cupom->codigo"
                             :generico="$cupom->codigo_generico"
+                            :logo="$marca->logo_url"
                             :marca="$marca->nome"
                             :marca-slug="$marca->slug"
                             origem="cupons"

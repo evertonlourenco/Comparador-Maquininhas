@@ -18,6 +18,7 @@
     :navegacao="$navegacao"
     :canonical="$canonical"
     :schema="$schema"
+    :scripts="['resources/js/marca.js']"
 >
     {{-- 1. Cabeçalho: logo, nota do Reclame Aqui e o cupom em destaque -------- --}}
     <header class="border-b border-regua bg-papel">
@@ -130,9 +131,69 @@
                 Ainda não há {{ $marca->publica_tabela ? 'taxa publicada' : 'faixa reportada' }} cadastrada para esta marca.
             </p>
         @else
-            <div class="space-y-4">
+            {{-- Seletores (19/09/2026, igual ao modal "Ver todas as taxas" do
+                 comparador): plano, prazo de recebimento e bandeira, em vez de
+                 uma tabela empilhada atras da outra. O Pix aparece sempre. --}}
+            <div class="space-y-4" x-data="{ plano: {{ $tabelasDeTaxas[0]['plano']->getKey() }} }">
+                @if (count($tabelasDeTaxas) > 1)
+                    <div class="space-y-1.5">
+                        <label for="seletor-plano" class="block text-sm font-medium text-tinta">Plano de taxas</label>
+                        <select
+                            id="seletor-plano"
+                            class="block min-h-11 w-full max-w-md rounded-botao border-2 border-contorno bg-papel px-3 py-2 text-base font-medium text-tinta"
+                            x-model.number="plano"
+                        >
+                            @foreach ($tabelasDeTaxas as $bloco)
+                                <option value="{{ $bloco['plano']->getKey() }}">Plano {{ $bloco['plano']->nome }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endif
+
                 @foreach ($tabelasDeTaxas as $bloco)
-                    <div class="space-y-2">
+                    @php
+                        $ehDivulgada = $bloco['classe'] === 'divulgada';
+                        $linhasDoBloco = collect($bloco['linhas']);
+                        $prazosDoBloco = $linhasDoBloco->filter(fn ($l) => ! empty($l['prazo_codigo']))
+                            ->unique('prazo_codigo')->map(fn ($l) => ['codigo' => $l['prazo_codigo'], 'nome' => $l['prazo_nome']])->values();
+                        $temOutras = $linhasDoBloco->contains(fn ($l) => ! ($l['eh_pix'] ?? false) && ! ($l['bandeira_padrao'] ?? true));
+                        $prazoInicial = $prazosDoBloco->first()['codigo'] ?? '';
+                    @endphp
+                    <div
+                        class="space-y-3"
+                        x-show="plano === {{ $bloco['plano']->getKey() }}"
+                        @if ($ehDivulgada) x-data="{ prazo: '{{ $prazoInicial }}', bandeira: 'padrao' }" @endif
+                        @if (! $loop->first) x-cloak @endif
+                    >
+                        @if ($ehDivulgada)
+                            <div class="grid gap-3 sm:grid-cols-2">
+                                <div role="group" aria-label="Prazo de recebimento" class="space-y-1.5">
+                                    <p class="text-sm font-medium text-tinta">Prazo de recebimento</p>
+                                    <div class="flex flex-wrap gap-2">
+                                        @foreach ($prazosDoBloco as $prazo)
+                                            <button type="button" x-on:click="prazo = '{{ $prazo['codigo'] }}'" :aria-pressed="prazo === '{{ $prazo['codigo'] }}'"
+                                                class="inline-flex min-h-11 items-center rounded-botao border-2 px-4 font-titulo text-sm font-semibold"
+                                                :class="prazo === '{{ $prazo['codigo'] }}' ? 'border-tinta bg-tinta text-papel' : 'border-contorno bg-papel text-tinta hover:bg-superficie-forte'">{{ $prazo['nome'] }}</button>
+                                        @endforeach
+                                    </div>
+                                </div>
+
+                                @if ($temOutras)
+                                    <div role="group" aria-label="Bandeiras" class="space-y-1.5">
+                                        <p class="text-sm font-medium text-tinta">Bandeiras</p>
+                                        <div class="flex flex-wrap gap-2">
+                                            <button type="button" x-on:click="bandeira = 'padrao'" :aria-pressed="bandeira === 'padrao'"
+                                                class="inline-flex min-h-11 items-center rounded-botao border-2 px-4 font-titulo text-sm font-semibold"
+                                                :class="bandeira === 'padrao' ? 'border-tinta bg-tinta text-papel' : 'border-contorno bg-papel text-tinta hover:bg-superficie-forte'">Visa e Mastercard</button>
+                                            <button type="button" x-on:click="bandeira = 'outras'" :aria-pressed="bandeira === 'outras'"
+                                                class="inline-flex min-h-11 items-center rounded-botao border-2 px-4 font-titulo text-sm font-semibold"
+                                                :class="bandeira === 'outras' ? 'border-tinta bg-tinta text-papel' : 'border-contorno bg-papel text-tinta hover:bg-superficie-forte'">Outras bandeiras</button>
+                                        </div>
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
+
                         <x-tabela-taxas
                             :classe="$bloco['classe']"
                             :titulo="'Plano '.$bloco['plano']->nome"
