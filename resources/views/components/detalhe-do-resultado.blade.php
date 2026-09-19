@@ -42,7 +42,7 @@
                                 <span x-text="rotuloDaVenda(linha.venda)"></span>
                                 <span class="numero block text-miudo text-tinta-suave" x-text="real(linha.venda.valor_mensal)"></span>
                             </th>
-                            <td class="px-3 py-2 text-miudo text-tinta-suave" x-text="linha.prazo ? nomeDoPrazo(linha.prazo) : '—'"></td>
+                            <td class="px-3 py-2 text-miudo text-tinta-suave" x-text="linha.prazo && linha.venda.tipo_operacao !== 'pix' ? nomeDoPrazo(linha.prazo) : '—'"></td>
                             <td class="numero px-3 py-2 text-end">
                                 {{-- Classe A: o percentual publicado. --}}
                                 <template x-if="linha.percentual_formatado">

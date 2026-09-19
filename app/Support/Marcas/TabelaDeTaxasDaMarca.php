@@ -44,12 +44,13 @@ final class TabelaDeTaxasDaMarca
         }
 
         $linhas = $plano->taxasDivulgadas
-            ->sortBy(fn ($t) => sprintf('%02d-%s-%02d', $t->prazoRecebimento->ordem, $t->tipo_operacao->value, $t->parcelas))
+            ->sortBy(fn ($t) => self::chaveDeOrdem($t->tipo_operacao, $t->prazoRecebimento->ordem, $t->parcelas))
             ->map(fn ($t): array => [
                 'rotulo' => self::rotulo($t->tipo_operacao, $t->grupoBandeira->codigo, $t->parcelas, $grupos),
                 'percentual' => (float) $t->percentual,
                 'fixo' => (float) $t->valor_fixo > 0 ? (float) $t->valor_fixo : null,
-                'prazo' => $t->prazoRecebimento->nome_exibicao,
+                // Pix cai sempre na hora, mas nunca vira um "prazo" a parte do plano.
+                'prazo' => $t->tipo_operacao === TipoOperacao::Pix ? null : $t->prazoRecebimento->nome_exibicao,
                 'condicao' => $t->condicao,
                 'data_verificacao' => $t->data_verificacao,
                 'url_fonte' => $t->url_fonte,
@@ -72,7 +73,7 @@ final class TabelaDeTaxasDaMarca
         }
 
         $linhas = $plano->faixasReportadas
-            ->sortBy(fn ($f) => sprintf('%02d-%s-%02d', $f->prazoRecebimento->ordem, $f->tipo_operacao->value, $f->parcelas))
+            ->sortBy(fn ($f) => self::chaveDeOrdem($f->tipo_operacao, $f->prazoRecebimento->ordem, $f->parcelas))
             ->map(fn ($f): array => [
                 'rotulo' => self::rotulo($f->tipo_operacao, $f->grupoBandeira->codigo, $f->parcelas, $grupos),
                 'minimo' => (float) $f->percentual_minimo,
@@ -91,6 +92,14 @@ final class TabelaDeTaxasDaMarca
             'plano' => $plano,
             'linhas' => $linhas,
         ];
+    }
+
+    /** Pix sempre no fim da tabela do plano, seja qual for o prazo dos cartões. */
+    private static function chaveDeOrdem(TipoOperacao $tipo, int $ordemDoPrazo, int $parcelas): string
+    {
+        return $tipo === TipoOperacao::Pix
+            ? sprintf('99-pix-%02d', $parcelas)
+            : sprintf('%02d-%s-%02d', $ordemDoPrazo, $tipo->value, $parcelas);
     }
 
     /** Reaproveita o mesmo rótulo que a etapa 07 já usa na tela do lojista. */

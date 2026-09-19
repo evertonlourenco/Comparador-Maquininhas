@@ -127,7 +127,7 @@
                     <div class="space-y-2">
                         <x-tabela-taxas
                             :classe="$bloco['classe']"
-                            :titulo="$bloco['plano']->nome"
+                            :titulo="'Plano '.$bloco['plano']->nome"
                             :linhas="$bloco['linhas']"
                             coluna-rotulo="Linha de venda"
                             :marca-slug="$marca->slug"

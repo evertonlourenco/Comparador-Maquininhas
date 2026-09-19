@@ -89,7 +89,7 @@
                                  Everton): nao e relevante para o cliente decidir por aqui,
                                  fica so na pagina da marca. --}}
                             <template x-if="item.plano">
-                                <p class="mt-0.5 text-miudo text-tinta-suave">Plano: <span x-text="item.plano.nome"></span></p>
+                                <p class="mt-0.5 text-miudo text-tinta-suave">Plano <span x-text="item.plano.nome"></span></p>
                             </template>
                         </div>
 
@@ -132,8 +132,10 @@
                          os numeros que decidem a comparacao a primeira vista. O resto
                          (parcelado, Pix, outros planos/prazos da marca) vai para o
                          modal "Ver todas as taxas", ao lado. --}}
-                    <div class="flex flex-wrap items-center gap-2 border-b border-regua px-4 py-3">
-                        <template x-for="(linha, i) in item.vendas.filter((l) => ! l.falta && ['debito', 'credito_avista'].includes(l.venda.tipo_operacao))" :key="i">
+                    <div class="space-y-2 border-b border-regua px-4 py-3">
+                    <p class="text-etiqueta font-semibold uppercase text-tinta-suave" x-text="rotuloDasBandeirasDoCartao(item)"></p>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <template x-for="(linha, i) in chipsDoCartao(item)" :key="i">
                             <span class="inline-flex items-center gap-1.5 rounded-full border-2 border-tinta bg-superficie px-2.5 py-1 text-miudo text-tinta">
                                 <span x-text="rotuloCurtoDaVenda(linha.venda)"></span>
                                 <span class="numero font-semibold" x-text="linha.percentual_formatado"></span>
@@ -163,6 +165,7 @@
                             class="inline-flex min-h-8 items-center rounded-full border border-contorno px-3 text-miudo font-medium text-tinta hover:bg-superficie-forte"
                             x-on:click="abrirModalTaxas(item)"
                         >Ver todas as taxas</button>
+                    </div>
                     </div>
 
                     {{-- Um numero so (revisao pos-lancamento: "Taxa média" saiu —

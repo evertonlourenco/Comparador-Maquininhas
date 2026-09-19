@@ -45,6 +45,9 @@ const VISA_MASTER_PADRAO = 100;
  */
 const ORDEM_PARCEIROS = ['ton', 'mercado-pago', 'facilitypay', 'sidepay', 'trincapay', 'yelly', 'pagbank'];
 
+/** Grupos que valem como "taxa padrao" do cartao: as bandeiras mais divulgadas por toda marca. */
+const GRUPOS_PADRAO = ['visa_master', 'geral'];
+
 /** Ordem de exibicao das formas de pagamento no modal "Ver todas as taxas". */
 const ORDEM_TIPO_OPERACAO = { debito: 0, credito_avista: 1, credito_parcelado: 2, pix: 3 };
 
@@ -116,6 +119,8 @@ function comparador(caminhoDoJson) {
     // comeca no do cartao que abriu o modal, mas o seletor pode trocar para
     // qualquer outro plano da mesma marca.
     taxasAbertas: null,
+    // Qual tabela o modal mostra: 'padrao' (Visa e Mastercard) ou 'outras'.
+    bandeirasDasTaxas: 'padrao',
     // Etapa 20 (bloco C): a segunda visualizacao do resultado, so alterna a
     // tela — nao muda cenario nem entra na URL.
     visualizacaoResultado: 'cartoes',
@@ -633,7 +638,38 @@ function comparador(caminhoDoJson) {
      * formas de pagamento que o chip do cartao nao mostra (parcelado, Pix).
      */
     abrirModalTaxas(item) {
+      this.bandeirasDasTaxas = 'padrao';
       this.taxasAbertas = { marcaSlug: item.marca.slug, planoId: item.plano ? item.plano.id : null };
+    },
+
+    /**
+     * As taxas de debito e credito 1x que o cartao destaca — sempre as do
+     * grupo padrao (Visa e Mastercard), que a marca mais divulga. So cai para
+     * qualquer grupo quando o mix do cenario nao tem nenhuma venda nele.
+     */
+    chipsDoCartao(item) {
+      const linhas = item.vendas.filter(
+        (l) => ! l.falta && ['debito', 'credito_avista'].includes(l.venda.tipo_operacao),
+      );
+      const padrao = linhas.filter((l) => GRUPOS_PADRAO.includes(l.venda.grupo));
+
+      return padrao.length > 0 ? padrao : linhas;
+    },
+
+    /** O rotulo acima dos chips, dizendo de quais bandeiras sao as taxas. */
+    rotuloDasBandeirasDoCartao(item) {
+      const chips = this.chipsDoCartao(item);
+
+      return chips.length > 0 && chips.every((l) => l.venda.grupo === 'geral')
+        ? 'Todas as bandeiras'
+        : 'Bandeiras Visa e Mastercard';
+    },
+
+    /** O plano do modal tem taxa fora do grupo padrao? So entao o alternador aparece. */
+    get temOutrasBandeirasNasTaxas() {
+      return (this.planoDasTaxasAbertas?.taxas ?? []).some(
+        (t) => t.tipo_operacao !== 'pix' && ! GRUPOS_PADRAO.includes(t.grupo),
+      );
     },
 
     fecharModalTaxas() {
@@ -660,10 +696,10 @@ function comparador(caminhoDoJson) {
     },
 
     /**
-     * A tabela completa do plano aberto, agrupada por prazo de recebimento —
-     * um plano pode publicar o mesmo par forma-de-pagamento em mais de um
-     * prazo (etapa 04/05), e o modal precisa mostrar os dois, nao so o mais
-     * barato que o cartao usa no calculo.
+     * A tabela do plano aberto, para as bandeiras escolhidas no alternador,
+     * agrupada por prazo de recebimento dos cartoes. O Pix fica de fora daqui
+     * (ver `pixDasTaxasAbertas`): ele cai sempre na hora e nunca vira um prazo
+     * a parte do plano.
      */
     get gruposDeTaxasDoPlano() {
       const plano = this.planoDasTaxasAbertas;
@@ -672,9 +708,14 @@ function comparador(caminhoDoJson) {
         return [];
       }
 
+      const padrao = this.bandeirasDasTaxas === 'padrao';
       const porPrazo = new Map();
 
       for (const taxa of plano.taxas) {
+        if (taxa.tipo_operacao === 'pix' || GRUPOS_PADRAO.includes(taxa.grupo) !== padrao) {
+          continue;
+        }
+
         if (! porPrazo.has(taxa.prazo)) {
           porPrazo.set(taxa.prazo, []);
         }
@@ -688,19 +729,34 @@ function comparador(caminhoDoJson) {
         .sort(([a], [b]) => (prazos[a]?.ordem ?? 0) - (prazos[b]?.ordem ?? 0))
         .map(([codigo, taxas]) => ({
           nome: this.nomeDoPrazo(codigo),
-          linhas: [...taxas]
-            .sort(
-              (a, b) =>
-                (ORDEM_TIPO_OPERACAO[a.tipo_operacao] ?? 9) - (ORDEM_TIPO_OPERACAO[b.tipo_operacao] ?? 9) ||
-                a.parcelas - b.parcelas ||
-                this.nomeDoGrupo(a.grupo).localeCompare(this.nomeDoGrupo(b.grupo)),
-            )
-            .map((taxa) => ({
-              rotulo: this.rotuloDaVenda({ tipo_operacao: taxa.tipo_operacao, parcelas: taxa.parcelas, grupo: taxa.grupo }),
-              percentual_formatado: taxa.percentual === null ? null : percentual(Number(taxa.percentual)),
-              condicao: taxa.condicao,
-            })),
+          linhas: this.linhasDeTaxa(taxas, ! padrao),
         }));
+    },
+
+    /** O Pix do plano aberto: uma vez so, no fim, com qualquer bandeira e qualquer prazo dos cartoes. */
+    get pixDasTaxasAbertas() {
+      const plano = this.planoDasTaxasAbertas;
+
+      return plano === null ? [] : this.linhasDeTaxa(plano.taxas.filter((t) => t.tipo_operacao === 'pix'), false);
+    },
+
+    linhasDeTaxa(taxas, comGrupo) {
+      return [...taxas]
+        .sort(
+          (a, b) =>
+            (ORDEM_TIPO_OPERACAO[a.tipo_operacao] ?? 9) - (ORDEM_TIPO_OPERACAO[b.tipo_operacao] ?? 9) ||
+            a.parcelas - b.parcelas ||
+            this.nomeDoGrupo(a.grupo).localeCompare(this.nomeDoGrupo(b.grupo)),
+        )
+        .map((taxa) => {
+          const venda = { tipo_operacao: taxa.tipo_operacao, parcelas: taxa.parcelas, grupo: taxa.grupo };
+
+          return {
+            rotulo: comGrupo ? this.rotuloDaVenda(venda) : this.rotuloBaseDaVenda(venda),
+            percentual_formatado: taxa.percentual === null ? null : percentual(Number(taxa.percentual)),
+            condicao: taxa.condicao,
+          };
+        });
     },
 
     get temAlgumResultado() {
@@ -907,11 +963,15 @@ function comparador(caminhoDoJson) {
     irParaCartao(item) {
       this.visualizacaoResultado = 'cartoes';
 
-      this.$nextTick(() => {
-        const elemento = document.getElementById(this.idDoCartaoResultado(item));
-        elemento?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        elemento?.focus({ preventScroll: true });
-      });
+      // Dois quadros de animacao: o x-show dos Cards so tira o display:none
+      // depois do proximo ciclo do Alpine, e rolar antes disso nao acha o cartao.
+      this.$nextTick(() =>
+        window.requestAnimationFrame(() => {
+          const elemento = document.getElementById(this.idDoCartaoResultado(item));
+          elemento?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          elemento?.focus({ preventScroll: true });
+        }),
+      );
     },
 
     real,

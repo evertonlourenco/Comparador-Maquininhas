@@ -4361,3 +4361,10 @@ dado verificado só cria campo vazio, e nenhum deles muda um centavo do cálculo
 faltavam no `.env.example` e no `phpunit.xml` — o `.env` local já os tinha. Sem
 isso a suíte rodava em UTC, e o selo de frescor de 45 dias viraria o dia na hora
 errada (regra 11).
+
+### Revisão dos cartões, 19/09/2026 (pós-lançamento, pedido do Everton)
+
+- **"Plano X" em todo lugar que cita plano** (cartão, veredito, modais, título da tabela na página da marca) — nunca o nome solto.
+- **Cartão mostra só débito e crédito 1x das bandeiras padrão** (`GRUPOS_PADRAO` = `visa_master` e `geral` em `comparador.js`), com o rótulo "Bandeiras Visa e Mastercard" acima. O resto vai no modal "Ver todas as taxas": seletor de plano + alternador "Visa e Mastercard" (padrão) / "Outras bandeiras".
+- **Pix nunca vira prazo próprio.** Ele cai na hora, mas a tabela do plano (modal e `TabelaDeTaxasDaMarca` na página da marca) o mostra uma vez só, no fim, repetido nas duas visões de bandeira, com prazo `—`. Vale para qualquer tela nova que liste taxa de um plano.
+- **Tabela de taxas → clique na célula** rola até o cartão da marca (`irParaCartao` espera o `x-show` dos Cards abrir). O botão "Cartões" virou "Cards" para não confundir com cartão de crédito/débito.
