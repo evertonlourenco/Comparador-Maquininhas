@@ -79,11 +79,14 @@ final class CompletudeDaMarca
             $pendencias[] = 'Logo da marca não cadastrado.';
         }
 
-        // Regra 8 (revista em 19/09/2026): nota do Reclame Aqui e manual, mensal,
-        // e toda marca so vai ao ar com ela preenchida e com a data da consulta.
+        // Regra 8 (revista em 19/09/2026): a nota do Reclame Aqui e manual, mensal,
+        // e toda marca so vai ao ar com a situacao dela informada e a data da
+        // consulta. Marca sem perfil ou com perfil ainda sem nota tambem fecha
+        // (nao existe nota a exigir), mas precisa dizer qual dos dois e.
         $ra = $marcaArr['reclame_aqui'] ?? [];
+        $situacaoRa = $ra['situacao'] ?? null;
 
-        if (($ra['nota'] ?? null) === null) {
+        if ($situacaoRa === null || ($situacaoRa === 'com_nota' && ($ra['nota'] ?? null) === null)) {
             $pendencias[] = 'Nota do Reclame Aqui não preenchida.';
         } elseif (($ra['consultado_em'] ?? null) === null) {
             $pendencias[] = 'Data da consulta da nota do Reclame Aqui não preenchida.';

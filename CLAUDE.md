@@ -2727,6 +2727,7 @@ tinha tamanho fixo, mas o atributo é a declaração explícita que a regra pede
 - [ ] 19 — Lançamento
 - [ ] 20 — Decisão sobre programa de parceiros
 - [ ] 21 — Cadastro de taxas por imagem (IA de visão)
+- [ ] 23 — Simulação de troca de maquininha (ver `PLANO.md`)
 
 **A ordem da 12 em diante foi refeita em 11/09/2026** (o motivo está em
 `PLANO.md`). Nada até a 11 mudou. O resumo: a identidade visual própria ainda
@@ -4376,3 +4377,4 @@ errada (regra 11).
 - **Nota do Reclame Aqui no cartão** (canto inferior direito, só se a nota existir) e **alerta no painel inicial** "Notas do Reclame Aqui desatualizadas" (marca aprovada sem nota, sem data ou consultada há +30 dias). Nota continua manual, uma vez por mês (decisão do Everton, 19/09/2026 — não raspar).
 - **Monitor de taxas cobre agora Ton, Yelly, SidePay, FacilityPay e TrincaPay** (`fontes.json`). A nota antiga de que a Ton não publica taxa estava errada — `ton.com.br/planos-e-taxas`. Limites: Ton e FacilityPay só mostram no texto o plano selecionado por padrão (o coletor não clica em abas); a tabela da TrincaPay é imagem/vídeo, então só preço, cupom e texto da página são vigiados.
 - **Trava: nota do Reclame Aqui (com data da consulta) é pendência de publicação** — `CompletudeDaMarca` (19/09/2026). Sem ela a marca não aprova e sai do JSON. **Esse commit foi feito só local, sem push, porque as 5 marcas no ar (Ton, Yelly, SidePay, FacilityPay, TrincaPay) ainda não tinham nota em produção: publicar antes esvaziaria o comparador no deploy seguinte.** Só dar push/deploy depois de conferir por tinker que todas as marcas aprovadas têm `reclame_aqui_nota` e `reclame_aqui_consultado_em` em produção.
+- **Reclame Aqui: três situações** (`marcas.reclame_aqui_situacao`, 19/09/2026): `com_nota`, `sem_nota` (perfil existe, poucas avaliações) e `sem_perfil`. As três fecham a trava, desde que a situação e a data da consulta estejam preenchidas; nota só é exigida em `com_nota`. A migration preencheu FacilityPay (`sem_nota`) e TrincaPay (`sem_perfil`) e as demais com nota (`com_nota`). Cartão só mostra nota quando há nota; a página da marca diz qual das três situações vale. **A trava foi publicada nesta data**, depois de conferido que as 5 marcas aprovadas passavam.

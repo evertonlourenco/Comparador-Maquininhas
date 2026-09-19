@@ -184,6 +184,7 @@ final class CatalogoDoComparador
             ],
             // Regra 8 do dominio: nota do Reclame Aqui e manual, com data e link.
             'reclame_aqui' => [
+                'situacao' => $marca->situacaoReclameAqui(),
                 'nota' => Dinheiro::doBanco($marca->reclame_aqui_nota),
                 'url' => $marca->reclame_aqui_url,
                 'consultado_em' => $marca->reclame_aqui_consultado_em?->toDateString(),

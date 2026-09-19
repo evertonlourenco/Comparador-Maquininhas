@@ -55,7 +55,7 @@ class PainelInicial extends StatsOverviewWidget
             ->ativas()
             ->whereNotNull('aprovada_em')
             ->where(fn ($q) => $q
-                ->whereNull('reclame_aqui_nota')
+                ->where(fn ($q) => $q->whereNull('reclame_aqui_situacao')->whereNull('reclame_aqui_nota'))
                 ->orWhereNull('reclame_aqui_consultado_em')
                 ->orWhere('reclame_aqui_consultado_em', '<', now()->subDays(30)->toDateString()))
             ->count();

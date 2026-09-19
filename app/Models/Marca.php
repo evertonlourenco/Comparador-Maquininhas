@@ -19,7 +19,7 @@ use App\Support\Saude\CompletudeDaMarca;
 #[Table('marcas')]
 #[Fillable([
     'adquirente_id', 'nome', 'slug', 'site_url', 'logo_path', 'descricao', 'youtube_video_id',
-    'reclame_aqui_nota', 'reclame_aqui_url', 'reclame_aqui_consultado_em',
+    'reclame_aqui_nota', 'reclame_aqui_situacao', 'reclame_aqui_url', 'reclame_aqui_consultado_em',
     'publica_tabela', 'aceita_relatos', 'status', 'ordem',
     'link_ultimo_status', 'link_ultima_falha', 'link_quebrado', 'link_verificado_em',
     'link_confirmado_manualmente', 'aprovada_em',
@@ -27,6 +27,24 @@ use App\Support\Saude\CompletudeDaMarca;
 class Marca extends Model
 {
     use SoftDeletes;
+
+    public const RA_COM_NOTA = 'com_nota';
+
+    public const RA_SEM_NOTA = 'sem_nota';
+
+    public const RA_SEM_PERFIL = 'sem_perfil';
+
+    public const SITUACOES_RECLAME_AQUI = [
+        self::RA_COM_NOTA => 'Com nota',
+        self::RA_SEM_NOTA => 'Perfil existe, ainda sem nota',
+        self::RA_SEM_PERFIL => 'Sem perfil no Reclame Aqui',
+    ];
+
+    /** Linha antiga so com nota conta como "com nota"; sem nada, nulo (nao informado). */
+    public function situacaoReclameAqui(): ?string
+    {
+        return $this->reclame_aqui_situacao ?? ($this->reclame_aqui_nota !== null ? self::RA_COM_NOTA : null);
+    }
 
     protected function casts(): array
     {

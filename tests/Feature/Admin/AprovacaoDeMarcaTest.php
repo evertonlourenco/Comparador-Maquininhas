@@ -126,6 +126,17 @@ class AprovacaoDeMarcaTest extends TestCase
         $this->assertNotContains($marca->slug, $slugs);
     }
 
+    public function test_marca_sem_perfil_ou_sem_nota_no_reclame_aqui_fecha_completude_com_a_situacao_informada(): void
+    {
+        $marca = $this->criarMarcaCompleta();
+
+        foreach (['sem_perfil', 'sem_nota'] as $situacao) {
+            $marca->update(['reclame_aqui_situacao' => $situacao, 'reclame_aqui_nota' => null]);
+
+            $this->assertTrue(CompletudeDaMarca::avaliar($marca->fresh())['completa'], $situacao);
+        }
+    }
+
     public function test_nota_sem_data_de_consulta_tambem_e_pendencia(): void
     {
         $marca = $this->criarMarcaCompleta();

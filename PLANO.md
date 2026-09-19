@@ -468,6 +468,50 @@ Plano, etapa 17).
   — a IA pré-preenche as células, a pessoa só corrige o que estiver errado
   antes de salvar
 
+### 23 — Simulação de troca de maquininha
+
+Ideia do Everton (19/09/2026): o lojista que **já tem** maquininha informa o
+que paga hoje, e o site mostra as **3 melhores opções** para ele e **em
+quantos meses a economia paga a adesão** da nova. Muda a pergunta do site de
+"qual é a mais barata?" para "vale a pena trocar?".
+
+**Entrada, mesma regra do comparador principal:**
+- Faturamento mensal na maquininha.
+- Por padrão o lojista escolhe **a forma de receber que mais usa** (débito,
+  crédito à vista ou crédito parcelado, este sempre em 12x) e informa a taxa
+  que paga nela. Em **"simulação avançada"** distribui valores (ou
+  percentuais) entre as formas de receber e informa a taxa de cada uma.
+- Mensalidade e aluguel que paga hoje (0 quando não paga).
+
+**Cálculo (reaproveita o motor, sem regra nova de domínio):**
+- Custo atual = Σ(valor × taxa informada) + mensalidade + aluguel.
+- Custo na marca nova = o que o motor já calcula para o mesmo cenário.
+- Economia mensal = custo atual − custo novo. Payback = adesão **com cupom** ÷
+  economia mensal, em meses.
+- Sem economia (zero ou negativa), o site **diz isso** em vez de recomendar
+  troca. Nunca um payback inventado.
+
+**Resultado:** as 3 marcas de melhor resultado, com "você paga R$ X hoje e
+pagaria R$ Y", a economia por mês e o payback. O lojista escolhe a ordenação:
+**por payback (padrão)** ou **por economia mensal**. O payback favorece adesão
+barata, a economia favorece taxa baixa — por isso as duas opções.
+
+**Multa de saída da maquininha antiga: fica de fora do cálculo, de propósito
+(decisão do Everton).** Perguntar isso trava a decisão — o lojista teria de
+consultar a marca atual e a chance de voltar ao site é mínima. Nas marcas
+cadastradas hoje, via de regra, não há multa nem fidelidade. **Pesquisa a
+fazer dentro desta fase:** conferir, só nas marcas que cobram mensalidade ou
+aluguel, se existe multa ou fidelidade — são as únicas em que ela pode existir
+— e registrar o achado no CLAUDE.md, sem entrar na conta.
+
+**Compartilhar:** botão para mandar a simulação por WhatsApp. As taxas que o
+lojista digitou **nunca vão para o banco**; ficam só na URL, como o resto do
+comparador (regra 9: tudo roda no navegador sobre o JSON estático).
+
+**Fica para decidir na hora de construir:** onde a simulação mora (aba na
+home, ou página `/trocar-de-maquininha`), e o texto que evita prometer
+economia — o resultado é uma estimativa sobre as taxas que o lojista informou.
+
 ---
 
 ## A decisão que reorganizou o plano

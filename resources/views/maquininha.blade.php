@@ -48,14 +48,21 @@
                 </div>
 
                 {{-- Regra 8: a nota do Reclame Aqui é campo manual, com data de consulta e link. --}}
-                @if ($marca->reclame_aqui_nota !== null)
+                @php $situacaoRa = $marca->situacaoReclameAqui(); @endphp
+                @if ($situacaoRa !== null)
                     <p class="text-sm text-tinta-suave">
-                        Nota no Reclame Aqui
-                        <span class="numero font-medium text-tinta">{{ Dinheiro::numero((float) $marca->reclame_aqui_nota, 1) }}</span><span class="numero">/10</span>
-                        @if ($marca->reclame_aqui_consultado_em)
-                            · consultada em <span class="numero">{{ Dinheiro::data($marca->reclame_aqui_consultado_em) }}</span>
+                        @if ($situacaoRa === \App\Models\Marca::RA_COM_NOTA)
+                            Nota no Reclame Aqui
+                            <span class="numero font-medium text-tinta">{{ Dinheiro::numero((float) $marca->reclame_aqui_nota, 1) }}</span><span class="numero">/10</span>
+                        @elseif ($situacaoRa === \App\Models\Marca::RA_SEM_NOTA)
+                            Perfil no Reclame Aqui ainda sem nota (poucas avaliações)
+                        @else
+                            Esta marca ainda não tem perfil no Reclame Aqui
                         @endif
-                        @if ($marca->reclame_aqui_url)
+                        @if ($marca->reclame_aqui_consultado_em)
+                            · consultado em <span class="numero">{{ Dinheiro::data($marca->reclame_aqui_consultado_em) }}</span>
+                        @endif
+                        @if ($marca->reclame_aqui_url && $situacaoRa !== \App\Models\Marca::RA_SEM_PERFIL)
                             · <a href="{{ $marca->reclame_aqui_url }}" target="_blank" rel="noopener noreferrer nofollow"
                                  class="text-link underline underline-offset-2 hover:no-underline">ver página<span class="sr-only"> no Reclame Aqui (abre em nova aba)</span></a>
                         @endif

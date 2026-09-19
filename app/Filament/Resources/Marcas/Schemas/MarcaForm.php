@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Marcas\Schemas;
 
 use App\Enums\StatusMarca;
 use App\Models\Adquirente;
+use App\Models\Marca;
 use App\Support\Uploads\ImagemSeguraWebp;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
@@ -12,6 +13,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Str;
@@ -101,19 +103,26 @@ class MarcaForm
                             ->maxLength(20),
                     ]),
                 Section::make('Reclame Aqui')
-                    ->columns(3)
+                    ->columns(2)
                     ->description('Regra 8: nota manual, com data de consulta e link. Nunca raspar.')
                     ->components([
+                        Select::make('reclame_aqui_situacao')
+                            ->label('Situação')
+                            ->options(Marca::SITUACOES_RECLAME_AQUI)
+                            ->live()
+                            ->helperText('Perfil com poucas avaliações e sem nota, ou marca sem perfil, também vale — só precisa dizer qual.'),
                         TextInput::make('reclame_aqui_nota')
                             ->label('Nota')
                             ->numeric()
                             ->step(0.1)
                             ->minValue(0)
-                            ->maxValue(10),
+                            ->maxValue(10)
+                            ->visible(fn (Get $get): bool => ($get('reclame_aqui_situacao') ?? Marca::RA_COM_NOTA) === Marca::RA_COM_NOTA),
                         TextInput::make('reclame_aqui_url')
                             ->label('Link do perfil')
                             ->url()
-                            ->maxLength(500),
+                            ->maxLength(500)
+                            ->visible(fn (Get $get): bool => $get('reclame_aqui_situacao') !== Marca::RA_SEM_PERFIL),
                         DatePicker::make('reclame_aqui_consultado_em')
                             ->label('Consultado em')
                             ->native(false)
