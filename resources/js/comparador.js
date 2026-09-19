@@ -16,7 +16,7 @@
  */
 
 import Alpine from 'alpinejs';
-import { doUsuario, numero as formatarNumero, percentual, real } from './comparador/dinheiro.mjs';
+import { data as formatarData, doUsuario, numero as formatarNumero, percentual, real } from './comparador/dinheiro.mjs';
 import { calcular } from './comparador/motor.mjs';
 import { resumir } from './comparador/resumo.mjs';
 import { daUrl, paraUrl, TODAS_AS_MARCAS } from './comparador/estado.mjs';
@@ -918,6 +918,88 @@ function comparador(caminhoDoJson) {
       }
 
       return { debito: 'Débito', credito_avista: 'Crédito 1x', pix: 'Pix' }[venda.tipo_operacao] ?? venda.tipo_operacao;
+    },
+
+    /**
+     * Selos "melhor para..." (19/09/2026, Everton). Saem da taxa publicada de
+     * cada plano, no grupo padrao (Visa e Mastercard) e no prazo que o cartao
+     * usa — nunca do mix do lojista, que e palpite. Disputam so os planos
+     * permanentes do bloco calculado; empate divide o selo, e selo que todos
+     * ganhariam nao aparece (nao diz nada).
+     */
+    taxaPadraoDoItem(item, tipo, parcelas) {
+      const plano = this.planoDoCatalogo(item);
+
+      if (! plano) {
+        return null;
+      }
+
+      const prazo = item.vendas.find((l) => l.venda.tipo_operacao !== 'pix' && l.prazo)?.prazo ?? null;
+      const taxa = plano.taxas.find(
+        (t) =>
+          t.tipo_operacao === tipo &&
+          t.parcelas === parcelas &&
+          GRUPOS_PADRAO.includes(t.grupo) &&
+          (prazo === null || t.prazo === prazo),
+      );
+
+      return taxa ? Number(taxa.percentual) : null;
+    },
+
+    planoDoCatalogo(item) {
+      return (
+        this.catalogo?.marcas.find((m) => m.slug === item.marca.slug)?.planos.find((p) => p.id === item.plano?.id) ?? null
+      );
+    },
+
+    selosDoItem(item) {
+      const pool = this.itensNoEstado('calculado');
+
+      if (item.estado !== 'calculado' || pool.length < 2) {
+        return [];
+      }
+
+      const criterios = [
+        ['Menor débito', (i) => this.taxaPadraoDoItem(i, 'debito', 1)],
+        ['Menor crédito à vista', (i) => this.taxaPadraoDoItem(i, 'credito_avista', 1)],
+        ['Menor crédito 12x', (i) => this.taxaPadraoDoItem(i, 'credito_parcelado', 12)],
+      ];
+      const selos = [];
+
+      for (const [rotulo, valorDe] of criterios) {
+        const valores = pool.map(valorDe).filter((v) => v !== null);
+        const meu = valorDe(item);
+
+        if (meu === null || valores.length < 2) {
+          continue;
+        }
+
+        if (meu === Math.min(...valores) && ! valores.every((v) => v === meu)) {
+          selos.push(rotulo);
+        }
+      }
+
+      const mensalidades = pool.map((i) => this.planoDoCatalogo(i)?.conta?.mensalidade).filter((v) => v !== null && v !== undefined).map(Number);
+      const minha = this.planoDoCatalogo(item)?.conta?.mensalidade;
+
+      if (minha !== null && minha !== undefined && Number(minha) === 0 && mensalidades.some((v) => v > 0)) {
+        selos.push('Sem mensalidade');
+      }
+
+      return selos;
+    },
+
+    /** "Reclame Aqui 8,4/10 · consultada em 05/09/2026" — so quando a nota existe. */
+    notaRaTexto(item) {
+      const ra = item.marca.reclame_aqui;
+
+      if (! ra || ra.nota === null || ra.nota === undefined) {
+        return null;
+      }
+
+      const data = ra.consultado_em ? ` · consultada em ${formatarData(ra.consultado_em)}` : '';
+
+      return `Reclame Aqui ${formatarNumero(Number(ra.nota), 1)}/10${data}`;
     },
 
     /** O item de menor custo do bloco calculado — o CTA fixo do celular usa este. */

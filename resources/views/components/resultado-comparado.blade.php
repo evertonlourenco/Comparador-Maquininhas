@@ -103,6 +103,9 @@
                                 <x-etiqueta tom="apagado">Parcial</x-etiqueta>
                             </template>
                             <x-etiqueta :tom="$tom">{{ $titulo }}</x-etiqueta>
+                            <template x-for="selo in selosDoItem(item)" :key="selo">
+                                <x-etiqueta tom="neutro"><span x-text="selo"></span></x-etiqueta>
+                            </template>
                             {{-- Etapa 19: o plano permanente nunca fica escondido atras do
                                  promocional — e o inverso: aqui so um selo aponta que a marca
                                  tambem tem tabela de entrada, e o numero de cima e sempre o
@@ -286,6 +289,13 @@
                         </template>
                         <template x-if="! temCupomParaContratar(item)">
                             <p class="text-miudo text-tinta-suave">Sem parceria com esta marca — link direto para o site oficial.</p>
+                        </template>
+
+                        <template x-if="notaRaTexto(item)">
+                            <p class="text-end text-miudo text-tinta-suave">
+                                <a x-show="item.marca.reclame_aqui.url" :href="item.marca.reclame_aqui.url" target="_blank" rel="noopener noreferrer nofollow" class="numero underline underline-offset-2 hover:no-underline" x-text="notaRaTexto(item)"></a>
+                                <span x-show="! item.marca.reclame_aqui.url" class="numero" x-text="notaRaTexto(item)"></span>
+                            </p>
                         </template>
                     </div>
                 </article>

@@ -49,7 +49,23 @@ class PainelInicial extends StatsOverviewWidget
         $linksQuebrados = Marca::query()->comLinkQuebrado()->count()
             + Cupom::query()->comLinkQuebrado()->count();
 
+        // Nota do Reclame Aqui e manual (regra 8), uma consulta por mes: marca
+        // aprovada sem nota, sem data ou consultada ha mais de 30 dias.
+        $notasRaDesatualizadas = Marca::query()
+            ->ativas()
+            ->whereNotNull('aprovada_em')
+            ->where(fn ($q) => $q
+                ->whereNull('reclame_aqui_nota')
+                ->orWhereNull('reclame_aqui_consultado_em')
+                ->orWhere('reclame_aqui_consultado_em', '<', now()->subDays(30)->toDateString()))
+            ->count();
+
         return [
+            Stat::make('Notas do Reclame Aqui desatualizadas', $notasRaDesatualizadas)
+                ->description('Marcas no ar sem nota ou consultadas há +30 dias')
+                ->color($notasRaDesatualizadas > 0 ? 'danger' : 'success')
+                ->url(MarcaResource::getUrl())
+                ->icon('heroicon-o-star'),
             Stat::make('Links de afiliado quebrados', $linksQuebrados)
                 ->description('Site da marca ou link de cupom fora do ar (HEAD diário)')
                 ->color($linksQuebrados > 0 ? 'danger' : 'success')

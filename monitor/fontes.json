@@ -52,12 +52,12 @@
     "marca_slug": "ton",
     "marca_nome": "Ton",
     "categoria": "tabela_taxas",
-    "url": null,
+    "url": "https://www.ton.com.br/planos-e-taxas",
     "tipo_conteudo": "html",
-    "requer_navegador": false,
+    "requer_navegador": true,
     "roda_no_mac": false,
-    "ativo": false,
-    "observacao": "Pesquisado em 14/09/2026: NAO existe pagina publica com a tabela completa. O proprio Ton diz que a tarifa e consultada dentro do app, em 'Minhas taxas e prazos' — depende de faturamento do mes e fica atras de login. O blog (blog.ton.com.br/taxas-da-maquininha-ton) so cita numeros soltos de exemplo ('a partir de 0,57%'), nao a tabela — monitorar isso geraria alerta sem dado real pra aprovar. Sem solucao por enquanto: exigiria login automatizado na conta do Everton, fora do escopo desta etapa."
+    "ativo": true,
+    "observacao": "Corrigido em 19/09/2026 (Everton): a Ton publica sim as taxas em ton.com.br/planos-e-taxas — a nota de 14/09 dizendo que so existia dentro do app estava errada. URL sem os parametros de rastreio do link colado. Precisa de navegador (fetch simples nao traz os percentuais). A pagina mostra so o plano selecionado por padrao: mudancas nos outros planos so aparecem se a pagina mudar o padrao. Ton esta na lista de marcas atras de Cloudflare — se o GitHub Actions tomar bloqueio, mude roda_no_mac para true."
   },
   {
     "id": "cielo-contrato-credenciamento",
@@ -203,5 +203,53 @@
     "roda_no_mac": false,
     "ativo": true,
     "observacao": "Ativado em 15/09/2026 (etapa 17): a marca ja existe na tabela marcas."
+  },
+  {
+    "id": "sidepay-tabela-taxas",
+    "marca_slug": "sidepay",
+    "marca_nome": "SidePay",
+    "categoria": "tabela_taxas",
+    "url": "https://sidepay.com.br/planos-taxas/",
+    "tipo_conteudo": "html",
+    "requer_navegador": false,
+    "roda_no_mac": false,
+    "ativo": true,
+    "observacao": "Adicionada em 19/09/2026 (Everton). Fetch simples traz todas as tabelas (~168 percentuais)."
+  },
+  {
+    "id": "yelly-tabela-taxas",
+    "marca_slug": "yelly",
+    "marca_nome": "Yelly",
+    "categoria": "tabela_taxas",
+    "url": "https://www.yelly.com.br/taxas",
+    "tipo_conteudo": "html",
+    "requer_navegador": false,
+    "roda_no_mac": false,
+    "ativo": true,
+    "observacao": "Adicionada em 19/09/2026 (Everton). Fetch simples traz todas as tabelas (~167 percentuais)."
+  },
+  {
+    "id": "facilitypay-tabela-taxas",
+    "marca_slug": "facilitypay",
+    "marca_nome": "FacilityPay",
+    "categoria": "tabela_taxas",
+    "url": "https://facilitypay.com.br/planos",
+    "tipo_conteudo": "html",
+    "requer_navegador": true,
+    "roda_no_mac": false,
+    "ativo": true,
+    "observacao": "Adicionada em 19/09/2026 (Everton). Precisa de navegador. Limite conhecido: so o plano selecionado por padrao (Express) aparece no texto; Profit e Light exigem clicar na aba e o coletor nao clica."
+  },
+  {
+    "id": "trincapay-tabela-taxas",
+    "marca_slug": "trincapay",
+    "marca_nome": "TrincaPay",
+    "categoria": "tabela_taxas",
+    "url": "https://www.trincapay.com.br/canal-monetizando/",
+    "tipo_conteudo": "html",
+    "requer_navegador": false,
+    "roda_no_mac": false,
+    "ativo": true,
+    "observacao": "Adicionada em 19/09/2026 (Everton). Limite conhecido: a tabela de taxas da pagina e imagem/video, nao texto — o monitor so pega mudancas de preco, cupom e textos da pagina, nao de percentual."
   }
 ]
